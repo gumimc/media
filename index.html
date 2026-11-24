@@ -627,6 +627,7 @@
             <li>사용하는 악기와 <strong>BGM·영상 재생 요청</strong> 여부를 선택해 주세요.</li>
             <li>연극 대본처럼 별도로 작성된 부서 자체 큐시트가 있다면 <strong>자체 부서 큐시트 파일 업로드</strong>에 바로 첨부할 수 있습니다.</li>
             <li>영상·음원·문서·자막 파일은 <strong>최대 500MB 이하</strong>까지 Backblaze B2로 업로드됩니다.</li>
+            <li>입력 내용은 중간중간 <strong>자동저장 및 자동 동기화</strong>되며, <strong>[제출 저장]</strong> 버튼으로 즉시 저장·동기화할 수도 있습니다.</li>
             <li>자막은 <strong>.txt 파일 여러 개</strong>를 한 번에 올리거나 아래 입력란에 <strong>직접 입력 / Ctrl+V 붙여넣기</strong>할 수 있으며, 어려울 경우 <strong>[미디어팀 자막 도움요청]</strong> 버튼을 눌러 주세요.</li>
           </ul>
         </div>
@@ -713,7 +714,7 @@
 
           <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; justify-content:space-between; align-items:center;">
             <button type="button" class="btn btn-success" id="saveDeptBtn">제출 저장</button>
-            <span class="helper-text" id="lastSavedText"></span>
+            <span class="helper-text" id="lastSavedText">자동저장 및 자동 동기화 활성화됨</span>
           </div>
         </div>
       </section>
@@ -951,6 +952,26 @@
     let remoteB2Files = [];
     let remoteB2Loaded = false;
 
+    let autoSaveTimer = null;
+    let autoSyncTimer = null;
+    let hasDirtyDeptChanges = false;
+
+    function clearAutoTimers() {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = null;
+      }
+      if (autoSyncTimer) {
+        clearTimeout(autoSyncTimer);
+        autoSyncTimer = null;
+      }
+    }
+
+    function setSavedStatusLabel(text) {
+      const el = document.getElementById("lastSavedText");
+      if (el) el.textContent = text;
+    }
+
     function getDeptOrderKey(sub) {
       if (!sub) return Number.MAX_SAFE_INTEGER;
       const subTime = Number(sub.submittedAt);
@@ -1064,8 +1085,8 @@
       }
     }
 
-    async function syncSubmissionToB2(sub) {
-      if (!sub || !sub.deptId || !isB2Configured()) return;
+    async function syncSubmissionToB2(sub, { silent = false } = {}) {
+      if (!sub || !sub.deptId || !isB2Configured()) return false;
       const now = Date.now();
       if (!sub.syncedAt) sub.syncedAt = now;
       if (!sub.submittedAt) sub.submittedAt = sub.syncedAt;
@@ -1074,13 +1095,59 @@
         const res = await fetch(`${base}?action=save_submission`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deptId: sub.deptId, submission: sub })
+          body: JSON.stringify({ deptId: sub.deptId, submission: sub }),
+          keepalive: true
         });
         if (!res.ok) {
-          console.warn("B2 submission sync failed:", res.status);
+          if (!silent) console.warn("B2 submission sync failed:", res.status);
+          return false;
         }
+        hasDirtyDeptChanges = false;
+        return true;
       } catch (e) {
-        console.warn("B2 submission sync error:", e);
+        if (!silent) console.warn("B2 submission sync error:", e);
+        return false;
+      }
+    }
+
+    function scheduleAutoSaveAndSync(user) {
+      if (!user || user.role !== "dept") return;
+      hasDirtyDeptChanges = true;
+      setSavedStatusLabel("입력 중... 자동저장 대기");
+
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        const current = getCurrentUser();
+        if (!current || current.role !== "dept") return;
+        const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true });
+        setSavedStatusLabel(`자동저장됨 (${sub.updatedAt}) · B2 동기화 대기...`);
+      }, 600);
+
+      if (autoSyncTimer) clearTimeout(autoSyncTimer);
+      autoSyncTimer = setTimeout(async () => {
+        const current = getCurrentUser();
+        if (!current || current.role !== "dept") return;
+        const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true });
+        setSavedStatusLabel("자동 동기화 중...");
+        const ok = await syncSubmissionToB2(sub, { silent: true });
+        setSavedStatusLabel(
+          ok
+            ? `자동저장 및 B2 동기화 완료 (${sub.updatedAt})`
+            : `로컬 자동저장됨 (${sub.updatedAt}) · 네트워크 확인 필요`
+        );
+      }, 1800);
+    }
+
+    async function flushPendingDeptChanges({ keepaliveOnly = false } = {}) {
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
+      if (!hasDirtyDeptChanges && !autoSaveTimer && !autoSyncTimer) return;
+      clearAutoTimers();
+      const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
+      if (keepaliveOnly) {
+        syncSubmissionToB2(sub, { silent: true });
+      } else {
+        await syncSubmissionToB2(sub, { silent: true });
       }
     }
 
@@ -1113,7 +1180,6 @@
               ? rSynced
               : (Number.isFinite(lSynced) && lSynced > 0 ? lSynced : Date.now() + idx * 1000);
 
-          // 최초 제출 시각을 유지하되, 양쪽 모두 없을 때만 확정
           const resolvedSubmittedAt =
             Number.isFinite(rSubmitted) && rSubmitted > 0
               ? rSubmitted
@@ -1560,6 +1626,8 @@
     async function fillDeptSampleData(user) {
       const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
       if (!ok) return;
+      clearAutoTimers();
+      hasDirtyDeptChanges = false;
       const existing = state.deptSubmissions[user.id];
       const now = Date.now();
       const submittedAt =
@@ -1570,7 +1638,7 @@
       state.deptSubmissions[user.id].syncedAt = now;
       state.deptSubmissions[user.id].updatedAt = new Date(now).toLocaleString("ko-KR");
       saveState();
-      await syncSubmissionToB2(state.deptSubmissions[user.id]);
+      await syncSubmissionToB2(state.deptSubmissions[user.id], { silent: true });
       renderDeptView(user);
       showToast(`${user.deptName} 예시 데이터가 입력 및 동기화되었습니다.`);
     }
@@ -1587,7 +1655,7 @@
           const submittedAt = baseTime + i * 1000;
           const sampleSub = await buildSampleSubmissionForDept(acc.id, acc.deptName, submittedAt);
           state.deptSubmissions[id] = sampleSub;
-          await syncSubmissionToB2(sampleSub);
+          await syncSubmissionToB2(sampleSub, { silent: true });
         }
       }
       saveState();
@@ -1784,9 +1852,11 @@
         <button type="button" class="btn btn-ghost-light btn-sm" id="logoutBtn">로그아웃</button>
       `;
 
-      document.getElementById("logoutBtn").addEventListener("click", () => {
+      document.getElementById("logoutBtn").addEventListener("click", async () => {
+        await flushPendingDeptChanges();
         state.sessionUserId = null;
         activeTab = null;
+        hasDirtyDeptChanges = false;
         saveState();
         renderAll();
       });
@@ -1826,7 +1896,8 @@
       }
 
       navTabs.querySelectorAll(".tab-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
+          await flushPendingDeptChanges();
           activeTab = btn.dataset.tab;
           renderAll();
         });
@@ -1851,7 +1922,11 @@
       document.getElementById("deptContact").value = sub.contact || "";
       document.getElementById("deptMicCount").value = sub.micCount ?? 0;
       document.getElementById("deptGeneralNote").value = sub.generalNote || "";
-      document.getElementById("lastSavedText").textContent = sub.updatedAt ? `최근 저장: ${sub.updatedAt}` : "";
+      setSavedStatusLabel(
+        sub.updatedAt
+          ? `최근 저장: ${sub.updatedAt} (자동저장/동기화 활성)`
+          : "자동저장 및 자동 동기화 활성화됨"
+      );
 
       renderMicOptionsControl(sub);
       renderInstrumentButtons(sub);
@@ -1898,6 +1973,7 @@
             else sub.instruments.push(inst);
           }
           renderInstrumentButtons(sub);
+          scheduleAutoSaveAndSync(getCurrentUser());
         });
       });
     }
@@ -1934,7 +2010,7 @@
           const target = sub.customCueFiles[idx];
           sub.customCueFiles.splice(idx, 1);
           saveState();
-          await syncSubmissionToB2(sub);
+          await syncSubmissionToB2(sub, { silent: true });
           if (target?.key) await deleteFileRecords([target.key]);
           renderCustomCueFiles(sub);
         });
@@ -2038,21 +2114,25 @@
       container.querySelectorAll(".cue-item").forEach((el) => {
         const idx = Number(el.dataset.cueIdx);
         const cue = sub.cues[idx];
-        el.querySelector(".cue-title").addEventListener("input", (e) => { cue.title = e.target.value; });
-        el.querySelector(".cue-topic").addEventListener("input", (e) => { cue.topic = e.target.value; });
-        el.querySelector(".cue-duration").addEventListener("input", (e) => { cue.duration = e.target.value; });
-        el.querySelector(".cue-note").addEventListener("input", (e) => { cue.note = e.target.value; });
+        const onCueFieldChange = () => scheduleAutoSaveAndSync(getCurrentUser());
+
+        el.querySelector(".cue-title").addEventListener("input", (e) => { cue.title = e.target.value; onCueFieldChange(); });
+        el.querySelector(".cue-topic").addEventListener("input", (e) => { cue.topic = e.target.value; onCueFieldChange(); });
+        el.querySelector(".cue-duration").addEventListener("input", (e) => { cue.duration = e.target.value; onCueFieldChange(); });
+        el.querySelector(".cue-note").addEventListener("input", (e) => { cue.note = e.target.value; onCueFieldChange(); });
 
         const subTextArea = el.querySelector(".cue-sub-text");
         subTextArea.addEventListener("input", (e) => {
           cue.subtitleText = e.target.value;
           if (cue.subtitleText.trim().length > 0) cue.subtitleHelp = false;
+          onCueFieldChange();
         });
         subTextArea.addEventListener("paste", () => {
           setTimeout(() => {
             cue.subtitleText = subTextArea.value;
             if (cue.subtitleText.trim().length > 0) cue.subtitleHelp = false;
             showToast("자막이 붙여넣기되었습니다.");
+            onCueFieldChange();
           }, 0);
         });
 
@@ -2063,8 +2143,8 @@
             if (meta) cue.mediaFiles.push(meta);
           }
           e.target.value = "";
-          saveState();
-          await syncSubmissionToB2(sub);
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          await syncSubmissionToB2(sub, { silent: true });
           renderCueList(sub);
         });
 
@@ -2090,8 +2170,8 @@
               : appendedTexts.join("\n\n");
           }
           e.target.value = "";
-          saveState();
-          await syncSubmissionToB2(sub);
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          await syncSubmissionToB2(sub, { silent: true });
           renderCueList(sub);
           showToast(`자막 TXT 파일 ${files.length}개가 등록되었습니다.`);
         });
@@ -2103,6 +2183,7 @@
           if (i > 0) {
             [sub.cues[i - 1], sub.cues[i]] = [sub.cues[i], sub.cues[i - 1]];
             renderCueList(sub);
+            scheduleAutoSaveAndSync(getCurrentUser());
           }
         });
       });
@@ -2113,6 +2194,7 @@
           if (i < sub.cues.length - 1) {
             [sub.cues[i + 1], sub.cues[i]] = [sub.cues[i], sub.cues[i + 1]];
             renderCueList(sub);
+            scheduleAutoSaveAndSync(getCurrentUser());
           }
         });
       });
@@ -2122,6 +2204,7 @@
           const i = Number(btn.dataset.delCue);
           sub.cues.splice(i, 1);
           renderCueList(sub);
+          scheduleAutoSaveAndSync(getCurrentUser());
         });
       });
 
@@ -2130,8 +2213,8 @@
           const [cIdx, fIdx] = btn.dataset.delMedia.split(":").map(Number);
           const target = sub.cues[cIdx].mediaFiles[fIdx];
           sub.cues[cIdx].mediaFiles.splice(fIdx, 1);
-          saveState();
-          await syncSubmissionToB2(sub);
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          await syncSubmissionToB2(sub, { silent: true });
           if (target?.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
         });
@@ -2142,8 +2225,8 @@
           const [cIdx, sIdx] = btn.dataset.delTxt.split(":").map(Number);
           const target = sub.cues[cIdx].subtitleFiles[sIdx];
           sub.cues[cIdx].subtitleFiles.splice(sIdx, 1);
-          saveState();
-          await syncSubmissionToB2(sub);
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          await syncSubmissionToB2(sub, { silent: true });
           if (target?.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
         });
@@ -2154,11 +2237,13 @@
           const i = Number(btn.dataset.toggleHelp);
           sub.cues[i].subtitleHelp = !sub.cues[i].subtitleHelp;
           renderCueList(sub);
+          scheduleAutoSaveAndSync(getCurrentUser());
         });
       });
     }
 
-    function collectDeptFormIntoState(user) {
+    function collectDeptFormIntoState(user, options = {}) {
+      const { preserveExistingSubmittedAt = true } = options;
       const sub = ensureDeptSubmission(user.id, user.deptName);
       sub.contact = document.getElementById("deptContact").value.trim();
       sub.micCount = Math.max(0, Number(document.getElementById("deptMicCount").value || 0));
@@ -2172,8 +2257,9 @@
       const now = Date.now();
       sub.updatedAt = new Date(now).toLocaleString("ko-KR");
       sub.syncedAt = now;
-      // 최초 제출 시각은 한 번 정해지면 재수정 시에도 유지
-      if (!(Number.isFinite(Number(sub.submittedAt)) && Number(sub.submittedAt) > 0)) {
+
+      const hasValidSubmittedAt = Number.isFinite(Number(sub.submittedAt)) && Number(sub.submittedAt) > 0;
+      if (!preserveExistingSubmittedAt || !hasValidSubmittedAt) {
         sub.submittedAt = now;
       }
       saveState();
@@ -2544,6 +2630,7 @@
       }
       state.sessionUserId = found.id;
       activeTab = found.role === "admin" ? "adminOverview" : "dept";
+      hasDirtyDeptChanges = false;
       saveState();
       document.getElementById("loginForm").reset();
       renderAll();
@@ -2551,12 +2638,20 @@
 
     document.getElementById("resetLoginStorageBtn").addEventListener("click", async () => {
       if (!confirm("브라우저에 저장된 이 앱의 데이터를 초기화하고 기본 계정으로 복구하시겠습니까?")) return;
+      clearAutoTimers();
+      hasDirtyDeptChanges = false;
       localStorage.removeItem(STORAGE_KEY);
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
       activeTab = null;
       renderAll();
       showToast("브라우저 저장 데이터가 초기화되었습니다.");
+    });
+
+    ["deptContact", "deptMicCount", "deptMicStandCount", "deptGeneralNote"].forEach((id) => {
+      const el = document.getElementById(id);
+      el.addEventListener("input", () => scheduleAutoSaveAndSync(getCurrentUser()));
+      el.addEventListener("change", () => scheduleAutoSaveAndSync(getCurrentUser()));
     });
 
     document.getElementById("chkReqMicStand").addEventListener("change", (e) => {
@@ -2568,6 +2663,7 @@
         sub.micStandCount = 1;
       }
       renderMicOptionsControl(sub);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("chkCeilingMic").addEventListener("change", (e) => {
@@ -2575,6 +2671,7 @@
       if (!user || user.role !== "dept") return;
       const sub = ensureDeptSubmission(user.id, user.deptName);
       sub.useCeilingMic = !!e.target.checked;
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("btnReqBgm").addEventListener("click", () => {
@@ -2583,6 +2680,7 @@
       const sub = ensureDeptSubmission(user.id, user.deptName);
       sub.requestBgm = !sub.requestBgm;
       renderMediaReqButtons(sub);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("btnReqVideo").addEventListener("click", () => {
@@ -2591,6 +2689,7 @@
       const sub = ensureDeptSubmission(user.id, user.deptName);
       sub.requestVideo = !sub.requestVideo;
       renderMediaReqButtons(sub);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("deptCustomCueFile").addEventListener("change", async (e) => {
@@ -2603,8 +2702,8 @@
         if (meta) sub.customCueFiles.push(meta);
       }
       e.target.value = "";
-      saveState();
-      await syncSubmissionToB2(sub);
+      collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
+      await syncSubmissionToB2(sub, { silent: true });
       renderCustomCueFiles(sub);
     });
 
@@ -2626,16 +2725,33 @@
       const sub = ensureDeptSubmission(user.id, user.deptName);
       sub.cues.push(createEmptyCue());
       renderCueList(sub);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("saveDeptBtn").addEventListener("click", async () => {
       const user = getCurrentUser();
       if (!user || user.role !== "dept") return;
-      const sub = collectDeptFormIntoState(user);
-      document.getElementById("lastSavedText").textContent = `최근 저장: ${sub.updatedAt}`;
+      clearAutoTimers();
+      const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
+      setSavedStatusLabel(`저장 및 B2 동기화 중... (${sub.updatedAt})`);
       showToast("부서 내용 저장 및 동기화 중...");
-      await syncSubmissionToB2(sub);
-      showToast("부서 내용이 저장 및 동기화되었습니다.");
+      const ok = await syncSubmissionToB2(sub, { silent: true });
+      setSavedStatusLabel(
+        ok
+          ? `최근 저장 및 B2 동기화됨: ${sub.updatedAt}`
+          : `로컬 저장됨 (${sub.updatedAt}) · B2 동기화 재시도 필요`
+      );
+      showToast(ok ? "부서 내용이 저장 및 동기화되었습니다." : "로컬에 저장되었습니다. 네트워크를 확인해 주세요.");
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        flushPendingDeptChanges({ keepaliveOnly: true });
+      }
+    });
+
+    window.addEventListener("pagehide", () => {
+      flushPendingDeptChanges({ keepaliveOnly: true });
     });
 
     document.getElementById("refreshAllSyncBtn").addEventListener("click", async () => {
@@ -2706,6 +2822,8 @@
           }
         }
 
+        clearAutoTimers();
+        hasDirtyDeptChanges = false;
         state.eventInfo = {
           name: "새 행사를 설정해 주세요",
           date: "",
