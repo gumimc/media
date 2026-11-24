@@ -586,6 +586,9 @@
         <strong>초기 테스트 계정 안내</strong><br />
         · 관리자: <code>admin</code> / <code>1234</code><br />
         · 청년부: <code>youth</code> / <code>1111</code> · 초등부: <code>elem</code> / <code>1111</code> · 중고등부: <code>teen</code> / <code>1111</code> · 찬양팀: <code>praise</code> / <code>1111</code>
+        <div style="margin-top:8px;">
+          <button type="button" class="btn btn-outline btn-sm" id="resetLoginStorageBtn">브라우저 저장 데이터 초기화(로그인 오류 시)</button>
+        </div>
       </div>
     </section>
 
@@ -710,7 +713,7 @@
             <span>전체 부서 종합 큐시트 현황</span>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
               <button type="button" class="btn btn-outline btn-sm" id="fillAdminSampleBtn">예시 데이터 넣어보기</button>
-              <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">전체 큐시트 엑셀(.xls) 내보내기</button>
+              <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">전체 큐시트 엑셀(.xlsx) 내보내기</button>
               <button type="button" class="btn btn-primary btn-sm" id="exportZipBtn">부서별 폴더 ZIP 내보내기</button>
             </div>
           </h3>
@@ -854,21 +857,22 @@
   </div>
 
   <script>
-    // =========================================================================
-    // [Backblaze B2 설정]
-    // =========================================================================
     const B2_CONFIG = {
       signerBaseUrl: "https://lingering-bread-b3e6.winnee.workers.dev",
       bucketName: "gumimc-media-files",
       region: "us-east-005"
     };
 
-    const MAX_FILE_BYTES = 500 * 1024 * 1024; // 최대 500MB
-    const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024; // 80MB 이하만 로컬 IndexedDB/ZIP 캐시 보관
+    const MAX_FILE_BYTES = 500 * 1024 * 1024;
+    const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v2";
-    const IDB_NAME = "gm_media_guide_files_b2_v2";
+    const STORAGE_KEY = "gm_media_guide_b2_v3";
+    const IDB_NAME = "gm_media_guide_files_b2_v3";
     const IDB_STORE = "files";
+
+    function deepClone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
 
     const DEFAULT_STATE = {
       sessionUserId: null,
@@ -886,6 +890,32 @@
       ],
       deptSubmissions: {}
     };
+
+    function loadState() {
+      const fallback = deepClone(DEFAULT_STATE);
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return fallback;
+
+        const validAccounts = Array.isArray(parsed.accounts) && parsed.accounts.length
+          ? parsed.accounts.filter((a) => a && a.id && a.pw && a.deptName && a.role)
+          : fallback.accounts;
+
+        return {
+          sessionUserId: parsed.sessionUserId || null,
+          eventInfo: {
+            ...fallback.eventInfo,
+            ...(parsed.eventInfo && typeof parsed.eventInfo === "object" ? parsed.eventInfo : {})
+          },
+          accounts: validAccounts.length ? validAccounts : fallback.accounts,
+          deptSubmissions: parsed.deptSubmissions && typeof parsed.deptSubmissions === "object" ? parsed.deptSubmissions : {}
+        };
+      } catch {
+        return fallback;
+      }
+    }
 
     let state = loadState();
     let activeTab = null;
@@ -921,29 +951,20 @@
       setTimeout(() => el.remove(), 2600);
     }
 
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return structuredClone(DEFAULT_STATE);
-        const parsed = JSON.parse(raw);
-        return {
-          ...structuredClone(DEFAULT_STATE),
-          ...parsed,
-          eventInfo: { ...DEFAULT_STATE.eventInfo, ...(parsed.eventInfo || {}) },
-          accounts: Array.isArray(parsed.accounts) && parsed.accounts.length ? parsed.accounts : structuredClone(DEFAULT_STATE.accounts),
-          deptSubmissions: parsed.deptSubmissions || {}
-        };
-      } catch {
-        return structuredClone(DEFAULT_STATE);
-      }
-    }
-
     function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn("localStorage save failed:", e);
+      }
     }
 
     function openDB() {
       return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error("IndexedDB not supported"));
+          return;
+        }
         const req = indexedDB.open(IDB_NAME, 1);
         req.onupgradeneeded = () => {
           const db = req.result;
@@ -1155,7 +1176,8 @@
         if (typeof sub.requestBgm !== "boolean") sub.requestBgm = false;
         if (typeof sub.requestVideo !== "boolean") sub.requestVideo = false;
         if (!Array.isArray(sub.customCueFiles)) sub.customCueFiles = [];
-        (sub.cues || []).forEach((c) => {
+        if (!Array.isArray(sub.cues) || !sub.cues.length) sub.cues = [createEmptyCue()];
+        sub.cues.forEach((c) => {
           if (!Array.isArray(c.subtitleFiles)) {
             c.subtitleFiles = (c.subtitleFileKey && c.subtitleFileName)
               ? [{ key: c.subtitleFileKey, name: c.subtitleFileName }]
@@ -1183,15 +1205,6 @@
 
     function sanitizeName(str) {
       return (str || "항목").trim().replace(/[\\/:*?"<>|]+/g, "_").slice(0, 40) || "항목";
-    }
-
-    function escapeXml(str) {
-      return String(str ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&apos;");
     }
 
     function dataUrlToUint8Array(dataUrl) {
@@ -2023,7 +2036,7 @@
       });
     }
 
-function exportExcel() {
+    function exportExcel() {
       const rows = getAllRows();
       if (!rows.length) {
         showToast("내보낼 큐시트 데이터가 없습니다.");
@@ -2070,112 +2083,6 @@ function exportExcel() {
       XLSX.utils.book_append_sheet(workbook, worksheet, "종합큐시트");
       XLSX.writeFile(workbook, `${eventPrefix}_종합큐시트.xlsx`);
       showToast("엑셀(.xlsx) 파일이 다운로드되었습니다.");
-    }
-
-      const colWidths = [70, 175, 110, 180, 165, 175, 95, 105, 120, 115, 175, 135, 180, 240];
-
-      const dataRows = rows.map((r) => [
-        r.seq,
-        state.eventInfo.name || "",
-        r.deptName,
-        r.contact,
-        r.title,
-        r.topic,
-        r.duration,
-        `${r.micCount}개`,
-        r.standText,
-        r.ceilingText,
-        r.instruments,
-        r.mediaReq,
-        r.customCueNames,
-        r.note
-      ]);
-
-      const headerXml = `
-        <Row ss:AutoFitHeight="1" ss:Height="28">
-          ${headers.map((h) => `<Cell ss:StyleID="HeaderStyle"><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`).join("")}
-        </Row>
-      `;
-
-      const bodyXml = dataRows.map((row) => {
-        const maxLines = Math.max(
-          1,
-          ...row.map((cell) => String(cell ?? "").split("\n").length)
-        );
-        const height = Math.max(26, maxLines * 20);
-        const cells = row.map((val) => {
-          const formatted = String(val ?? "").replace(/\n/g, "&#10;");
-          return `<Cell ss:StyleID="BodyStyle"><Data ss:Type="String">${escapeXml(formatted)}</Data></Cell>`;
-        }).join("");
-        return `<Row ss:AutoFitHeight="1" ss:Height="${height}">${cells}</Row>`;
-      }).join("");
-
-      const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-  xmlns:o="urn:schemas-microsoft-com:office:office"
-  xmlns:x="urn:schemas-microsoft-com:office:excel"
-  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
-  xmlns:html="http://www.w3.org/TR/REC-html40">
-  <Styles>
-    <Style ss:ID="Default" ss:Name="Normal">
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-      <Borders>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-      </Borders>
-      <Font ss:FontName="맑은 고딕" x:CharSet="129" ss:Size="10" ss:Color="#0F172A"/>
-    </Style>
-    <Style ss:ID="HeaderStyle">
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-      <Borders>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
-        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
-      </Borders>
-      <Font ss:FontName="맑은 고딕" x:CharSet="129" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/>
-      <Interior ss:Color="#1E40AF" ss:Pattern="Solid"/>
-    </Style>
-    <Style ss:ID="BodyStyle">
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-      <Borders>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-      </Borders>
-      <Font ss:FontName="맑은 고딕" x:CharSet="129" ss:Size="10" ss:Color="#18202C"/>
-    </Style>
-  </Styles>
-  <Worksheet ss:Name="종합큐시트">
-    <Table>
-      ${colWidths.map((w) => `<Column ss:AutoFitWidth="0" ss:Width="${w}"/>`).join("")}
-      ${headerXml}
-      ${bodyXml}
-    </Table>
-    <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
-      <Selected/>
-      <Panes>
-        <Pane>
-          <Number>3</Number>
-          <ActiveRow>1</ActiveRow>
-        </Pane>
-      </Panes>
-    </WorksheetOptions>
-  </Worksheet>
-</Workbook>`;
-
-      const blob = new Blob(["\uFEFF" + xmlContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${eventPrefix}_종합큐시트.xls`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("정리된 엑셀(.xls) 파일이 다운로드되었습니다.");
     }
 
     async function exportZip() {
@@ -2249,7 +2156,7 @@ function exportExcel() {
       e.preventDefault();
       const id = document.getElementById("loginId").value.trim();
       const pw = document.getElementById("loginPw").value.trim();
-      const found = state.accounts.find((a) => a.id === id && a.pw === pw);
+      const found = state.accounts.find((a) => String(a.id).trim() === id && String(a.pw).trim() === pw);
       if (!found) {
         alert("아이디 또는 비밀번호가 올바르지 않습니다.");
         return;
@@ -2259,6 +2166,16 @@ function exportExcel() {
       saveState();
       document.getElementById("loginForm").reset();
       renderAll();
+    });
+
+    document.getElementById("resetLoginStorageBtn").addEventListener("click", async () => {
+      if (!confirm("브라우저에 저장된 이 앱의 데이터를 초기화하고 기본 계정으로 복구하시겠습니까?")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      await clearAllFileRecords();
+      state = deepClone(DEFAULT_STATE);
+      activeTab = null;
+      renderAll();
+      showToast("브라우저 저장 데이터가 초기화되었습니다.");
     });
 
     document.getElementById("chkReqMicStand").addEventListener("change", (e) => {
