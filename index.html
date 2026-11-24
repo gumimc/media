@@ -6,7 +6,6 @@
   <title>구미제일감리교회 미디어팀 행사 가이드</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     :root {
       --bg: #f4f6fa;
@@ -457,6 +456,17 @@
       color: var(--muted);
     }
 
+    .upload-progress-box {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      font-size: 0.8rem;
+      color: #1e3a8a;
+      font-weight: 600;
+    }
+
     .pill {
       display: inline-block;
       padding: 3px 8px;
@@ -550,7 +560,7 @@
     <header class="topbar">
       <div class="topbar-title">
         <h1>구미제일감리교회 미디어팀 행사 가이드</h1>
-        <p>부서별 큐시트 · 음향/악기 · 자막 · 구글 드라이브 자료 통합 관리</p>
+        <p>부서별 큐시트 · 음향/악기 · 자막 · Backblaze B2 자료 관리 (최대 500MB 지원)</p>
       </div>
       <div class="topbar-actions" id="topbarActions"></div>
     </header>
@@ -600,8 +610,8 @@
             <li>마이크는 유·무선 구분 없이 <strong>필요한 총 개수</strong>만 적고, <strong>마이크 스탠드</strong>(체크 시 개수 입력) 및 <strong>천장 E/L 마이크 사용</strong> 여부를 체크해 주세요.</li>
             <li>사용하는 악기와 <strong>BGM·영상 재생 요청</strong> 여부를 선택해 주세요.</li>
             <li>연극 대본처럼 별도로 작성된 부서 자체 큐시트가 있다면 <strong>자체 부서 큐시트 파일 업로드</strong>에 바로 첨부할 수 있습니다.</li>
+            <li>영상·음원·문서·자막 파일은 <strong>최대 500MB 이하</strong>까지 Backblaze B2로 업로드됩니다.</li>
             <li>자막은 <strong>.txt 파일 여러 개</strong>를 한 번에 올리거나 아래 입력란에 <strong>직접 입력 / Ctrl+V 붙여넣기</strong>할 수 있으며, 어려울 경우 <strong>[미디어팀 자막 도움요청]</strong> 버튼을 눌러 주세요.</li>
-            <li>상단의 <strong>[구글 드라이브 연결]</strong>을 한 번 해 두면 유효 기간 동안 자동 연결 상태가 유지되며 업로드한 파일이 지정된 구글 드라이브 폴더로 전송됩니다.</li>
           </ul>
         </div>
 
@@ -670,10 +680,12 @@
             </div>
           </h3>
 
+          <div id="deptUploadProgress" class="upload-progress-box hidden"></div>
+
           <!-- 자체 부서 큐시트 파일 업로드 영역 -->
           <div class="custom-sheet-box">
             <label for="deptCustomCueFile" style="margin-bottom:4px; color:#1e3a8a;">
-              자체 부서 큐시트 파일 업로드 (연극 대본, 세부 진행표 등 별도 문서가 있는 경우)
+              자체 부서 큐시트 파일 업로드 (연극 대본, 세부 진행표 등 별도 문서가 있는 경우 · 최대 500MB)
             </label>
             <div class="helper-text" style="margin-bottom:8px;">
               한글(.hwp/.hwpx), 워드(.doc/.docx), PDF, 엑셀(.xlsx), 텍스트(.txt) 등 부서에서 작성한 전체 큐시트·대본 파일을 올려주세요.
@@ -753,29 +765,24 @@
           </div>
         </div>
 
-        <!-- 구글 드라이브 업로드 파일 목록 카드 -->
+        <!-- Backblaze B2 업로드 파일 목록 카드 -->
         <div class="card">
           <h3 class="card-title">
-            <span>구글 드라이브 업로드 파일 목록 (영상 · 음원 · 자막 · 자체큐시트)</span>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <span class="helper-text" style="margin:0;" id="driveFolderStatusText">드라이브 폴더 미조회</span>
-              <button type="button" class="btn btn-primary btn-sm" id="refreshDriveFilesBtn">드라이브 목록 새로고침</button>
-            </div>
+            <span>Backblaze B2 업로드 파일 목록 (영상 · 음원 · 자막 · 자체큐시트)</span>
+            <span class="helper-text" style="margin:0;" id="b2StatusText"></span>
           </h3>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
+                  <th>부서</th>
+                  <th>구분</th>
                   <th>파일명</th>
-                  <th>형식</th>
                   <th>용량</th>
-                  <th>업로드 일시</th>
-                  <th>열기 / 다운로드</th>
+                  <th>다운로드</th>
                 </tr>
               </thead>
-              <tbody id="driveFilesTableBody">
-                <tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">상단의 [구글 드라이브 연결] 후 [드라이브 목록 새로고침]을 눌러 확인하세요.</td></tr>
-              </tbody>
+              <tbody id="b2FilesTableBody"></tbody>
             </table>
           </div>
         </div>
@@ -853,19 +860,19 @@
 
   <script>
     // =========================================================================
-    // [구글 드라이브 설정]
-    // 발급받은 OAuth 클라이언트 ID와 업로드 파일을 모을 드라이브 폴더 ID를 입력하세요.
+    // [Backblaze B2 설정]
     // =========================================================================
-    const GDRIVE_CONFIG = {
-      clientId: "963943556338-1i0dnfp826jppovs7endf4dmtc9k0spn.apps.googleusercontent.com",
-      folderId: "1YkLvnvXrbGEzZfZY2uhPRm6Kbe5CwH9c",
-      scope: "https://www.googleapis.com/auth/drive.file"
-    };
+    const B2_CONFIG = {
+      signerBaseUrl: "https://lingering-bread-b3e6.winnee.workers.dev",
+      bucketName: "gumimc-media-files",
+      region: "us-east-005"
+    }; //[cite: 6]
 
-    const DRIVE_TOKEN_STORAGE_KEY = "gm_gdrive_token_session_v1";
+    const MAX_FILE_BYTES = 500 * 1024 * 1024; // 최대 500MB
+    const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024; // 80MB 이하만 로컬 IndexedDB/ZIP 캐시 보관
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_state_v10";
-    const IDB_NAME = "gm_media_guide_files_v10";
+    const STORAGE_KEY = "gm_media_guide_b2_v1";
+    const IDB_NAME = "gm_media_guide_files_b2_v1";
     const IDB_STORE = "files";
 
     const DEFAULT_STATE = {
@@ -888,224 +895,27 @@
     let state = loadState();
     let activeTab = null;
     let fileCache = {};
-    let gdriveToken = null;
-    let gdriveTokenClient = null;
-    let cachedDriveFiles = [];
 
-    function saveDriveTokenSession(accessToken, expiresInSec = 3500) {
-      const expiresAt = Date.now() + Number(expiresInSec || 3500) * 1000;
-      gdriveToken = accessToken;
-      try {
-        sessionStorage.setItem(DRIVE_TOKEN_STORAGE_KEY, JSON.stringify({ accessToken, expiresAt }));
-      } catch {}
+    function isB2Configured() {
+      return Boolean(B2_CONFIG.signerBaseUrl && B2_CONFIG.bucketName);
     }
 
-    function clearDriveTokenSession() {
-      gdriveToken = null;
-      try {
-        sessionStorage.removeItem(DRIVE_TOKEN_STORAGE_KEY);
-      } catch {}
+    function buildPublicB2Url(objectKey) {
+      if (!objectKey) return "";
+      const encodedPath = objectKey.split("/").map(encodeURIComponent).join("/");
+      return `https://${B2_CONFIG.bucketName}.s3.${B2_CONFIG.region}.backblazeb2.com/${encodedPath}`;
     }
 
-    function loadDriveTokenSession() {
-      try {
-        const raw = sessionStorage.getItem(DRIVE_TOKEN_STORAGE_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (parsed?.accessToken && parsed?.expiresAt && Date.now() < parsed.expiresAt - 30000) {
-          gdriveToken = parsed.accessToken;
-          return gdriveToken;
-        }
-        sessionStorage.removeItem(DRIVE_TOKEN_STORAGE_KEY);
-      } catch {}
-      gdriveToken = null;
-      return null;
-    }
-
-    function isDriveConfigured() {
-      return (
-        Boolean(GDRIVE_CONFIG.clientId) &&
-        !GDRIVE_CONFIG.clientId.includes("여기에_") &&
-        Boolean(GDRIVE_CONFIG.folderId) &&
-        !GDRIVE_CONFIG.folderId.includes("여기에_")
-      );
-    }
-
-    function initGoogleDriveAuth() {
-      if (!window.google?.accounts?.oauth2 || !GDRIVE_CONFIG.clientId || GDRIVE_CONFIG.clientId.includes("여기에_")) {
-        return;
+    function setUploadProgressText(text) {
+      const box = document.getElementById("deptUploadProgress");
+      if (!box) return;
+      if (!text) {
+        box.classList.add("hidden");
+        box.textContent = "";
+      } else {
+        box.classList.remove("hidden");
+        box.textContent = text;
       }
-      if (!gdriveTokenClient) {
-        gdriveTokenClient = google.accounts.oauth2.initTokenClient({
-          client_id: GDRIVE_CONFIG.clientId,
-          scope: GDRIVE_CONFIG.scope,
-          callback: () => {}
-        });
-      }
-    }
-
-    function ensureDriveToken(interactive = true) {
-      return new Promise((resolve, reject) => {
-        if (!isDriveConfigured()) {
-          reject(new Error("GDRIVE_CONFIG의 클라이언트 ID와 폴더 ID를 먼저 입력해 주세요."));
-          return;
-        }
-        const restored = loadDriveTokenSession();
-        if (restored) {
-          resolve(restored);
-          return;
-        }
-        initGoogleDriveAuth();
-        if (!gdriveTokenClient) {
-          reject(new Error("Google 로그인 스크립트가 아직 로드되지 않았습니다. 잠시 후 다시 시도해 주세요."));
-          return;
-        }
-        if (!interactive) {
-          reject(new Error("드라이브 미연결"));
-          return;
-        }
-        gdriveTokenClient.callback = (resp) => {
-          if (resp.error) {
-            reject(new Error(resp.error_description || resp.error));
-            return;
-          }
-          saveDriveTokenSession(resp.access_token, resp.expires_in);
-          renderTopbar();
-          resolve(gdriveToken);
-        };
-        gdriveTokenClient.requestAccessToken({ prompt: "" });
-      });
-    }
-
-    // Resumable Upload (수백 MB 이하 파일도 안정적으로 업로드 가능)
-    async function uploadFileToDrive(file, deptPrefix = "") {
-      const token = await ensureDriveToken(true);
-      const finalName = deptPrefix ? `[${deptPrefix}] ${file.name}` : file.name;
-      const metadata = {
-        name: finalName,
-        parents: [GDRIVE_CONFIG.folderId]
-      };
-
-      const initRes = await fetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,mimeType,size,webViewLink,webContentLink",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json; charset=UTF-8",
-            "X-Upload-Content-Type": file.type || "application/octet-stream",
-            "X-Upload-Content-Length": String(file.size || 0)
-          },
-          body: JSON.stringify(metadata)
-        }
-      );
-
-      if (initRes.status === 401) {
-        clearDriveTokenSession();
-        renderTopbar();
-        throw new Error("구글 드라이브 인증이 만료되었습니다. 상단의 [구글 드라이브 연결]을 다시 눌러 주세요.");
-      }
-
-      if (!initRes.ok) {
-        const errText = await initRes.text();
-        throw new Error(`드라이브 업로드 세션 생성 실패: ${errText}`);
-      }
-
-      const uploadUrl = initRes.headers.get("Location");
-      if (!uploadUrl) {
-        throw new Error("드라이브 업로드 URL을 받지 못했습니다.");
-      }
-
-      const putRes = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type || "application/octet-stream"
-        },
-        body: file
-      });
-
-      if (!putRes.ok) {
-        const errText = await putRes.text();
-        throw new Error(`드라이브 파일 전송 실패: ${errText}`);
-      }
-
-      return await putRes.json();
-    }
-
-    async function listDriveFilesFromFolder() {
-      const token = await ensureDriveToken(true);
-      const q = encodeURIComponent(`'${GDRIVE_CONFIG.folderId}' in parents and trashed = false`);
-      const fields = encodeURIComponent("files(id,name,mimeType,size,webViewLink,webContentLink,createdTime)");
-      const res = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}&pageSize=100&orderBy=createdTime desc`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-      if (res.status === 401) {
-        clearDriveTokenSession();
-        renderTopbar();
-        throw new Error("구글 드라이브 인증이 만료되었습니다. 상단의 [구글 드라이브 연결]을 다시 눌러 주세요.");
-      }
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`드라이브 파일 목록 조회 실패: ${errText}`);
-      }
-      const data = await res.json();
-      cachedDriveFiles = data.files || [];
-      return cachedDriveFiles;
-    }
-
-    function renderDriveFilesTable() {
-      const tbody = document.getElementById("driveFilesTableBody");
-      const statusText = document.getElementById("driveFolderStatusText");
-      if (!tbody) return;
-
-      const hasToken = Boolean(loadDriveTokenSession());
-
-      if (!isDriveConfigured()) {
-        if (statusText) statusText.textContent = "GDRIVE_CONFIG 설정 필요";
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">코드 상단 <code>GDRIVE_CONFIG</code>에 클라이언트 ID와 폴더 ID를 입력한 뒤 사용해 주세요.</td></tr>`;
-        return;
-      }
-
-      if (statusText) {
-        statusText.textContent = hasToken
-          ? `자동 연결 유지 중 · 총 ${cachedDriveFiles.length}개 파일`
-          : "드라이브 연결 필요";
-      }
-
-      if (!cachedDriveFiles.length) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">지정된 구글 드라이브 폴더에 표시할 파일이 없습니다. [드라이브 목록 새로고침]을 눌러 보세요.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = cachedDriveFiles.map((f) => {
-        const dateStr = f.createdTime ? new Date(f.createdTime).toLocaleString("ko-KR") : "-";
-        const openLink = f.webViewLink
-          ? `<a href="${escapeHtml(f.webViewLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">열기</a>`
-          : "";
-        const dlLink = f.webContentLink
-          ? `<a href="${escapeHtml(f.webContentLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">다운로드</a>`
-          : "";
-        return `
-          <tr>
-            <td><strong>${escapeHtml(f.name || "-")}</strong></td>
-            <td>${escapeHtml(f.mimeType || "-")}</td>
-            <td class="nowrap-col">${escapeHtml(formatFileSize(f.size))}</td>
-            <td class="nowrap-col">${escapeHtml(dateStr)}</td>
-            <td class="nowrap-col">${openLink} ${dlLink}</td>
-          </tr>
-        `;
-      }).join("");
-    }
-
-    function formatFileSize(bytes) {
-      const n = Number(bytes || 0);
-      if (!n) return "-";
-      if (n < 1024) return `${n} B`;
-      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-      return `${(n / (1024 * 1024)).toFixed(1)} MB`;
     }
 
     function showToast(msg) {
@@ -1203,6 +1013,120 @@
       } catch {}
     }
 
+    function formatFileSize(bytes) {
+      const n = Number(bytes || 0);
+      if (!n) return "-";
+      if (n < 1024) return `${n} B`;
+      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+      return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function uploadFileWithProgress(url, file, onProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", url, true);
+        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && onProgress) {
+            onProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`업로드 실패 (HTTP ${xhr.status})`));
+          }
+        };
+        xhr.onerror = () => reject(new Error("네트워크 오류로 업로드에 실패했습니다."));
+        xhr.send(file);
+      });
+    }
+
+    async function uploadFileToB2(file, kind, deptName, key) {
+      const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+      const safeDept = sanitizeName(deptName);
+      const safeFile = sanitizeName(file.name);
+      const objectKey = `event_files/${safeDept}/${kind}/${key}_${safeFile}`;
+
+      const presignRes = await fetch(base, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ objectKey })
+      });
+      if (!presignRes.ok) {
+        throw new Error("업로드 URL 발급에 실패했습니다.");
+      }
+      const data = await presignRes.json();
+      if (!data.uploadUrl) {
+        throw new Error("유효한 uploadUrl이 반환되지 않았습니다.");
+      }
+
+      setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... 0%`);
+      await uploadFileWithProgress(data.uploadUrl, file, (pct) => {
+        setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... ${pct}%`);
+      });
+      setUploadProgressText("");
+      return {
+        b2Key: objectKey,
+        publicUrl: data.publicUrl || buildPublicB2Url(objectKey)
+      };
+    }
+
+    async function processAndStoreUploadedFile(file, kind, deptName = "부서") {
+      if ((file.size || 0) > MAX_FILE_BYTES) {
+        alert(`'${file.name}' 파일이 최대 허용 용량(500MB)을 초과합니다.`);
+        return null;
+      }
+
+      const key = "f_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      let b2Result = null;
+
+      if (isB2Configured()) {
+        try {
+          b2Result = await uploadFileToB2(file, kind, deptName, key);
+          showToast(`'${file.name}' Backblaze B2 업로드 완료`);
+        } catch (err) {
+          setUploadProgressText("");
+          console.warn("B2 upload failed:", err);
+          alert(`Backblaze B2 업로드에 실패했습니다.\n사유: ${err.message}`);
+        }
+      }
+
+      let savedLocal = false;
+      if ((file.size || 0) <= LOCAL_CACHE_MAX_BYTES) {
+        try {
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+          });
+          await putFileRecord({
+            key,
+            name: file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size,
+            dataUrl,
+            kind
+          });
+          savedLocal = true;
+        } catch (e) {
+          console.warn("Local cache skip:", e);
+        }
+      }
+
+      return {
+        key,
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        savedLocal,
+        b2Key: b2Result?.b2Key || "",
+        publicUrl: b2Result?.publicUrl || ""
+      };
+    }
+
     function getCurrentUser() {
       if (!state.sessionUserId) return null;
       return state.accounts.find((a) => a.id === state.sessionUserId) || null;
@@ -1291,57 +1215,6 @@
       return `data:${mimeType};base64,${btoa(binary)}`;
     }
 
-    async function processAndStoreUploadedFile(file, kind, deptName = "") {
-      const key = "f_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      let driveMeta = null;
-
-      if (isDriveConfigured()) {
-        try {
-          showToast(`'${file.name}' 구글 드라이브 업로드 중...`);
-          const uploaded = await uploadFileToDrive(file, deptName);
-          driveMeta = {
-            driveId: uploaded.id,
-            webViewLink: uploaded.webViewLink || "",
-            webContentLink: uploaded.webContentLink || ""
-          };
-          showToast(`'${file.name}' 구글 드라이브 업로드 완료`);
-        } catch (err) {
-          console.warn("Google Drive upload skipped/failed:", err);
-          alert(`구글 드라이브 업로드에 실패해 로컬에만 저장합니다.\n사유: ${err.message}`);
-        }
-      }
-
-      let savedLocal = false;
-      if ((file.size || 0) <= 80 * 1024 * 1024) {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file);
-        });
-        await putFileRecord({
-          key,
-          name: file.name,
-          type: file.type || "application/octet-stream",
-          size: file.size,
-          dataUrl,
-          kind
-        });
-        savedLocal = true;
-      }
-
-      return {
-        key,
-        name: file.name,
-        type: file.type || "application/octet-stream",
-        size: file.size,
-        savedLocal,
-        driveId: driveMeta?.driveId || null,
-        webViewLink: driveMeta?.webViewLink || "",
-        webContentLink: driveMeta?.webContentLink || ""
-      };
-    }
-
     async function createSampleSubtitleFileRecord(fileName, content) {
       const key = "sample_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
       const rec = {
@@ -1358,15 +1231,10 @@
 
     async function buildSampleSubmissionForDept(deptId, deptName) {
       const nowStr = new Date().toLocaleString("ko-KR");
-
       if (deptId === "youth") {
         const sub1 = await createSampleSubtitleFileRecord(
           "청년부_오프닝_자막.txt",
           "[1절]\n어두운 밤하늘에 밝은 빛 비추네\n기쁨의 소식 온 땅에 울려 퍼지네"
-        );
-        const sub2 = await createSampleSubtitleFileRecord(
-          "청년부_특송_자막.txt",
-          "[후렴]\n주를 찬양해 온 맘 다해\n우리 구주 예수 이름 높이세"
         );
         return {
           deptId,
@@ -1380,7 +1248,7 @@
           requestBgm: true,
           requestVideo: false,
           customCueFiles: [],
-          generalNote: "30분 전 밴드 라인체크 희망, 1절 후 조명 50% 다운",
+          generalNote: "30분 전 밴드 라인체크 희망",
           updatedAt: nowStr,
           cues: [
             {
@@ -1393,123 +1261,10 @@
               subtitleText: "[청년부_오프닝_자막.txt]\n[1절]\n어두운 밤하늘에 밝은 빛 비추네\n기쁨의 소식 온 땅에 울려 퍼지네",
               subtitleFiles: [sub1],
               mediaFiles: []
-            },
-            {
-              id: "sample_youth_2",
-              title: "청년부 특송",
-              topic: "주의 이름 높이세",
-              duration: "약 4분",
-              note: "보컬 3명 스탠드 마이크 사용",
-              subtitleHelp: false,
-              subtitleText: "[청년부_특송_자막.txt]\n[후렴]\n주를 찬양해 온 맘 다해\n우리 구주 예수 이름 높이세",
-              subtitleFiles: [sub2],
-              mediaFiles: []
             }
           ]
         };
       }
-
-      if (deptId === "elem") {
-        const subElem = await createSampleSubtitleFileRecord(
-          "초등부_율동찬양_자막.txt",
-          "예수님 사랑해요\n손뼉 치며 찬양해요\n성탄의 기쁨 함께 나눠요"
-        );
-        return {
-          deptId,
-          deptName,
-          contact: "박초등 선생님 (010-3456-7890)",
-          micCount: 2,
-          requestMicStand: false,
-          micStandCount: 0,
-          useCeilingMic: true,
-          instruments: ["악기 사용안함"],
-          requestBgm: true,
-          requestVideo: true,
-          customCueFiles: [],
-          generalNote: "아이들 이동 동선 확보 부탁드립니다. 인트로 영상 재생 요청",
-          updatedAt: nowStr,
-          cues: [
-            {
-              id: "sample_elem_1",
-              title: "율동 찬양 및 영상",
-              topic: "성탄의 기쁨",
-              duration: "총 7분",
-              note: "영상 시작 시 볼륨 70% 맞추어 재생",
-              subtitleHelp: false,
-              subtitleText: "[초등부_율동찬양_자막.txt]\n예수님 사랑해요\n손뼉 치며 찬양해요",
-              subtitleFiles: [subElem],
-              mediaFiles: []
-            }
-          ]
-        };
-      }
-
-      if (deptId === "teen") {
-        return {
-          deptId,
-          deptName,
-          contact: "이중고 부장 (010-4567-8901)",
-          micCount: 3,
-          requestMicStand: true,
-          micStandCount: 2,
-          useCeilingMic: false,
-          instruments: ["신디", "드럼"],
-          requestBgm: false,
-          requestVideo: true,
-          customCueFiles: [],
-          generalNote: "연극 중간 암전 신호 맞춰 주세요.",
-          updatedAt: nowStr,
-          cues: [
-            {
-              id: "sample_teen_1",
-              title: "성탄 드라마",
-              topic: "진짜 선물",
-              duration: "약 10분",
-              note: "대사 자막 제작 도움 요청합니다.",
-              subtitleHelp: true,
-              subtitleText: "",
-              subtitleFiles: [],
-              mediaFiles: []
-            }
-          ]
-        };
-      }
-
-      if (deptId === "praise") {
-        const subPraise = await createSampleSubtitleFileRecord(
-          "찬양팀_엔딩_자막.txt",
-          "영광과 존귀와 능력\n우리 주 하나님께\n영원토록 드리세"
-        );
-        return {
-          deptId,
-          deptName,
-          contact: "최찬양 팀장 (010-5678-9012)",
-          micCount: 5,
-          requestMicStand: true,
-          micStandCount: 4,
-          useCeilingMic: true,
-          instruments: ["어쿠스틱피아노", "신디", "드럼", "베이스기타"],
-          requestBgm: false,
-          requestVideo: false,
-          customCueFiles: [],
-          generalNote: "모니터 스피커 밸런스 확인 요청",
-          updatedAt: nowStr,
-          cues: [
-            {
-              id: "sample_praise_1",
-              title: "연합 엔딩 찬양",
-              topic: "영광을 돌리세",
-              duration: "약 6분",
-              note: "마지막 코드 후 페이드아웃",
-              subtitleHelp: false,
-              subtitleText: "[찬양팀_엔딩_자막.txt]\n영광과 존귀와 능력\n우리 주 하나님께",
-              subtitleFiles: [subPraise],
-              mediaFiles: []
-            }
-          ]
-        };
-      }
-
       const defaultSub = await createSampleSubtitleFileRecord(
         `${sanitizeName(deptName)}_예시_자막.txt`,
         `${deptName} 예시 자막입니다.\n실제 행사 순서에 맞게 수정해 주세요.`
@@ -1526,7 +1281,7 @@
         requestBgm: true,
         requestVideo: false,
         customCueFiles: [],
-        generalNote: "예시 데이터입니다. 실제 진행 내용으로 수정 후 저장해 주세요.",
+        generalNote: "예시 데이터입니다.",
         updatedAt: nowStr,
         cues: [
           {
@@ -1534,9 +1289,9 @@
             title: `${deptName} 특별 순서`,
             topic: "성탄의 기쁨",
             duration: "약 5분",
-            note: "예시 메모: 시작 전 BGM 재생 요청",
+            note: "예시 메모",
             subtitleHelp: false,
-            subtitleText: `[${sanitizeName(deptName)}_예시_자막.txt]\n${deptName} 예시 자막입니다.\n실제 행사 순서에 맞게 수정해 주세요.`,
+            subtitleText: `[${sanitizeName(deptName)}_예시_자막.txt]\n${deptName} 예시 자막입니다.`,
             subtitleFiles: [defaultSub],
             mediaFiles: []
           }
@@ -1545,20 +1300,18 @@
     }
 
     async function fillDeptSampleData(user) {
-      const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까? (현재 입력 중인 내용이 덮어씌워집니다.)`);
+      const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
       if (!ok) return;
-      const sampleSub = await buildSampleSubmissionForDept(user.id, user.deptName);
-      state.deptSubmissions[user.id] = sampleSub;
+      state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName);
       saveState();
       renderDeptView(user);
       showToast(`${user.deptName} 예시 데이터가 입력되었습니다.`);
     }
 
     async function fillAdminSampleData() {
-      const ok = confirm("청년부·초등부·중고등부·찬양팀의 가이드용 예시 데이터를 한 번에 채우시겠습니까?");
+      const ok = confirm("청년부·초등부·중고등부·찬양팀의 가이드용 예시 데이터를 채우시겠습니까?");
       if (!ok) return;
-      const sampleDeptIds = ["youth", "elem", "teen", "praise"];
-      for (const id of sampleDeptIds) {
+      for (const id of ["youth", "elem", "teen", "praise"]) {
         const acc = state.accounts.find((a) => a.id === id);
         if (acc) {
           state.deptSubmissions[id] = await buildSampleSubmissionForDept(acc.id, acc.deptName);
@@ -1566,7 +1319,7 @@
       }
       saveState();
       renderAdminOverview();
-      showToast("전체 부서 예시 데이터가 입력되었습니다.");
+      showToast("예시 데이터가 입력되었습니다.");
     }
 
     function escapeHtml(str) {
@@ -1598,21 +1351,15 @@
       const sub = state.deptSubmissions[deptId];
       if (!sub) return;
       const deptLabel = sub.deptName || deptId;
-      const ok = confirm(`'${deptLabel}' 부서의 제출 큐시트, 마이크/악기/재생 요청 및 첨부 파일 내역을 모두 삭제하시겠습니까?`);
+      const ok = confirm(`'${deptLabel}' 부서의 제출 큐시트 및 첨부 파일 내역을 삭제하시겠습니까?`);
       if (!ok) return;
 
       const fileKeys = [];
-      (sub.customCueFiles || []).forEach((cf) => {
-        if (cf && cf.key) fileKeys.push(cf.key);
-      });
+      (sub.customCueFiles || []).forEach((cf) => { if (cf?.key) fileKeys.push(cf.key); });
       (sub.cues || []).forEach((cue) => {
         if (cue.subtitleFileKey) fileKeys.push(cue.subtitleFileKey);
-        (cue.subtitleFiles || []).forEach((sf) => {
-          if (sf && sf.key) fileKeys.push(sf.key);
-        });
-        (cue.mediaFiles || []).forEach((mf) => {
-          if (mf && mf.key) fileKeys.push(mf.key);
-        });
+        (cue.subtitleFiles || []).forEach((sf) => { if (sf?.key) fileKeys.push(sf.key); });
+        (cue.mediaFiles || []).forEach((mf) => { if (mf?.key) fileKeys.push(mf.key); });
       });
 
       delete state.deptSubmissions[deptId];
@@ -1620,6 +1367,79 @@
       await deleteFileRecords(fileKeys);
       renderAdminOverview();
       showToast(`'${deptLabel}' 부서 큐시트가 삭제되었습니다.`);
+    }
+
+    function collectAllB2Files() {
+      const items = [];
+      Object.values(state.deptSubmissions || {}).forEach((sub) => {
+        (sub.customCueFiles || []).forEach((cf) => {
+          items.push({
+            deptName: sub.deptName,
+            category: "자체 큐시트",
+            name: cf.name,
+            size: cf.size || 0,
+            b2Key: cf.b2Key || "",
+            publicUrl: cf.publicUrl || buildPublicB2Url(cf.b2Key)
+          });
+        });
+        (sub.cues || []).forEach((cue, idx) => {
+          const orderLabel = cue.title ? `순서 ${idx + 1} (${cue.title})` : `순서 ${idx + 1}`;
+          (cue.mediaFiles || []).forEach((mf) => {
+            items.push({
+              deptName: sub.deptName,
+              category: `${orderLabel} · 영상/음원`,
+              name: mf.name,
+              size: mf.size || 0,
+              b2Key: mf.b2Key || "",
+              publicUrl: mf.publicUrl || buildPublicB2Url(mf.b2Key)
+            });
+          });
+          getCueSubtitleFiles(cue).forEach((sf) => {
+            items.push({
+              deptName: sub.deptName,
+              category: `${orderLabel} · 자막`,
+              name: sf.name,
+              size: sf.size || 0,
+              b2Key: sf.b2Key || "",
+              publicUrl: sf.publicUrl || buildPublicB2Url(sf.b2Key)
+            });
+          });
+        });
+      });
+      return items;
+    }
+
+    function renderB2FilesTable() {
+      const tbody = document.getElementById("b2FilesTableBody");
+      const statusText = document.getElementById("b2StatusText");
+      if (!tbody) return;
+
+      const items = collectAllB2Files();
+      if (statusText) {
+        statusText.textContent = isB2Configured()
+          ? `버킷: ${B2_CONFIG.bucketName} (Public) · 등록 ${items.length}개`
+          : "B2_CONFIG 미설정 (로컬 백업 모드)";
+      }
+
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">등록된 파일이 없습니다.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map((it) => {
+        const dlBtn = it.publicUrl
+          ? `<a href="${escapeHtml(it.publicUrl)}" target="_blank" rel="noopener noreferrer" download="${escapeHtml(it.name)}" class="btn btn-primary btn-sm">다운로드</a>`
+          : `<span class="helper-text">B2 링크 없음</span>`;
+        return `
+          <tr>
+            <td class="nowrap-col"><strong>${escapeHtml(it.deptName)}</strong></td>
+            <td>${escapeHtml(it.category)}</td>
+            <td><strong>${escapeHtml(it.name)}</strong></td>
+            <td class="nowrap-col">${escapeHtml(formatFileSize(it.size))}</td>
+            <td class="nowrap-col">${dlBtn}</td>
+          </tr>
+        `;
+      }).join("");
     }
 
     function renderTopbar() {
@@ -1630,32 +1450,12 @@
         return;
       }
 
-      const hasToken = Boolean(loadDriveTokenSession());
-      const driveLabel = !isDriveConfigured()
-        ? "드라이브 미설정"
-        : hasToken
-          ? "✓ 구글 드라이브 자동 연결됨"
-          : "구글 드라이브 연결";
-
+      const b2Badge = isB2Configured() ? `✓ B2 (${B2_CONFIG.bucketName})` : "B2 미연결";
       topbarActions.innerHTML = `
         <span class="user-badge">${escapeHtml(user.deptName)} (${escapeHtml(user.id)})</span>
-        <button type="button" class="btn btn-ghost-light btn-sm" id="connectDriveBtn">${driveLabel}</button>
+        <span class="user-badge">${escapeHtml(b2Badge)}</span>
         <button type="button" class="btn btn-ghost-light btn-sm" id="logoutBtn">로그아웃</button>
       `;
-
-      document.getElementById("connectDriveBtn").addEventListener("click", async () => {
-        try {
-          await ensureDriveToken(true);
-          renderTopbar();
-          showToast("구글 드라이브와 연결되었습니다.");
-          if (activeTab === "adminOverview") {
-            await listDriveFilesFromFolder();
-            renderDriveFilesTable();
-          }
-        } catch (err) {
-          alert(err.message);
-        }
-      });
 
       document.getElementById("logoutBtn").addEventListener("click", () => {
         state.sessionUserId = null;
@@ -1667,8 +1467,6 @@
 
     function renderAll() {
       const user = getCurrentUser();
-      loadDriveTokenSession();
-
       if (!user) {
         document.getElementById("loginView").classList.remove("hidden");
         document.getElementById("appView").classList.add("hidden");
@@ -1711,16 +1509,9 @@
       document.getElementById("adminOverviewTab").classList.toggle("hidden", activeTab !== "adminOverview");
       document.getElementById("adminManageTab").classList.toggle("hidden", activeTab !== "adminManage");
 
-      if (activeTab === "dept") {
-        renderDeptView(user);
-      } else if (activeTab === "adminOverview") {
-        renderAdminOverview();
-        if (isDriveConfigured() && loadDriveTokenSession()) {
-          listDriveFilesFromFolder().then(() => renderDriveFilesTable()).catch(() => {});
-        }
-      } else if (activeTab === "adminManage") {
-        renderAdminManage();
-      }
+      if (activeTab === "dept") renderDeptView(user);
+      else if (activeTab === "adminOverview") renderAdminOverview();
+      else if (activeTab === "adminManage") renderAdminManage();
     }
 
     function renderDeptView(user) {
@@ -1783,10 +1574,8 @@
     function renderMediaReqButtons(sub) {
       const btnBgm = document.getElementById("btnReqBgm");
       const btnVideo = document.getElementById("btnReqVideo");
-
       btnBgm.classList.toggle("active", !!sub.requestBgm);
       btnVideo.classList.toggle("active", !!sub.requestVideo);
-
       btnBgm.textContent = sub.requestBgm ? "✓ BGM 재생 요청됨" : "BGM 재생 요청";
       btnVideo.textContent = sub.requestVideo ? "✓ 영상 재생 요청됨" : "영상 재생 요청";
     }
@@ -1801,7 +1590,7 @@
         <ul class="file-list" style="margin-top:8px;">
           ${sub.customCueFiles.map((f, idx) => `
             <li style="margin-bottom:4px; color:#1e3a8a; font-weight:600;">
-              ${escapeHtml(f.name)} ${f.driveId ? '<span class="pill pill-green">드라이브 저장됨</span>' : ''}
+              ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">B2 저장됨</span>' : ''}
               <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px;" data-del-custom-cue="${idx}">삭제</button>
             </li>
           `).join("")}
@@ -1809,9 +1598,12 @@
       `;
 
       box.querySelectorAll("[data-del-custom-cue]").forEach((btn) => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
           const idx = Number(btn.dataset.delCustomCue);
+          const target = sub.customCueFiles[idx];
           sub.customCueFiles.splice(idx, 1);
+          saveState();
+          if (target?.key) await deleteFileRecords([target.key]);
           renderCustomCueFiles(sub);
         });
       });
@@ -1829,11 +1621,11 @@
         const mediaHtml = (cue.mediaFiles || []).length
           ? `<ul class="file-list">${cue.mediaFiles.map((f, fIdx) => `
               <li>
-                ${escapeHtml(f.name)} ${f.driveId ? '<span class="pill pill-green">드라이브 저장됨</span>' : ''}
+                ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">B2 저장됨</span>' : ''}
                 <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px;" data-del-media="${idx}:${fIdx}">삭제</button>
               </li>
             `).join("")}</ul>`
-          : `<div class="helper-text">등록된 영상/음원 파일이 없습니다.</div>`;
+          : `<div class="helper-text">등록된 영상/음원 파일이 없습니다. (최대 500MB)</div>`;
 
         const txtStatusHtml = subFiles.length
           ? `<ul class="file-list" style="color:var(--success); font-weight:700;">
@@ -1879,7 +1671,7 @@
 
             <div class="grid-2">
               <div class="form-group" style="margin-bottom:8px;">
-                <label>영상 / 음원 파일 업로드</label>
+                <label>영상 / 음원 파일 업로드 (최대 500MB)</label>
                 <input type="file" class="cue-media-input" accept="video/*,audio/*,.mp4,.mov,.mp3,.wav,.m4a" multiple />
                 ${mediaHtml}
               </div>
@@ -1922,16 +1714,12 @@
         const subTextArea = el.querySelector(".cue-sub-text");
         subTextArea.addEventListener("input", (e) => {
           cue.subtitleText = e.target.value;
-          if (cue.subtitleText.trim().length > 0) {
-            cue.subtitleHelp = false;
-          }
+          if (cue.subtitleText.trim().length > 0) cue.subtitleHelp = false;
         });
         subTextArea.addEventListener("paste", () => {
           setTimeout(() => {
             cue.subtitleText = subTextArea.value;
-            if (cue.subtitleText.trim().length > 0) {
-              cue.subtitleHelp = false;
-            }
+            if (cue.subtitleText.trim().length > 0) cue.subtitleHelp = false;
             showToast("자막이 붙여넣기되었습니다.");
           }, 0);
         });
@@ -1940,12 +1728,11 @@
           const files = Array.from(e.target.files || []);
           for (const f of files) {
             const meta = await processAndStoreUploadedFile(f, "media", sub.deptName);
-            cue.mediaFiles.push(meta);
+            if (meta) cue.mediaFiles.push(meta);
           }
           e.target.value = "";
           saveState();
           renderCueList(sub);
-          showToast("미디어 파일이 추가되었습니다.");
         });
 
         el.querySelector(".cue-txt-input").addEventListener("change", async (e) => {
@@ -1956,7 +1743,7 @@
           const appendedTexts = [];
           for (const f of files) {
             const meta = await processAndStoreUploadedFile(f, "subtitle", sub.deptName);
-            cue.subtitleFiles.push(meta);
+            if (meta) cue.subtitleFiles.push(meta);
             try {
               const txt = await f.text();
               if (txt.trim()) appendedTexts.push(`[${f.name}]\n${txt.trim()}`);
@@ -2005,17 +1792,23 @@
       });
 
       container.querySelectorAll("[data-del-media]").forEach((btn) => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
           const [cIdx, fIdx] = btn.dataset.delMedia.split(":").map(Number);
+          const target = sub.cues[cIdx].mediaFiles[fIdx];
           sub.cues[cIdx].mediaFiles.splice(fIdx, 1);
+          saveState();
+          if (target?.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
         });
       });
 
       container.querySelectorAll("[data-del-txt]").forEach((btn) => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
           const [cIdx, sIdx] = btn.dataset.delTxt.split(":").map(Number);
+          const target = sub.cues[cIdx].subtitleFiles[sIdx];
           sub.cues[cIdx].subtitleFiles.splice(sIdx, 1);
+          saveState();
+          if (target?.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
         });
       });
@@ -2125,7 +1918,7 @@
                 : `<span class="pill pill-red">없음</span>`;
 
           const filesText = [
-            ...r.mediaFiles.map((f) => f.name),
+            ...r.mediaFiles.map((f) => `${f.name} (${formatFileSize(f.size)})`),
             ...r.subtitleFiles.map((f) => f.name),
             ...(!r.subtitleFiles.length && r.hasSubText ? [`${sanitizeName(r.title)}_자막.txt`] : [])
           ].join(", ") || "-";
@@ -2198,7 +1991,7 @@
         });
       });
 
-      renderDriveFilesTable();
+      renderB2FilesTable();
     }
 
     function renderAdminManage() {
@@ -2377,7 +2170,7 @@
         return;
       }
       if (!hasCueFiles && !hasCustomFiles) {
-        showToast("로컬에 보관된 영상/음원/자막/자체큐시트 파일이 없습니다.");
+        showToast("로컬에 보관된 파일(80MB 이하)이 없습니다. 대용량 파일은 B2 목록에서 다운로드하세요.");
         return;
       }
 
@@ -2449,16 +2242,6 @@
       renderAll();
     });
 
-    document.getElementById("refreshDriveFilesBtn").addEventListener("click", async () => {
-      try {
-        await listDriveFilesFromFolder();
-        renderDriveFilesTable();
-        showToast("구글 드라이브 파일 목록을 불러왔습니다.");
-      } catch (err) {
-        alert(err.message);
-      }
-    });
-
     document.getElementById("chkReqMicStand").addEventListener("change", (e) => {
       const user = getCurrentUser();
       if (!user || user.role !== "dept") return;
@@ -2500,12 +2283,11 @@
       const files = Array.from(e.target.files || []);
       for (const f of files) {
         const meta = await processAndStoreUploadedFile(f, "custom_cue", sub.deptName);
-        sub.customCueFiles.push(meta);
+        if (meta) sub.customCueFiles.push(meta);
       }
       e.target.value = "";
       saveState();
       renderCustomCueFiles(sub);
-      showToast("자체 부서 큐시트 파일이 처리되었습니다.");
     });
 
     document.getElementById("fillDeptSampleBtn").addEventListener("click", async () => {
@@ -2543,45 +2325,28 @@
 
       const packedCustomFiles = [];
       for (const cf of (sub.customCueFiles || [])) {
-        const rec = await getFileRecord(cf.key);
-        packedCustomFiles.push({
-          ...cf,
-          dataUrl: rec ? rec.dataUrl : null
-        });
+        const rec = cf.savedLocal ? await getFileRecord(cf.key) : null;
+        packedCustomFiles.push({ ...cf, dataUrl: rec ? rec.dataUrl : null });
       }
 
       const packedCues = [];
       for (const cue of sub.cues) {
         const packedMedia = [];
         for (const mf of (cue.mediaFiles || [])) {
-          const rec = await getFileRecord(mf.key);
-          packedMedia.push({
-            ...mf,
-            dataUrl: rec ? rec.dataUrl : null
-          });
+          const rec = mf.savedLocal ? await getFileRecord(mf.key) : null;
+          packedMedia.push({ ...mf, dataUrl: rec ? rec.dataUrl : null });
         }
         const packedSubs = [];
         for (const sf of getCueSubtitleFiles(cue)) {
-          const sRec = await getFileRecord(sf.key);
-          packedSubs.push({
-            ...sf,
-            dataUrl: sRec ? sRec.dataUrl : null
-          });
+          const sRec = sf.savedLocal ? await getFileRecord(sf.key) : null;
+          packedSubs.push({ ...sf, dataUrl: sRec ? sRec.dataUrl : null });
         }
-        packedCues.push({
-          ...cue,
-          mediaFiles: packedMedia,
-          subtitleFiles: packedSubs
-        });
+        packedCues.push({ ...cue, mediaFiles: packedMedia, subtitleFiles: packedSubs });
       }
 
       const payload = {
         eventName: state.eventInfo.name,
-        submission: {
-          ...sub,
-          customCueFiles: packedCustomFiles,
-          cues: packedCues
-        }
+        submission: { ...sub, customCueFiles: packedCustomFiles, cues: packedCues }
       };
 
       const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
@@ -2611,14 +2376,7 @@
           for (const cf of (sub.customCueFiles || [])) {
             const key = cf.key || ("cf_" + Math.random().toString(36).slice(2, 9));
             if (cf.dataUrl) {
-              await putFileRecord({
-                key,
-                name: cf.name,
-                type: cf.type || "application/octet-stream",
-                size: cf.size || 0,
-                dataUrl: cf.dataUrl,
-                kind: "custom_cue"
-              });
+              await putFileRecord({ key, name: cf.name, type: cf.type || "application/octet-stream", size: cf.size || 0, dataUrl: cf.dataUrl, kind: "custom_cue" });
             }
             cleanCustomFiles.push({
               key,
@@ -2626,9 +2384,8 @@
               type: cf.type,
               size: cf.size,
               savedLocal: Boolean(cf.dataUrl),
-              driveId: cf.driveId || null,
-              webViewLink: cf.webViewLink || "",
-              webContentLink: cf.webContentLink || ""
+              b2Key: cf.b2Key || "",
+              publicUrl: cf.publicUrl || buildPublicB2Url(cf.b2Key)
             });
           }
 
@@ -2638,14 +2395,7 @@
             for (const mf of (cue.mediaFiles || [])) {
               const key = mf.key || ("f_" + Math.random().toString(36).slice(2, 9));
               if (mf.dataUrl) {
-                await putFileRecord({
-                  key,
-                  name: mf.name,
-                  type: mf.type || "application/octet-stream",
-                  size: mf.size || 0,
-                  dataUrl: mf.dataUrl,
-                  kind: "media"
-                });
+                await putFileRecord({ key, name: mf.name, type: mf.type || "application/octet-stream", size: mf.size || 0, dataUrl: mf.dataUrl, kind: "media" });
               }
               cleanMedia.push({
                 key,
@@ -2653,9 +2403,8 @@
                 type: mf.type,
                 size: mf.size,
                 savedLocal: Boolean(mf.dataUrl),
-                driveId: mf.driveId || null,
-                webViewLink: mf.webViewLink || "",
-                webContentLink: mf.webContentLink || ""
+                b2Key: mf.b2Key || "",
+                publicUrl: mf.publicUrl || buildPublicB2Url(mf.b2Key)
               });
             }
 
@@ -2668,14 +2417,7 @@
             for (const sf of rawSubs) {
               const sKey = sf.key || ("s_" + Math.random().toString(36).slice(2, 9));
               if (sf.dataUrl) {
-                await putFileRecord({
-                  key: sKey,
-                  name: sf.name,
-                  type: sf.type || "text/plain",
-                  size: sf.size || sf.dataUrl.length,
-                  dataUrl: sf.dataUrl,
-                  kind: "subtitle"
-                });
+                await putFileRecord({ key: sKey, name: sf.name, type: sf.type || "text/plain", size: sf.size || sf.dataUrl.length, dataUrl: sf.dataUrl, kind: "subtitle" });
               }
               cleanSubs.push({
                 key: sKey,
@@ -2683,9 +2425,8 @@
                 type: sf.type || "text/plain",
                 size: sf.size || 0,
                 savedLocal: Boolean(sf.dataUrl),
-                driveId: sf.driveId || null,
-                webViewLink: sf.webViewLink || "",
-                webContentLink: sf.webContentLink || ""
+                b2Key: sf.b2Key || "",
+                publicUrl: sf.publicUrl || buildPublicB2Url(sf.b2Key)
               });
             }
 
@@ -2768,14 +2509,12 @@
         notice: ""
       };
       state.deptSubmissions = {};
-      cachedDriveFiles = [];
-      await clearAllFileRecords();
       saveState();
+      await clearAllFileRecords();
       renderAll();
       showToast("행사 데이터가 모두 초기화되었습니다.");
     });
 
-    loadDriveTokenSession();
     renderAll();
   </script>
 </body>
