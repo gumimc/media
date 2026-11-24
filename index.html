@@ -861,7 +861,7 @@
         <div class="card" style="border-color:#fecaca; background:#fffafa;">
           <h3 class="card-title" style="color:var(--danger);">행사 종료 및 전체 초기화</h3>
           <p class="helper-text" style="margin-bottom:12px;">
-            행사가 끝난 뒤 버튼을 누르면 <strong>행사명, 모든 부서의 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청, 업로드된 파일 데이터가 모두 초기화</strong>됩니다. (부서 계정 목록은 유지됩니다.)
+            행사가 끝난 뒤 버튼을 누르면 <strong>행사명, 모든 부서의 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청, 업로드된 파일 데이터(B2 포함)가 모두 초기화</strong>됩니다. (부서 계정 목록은 유지됩니다.)
           </p>
           <button type="button" class="btn btn-danger" id="resetEventBtn">행사 삭제 및 전체 초기화</button>
         </div>
@@ -876,6 +876,7 @@
       region: "us-east-005"
     };
 
+    const SUBMISSIONS_PREFIX = "_submissions/";
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
@@ -937,6 +938,18 @@
     let remoteB2Files = [];
     let remoteB2Loaded = false;
 
+    function getDeptOrderIndex(deptId) {
+      const deptAccounts = state.accounts.filter((a) => a.role === "dept");
+      const idx = deptAccounts.findIndex((a) => a.id === deptId);
+      return idx >= 0 ? idx : 9999;
+    }
+
+    function getSortedSubmissions() {
+      return Object.values(state.deptSubmissions || {}).sort(
+        (a, b) => getDeptOrderIndex(a.deptId) - getDeptOrderIndex(b.deptId)
+      );
+    }
+
     function buildWorkerDownloadUrl(objectKey, fileName = "") {
       if (!objectKey || !B2_CONFIG.signerBaseUrl) return "";
       const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
@@ -958,47 +971,48 @@
       return id;
     }
 
-    async function fetchRemoteSubmissions(showMessage = false) {
-  if (!isB2Configured()) return;
-  try {
-    const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
-    const res = await fetch(`${base}?action=submissions&_t=${Date.now()}`, { cache: "no-store" });
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      throw new Error(data.error || `HTTP ${res.status}`);
-    }
-
-    const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
-    Object.keys(remoteSubs).forEach((deptId) => {
-      const rSub = remoteSubs[deptId];
-      if (!rSub || typeof rSub !== "object") return;
-      const targetId = rSub.deptId || deptId;
-      const lSub = state.deptSubmissions[targetId];
-
-      const remoteHasContent =
-        Boolean((rSub.contact || "").trim()) ||
-        Number(rSub.micCount || 0) > 0 ||
-        Boolean(rSub.requestMicStand) ||
-        Boolean(rSub.useCeilingMic) ||
-        Boolean(rSub.requestBgm) ||
-        Boolean(rSub.requestVideo) ||
-        (Array.isArray(rSub.instruments) && rSub.instruments.length > 0) ||
-        (Array.isArray(rSub.customCueFiles) && rSub.customCueFiles.length > 0) ||
-        (Array.isArray(rSub.cues) && rSub.cues.some((c) => c && (c.title || c.topic || c.duration || c.note || c.subtitleText || c.subtitleHelp || (c.mediaFiles && c.mediaFiles.length) || (c.subtitleFiles && c.subtitleFiles.length))));
-
-      if (!lSub || remoteHasContent || !lSub.updatedAt) {
-        state.deptSubmissions[targetId] = { ...rSub, deptId: targetId };
+    async function triggerSingleFileDownload(dlId) {
+      const item = downloadableFileRegistry[dlId];
+      if (!item) {
+        showToast("다운로드할 파일 정보를 찾을 수 없습니다.");
+        return;
       }
-    });
 
-    saveState();
-    renderAdminOverview();
-    if (showMessage) showToast("전체 부서 큐시트와 B2 파일을 동기화했습니다.");
-  } catch (err) {
-    console.warn("Remote submissions fetch failed:", err);
-    if (showMessage) showToast("원격 큐시트 동기화에 실패했습니다.");
-  }
-}
+      try {
+        if (item.key) {
+          const rec = await getFileRecord(item.key);
+          if (rec && rec.dataUrl) {
+            const bytes = dataUrlToUint8Array(rec.dataUrl);
+            const blob = new Blob([bytes], { type: rec.type || "application/octet-stream" });
+            saveBlobAsFile(blob, item.name);
+            showToast(`'${item.name}' 다운로드 시작`);
+            return;
+          }
+        }
+
+        if (item.fallbackText) {
+          const blob = new Blob(["\uFEFF" + item.fallbackText], { type: "text/plain;charset=utf-8" });
+          saveBlobAsFile(blob, item.name);
+          showToast(`'${item.name}' 다운로드 시작`);
+          return;
+        }
+
+        const dlUrl = item.b2Key ? buildWorkerDownloadUrl(item.b2Key, item.name) : item.url;
+        if (dlUrl) {
+          showToast(`'${item.name}' 다운로드 중...`);
+          const res = await fetch(dlUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const blob = await res.blob();
+          saveBlobAsFile(blob, item.name);
+          showToast(`'${item.name}' 다운로드 완료`);
+          return;
+        }
+
+        showToast("다운로드 가능한 파일 경로가 없습니다.");
+      } catch (err) {
+        alert(`파일 다운로드에 실패했습니다.\n사유: ${err.message}`);
+      }
+    }
 
     async function deleteB2FileByKey(objectKey, displayName = "") {
       if (!objectKey || !isB2Configured()) return;
@@ -1055,7 +1069,7 @@
       if (!isB2Configured()) return;
       try {
         const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
-        const res = await fetch(`${base}?action=submissions`);
+        const res = await fetch(`${base}?action=submissions&_t=${Date.now()}`, { cache: "no-store" });
         const data = await res.json();
         if (!res.ok || !data.ok) {
           throw new Error(data.error || `HTTP ${res.status}`);
@@ -1064,11 +1078,26 @@
         const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
         Object.keys(remoteSubs).forEach((deptId) => {
           const rSub = remoteSubs[deptId];
-          const lSub = state.deptSubmissions[deptId];
-          if (!lSub || String(rSub.updatedAt || "") >= String(lSub.updatedAt || "")) {
-            state.deptSubmissions[deptId] = rSub;
+          if (!rSub || typeof rSub !== "object") return;
+          const targetId = rSub.deptId || deptId;
+          const lSub = state.deptSubmissions[targetId];
+
+          const remoteHasContent =
+            Boolean((rSub.contact || "").trim()) ||
+            Number(rSub.micCount || 0) > 0 ||
+            Boolean(rSub.requestMicStand) ||
+            Boolean(rSub.useCeilingMic) ||
+            Boolean(rSub.requestBgm) ||
+            Boolean(rSub.requestVideo) ||
+            (Array.isArray(rSub.instruments) && rSub.instruments.length > 0) ||
+            (Array.isArray(rSub.customCueFiles) && rSub.customCueFiles.length > 0) ||
+            (Array.isArray(rSub.cues) && rSub.cues.some((c) => c && (c.title || c.topic || c.duration || c.note || c.subtitleText || c.subtitleHelp || (c.mediaFiles && c.mediaFiles.length) || (c.subtitleFiles && c.subtitleFiles.length))));
+
+          if (!lSub || remoteHasContent || !lSub.updatedAt) {
+            state.deptSubmissions[targetId] = { ...rSub, deptId: targetId };
           }
         });
+
         saveState();
         renderAdminOverview();
         if (showMessage) showToast("전체 부서 큐시트와 B2 파일을 동기화했습니다.");
@@ -1308,7 +1337,7 @@
       if (statusText) statusText.textContent = "B2 파일 목록 불러오는 중...";
       try {
         const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
-        const res = await fetch(`${base}?action=list`);
+        const res = await fetch(`${base}?action=list&_t=${Date.now()}`, { cache: "no-store" });
         const data = await res.json();
         if (!res.ok || !data.ok) {
           throw new Error(data.error || `HTTP ${res.status}`);
@@ -1593,7 +1622,7 @@
       }
 
       const items = [];
-      Object.values(state.deptSubmissions || {}).forEach((sub) => {
+      getSortedSubmissions().forEach((sub) => {
         (sub.customCueFiles || []).forEach((cf) => {
           items.push({
             deptName: sub.deptName,
@@ -2100,7 +2129,7 @@
     }
 
     function getAllRows() {
-      const subs = Object.values(state.deptSubmissions || {});
+      const subs = getSortedSubmissions();
       const rows = [];
       let seq = 1;
       subs.forEach((sub) => {
@@ -2144,7 +2173,7 @@
       downloadableFileRegistry = {};
 
       const rows = getAllRows();
-      const subs = Object.values(state.deptSubmissions || {});
+      const subs = getSortedSubmissions();
       const totalMics = subs.reduce((acc, s) => acc + Number(s.micCount || 0), 0);
       const totalStands = subs.reduce((acc, s) => acc + (s.requestMicStand ? Number(s.micStandCount || 0) : 0), 0);
       const ceilingDeptCount = subs.filter((s) => s.useCeilingMic).length;
@@ -2378,7 +2407,7 @@
 
     async function exportZip() {
       const rows = getAllRows();
-      const subs = Object.values(state.deptSubmissions || {});
+      const subs = getSortedSubmissions();
       const hasCustomFiles = subs.some((s) => (s.customCueFiles || []).length > 0);
       const hasCueFiles = rows.some((r) => r.mediaFiles.length > 0 || r.subtitleFiles.length > 0 || r.hasSubText);
 
