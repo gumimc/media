@@ -1093,13 +1093,13 @@
         }
 
         const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
-        const nextSubmissions = { ...state.deptSubmissions };
+        const nextSubmissions = {};
 
         Object.keys(remoteSubs).forEach((deptId, idx) => {
           const rSub = remoteSubs[deptId];
           if (!rSub || typeof rSub !== "object") return;
           const targetId = rSub.deptId || deptId;
-          const lSub = nextSubmissions[targetId];
+          const lSub = state.deptSubmissions[targetId];
 
           const rOrder = Number(rSub.uploadOrder);
           const lOrder = Number(lSub?.uploadOrder);
@@ -2687,6 +2687,18 @@
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.ok) {
             throw new Error(data.error || `HTTP ${res.status}`);
+          }
+
+          for (const acc of state.accounts || []) {
+            if (acc.role === "dept") {
+              try {
+                await fetch(`${base}?action=delete`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ objectKey: `${SUBMISSIONS_PREFIX}${encodeURIComponent(acc.id)}.json` })
+                });
+              } catch {}
+            }
           }
         }
 
