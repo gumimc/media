@@ -1,2450 +1,274 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>구미제일감리교회 미디어팀 행사 가이드</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <style>
-    :root {
-      --bg: #f4f6fa;
-      --card: #ffffff;
-      --text: #18202c;
-      --muted: #5d6a7e;
-      --line: #dde3ee;
-      --primary: #1e40af;
-      --primary-hover: #17338c;
-      --primary-soft: #eef2ff;
-      --success: #0f766e;
-      --success-soft: #f0fdfa;
-      --warn: #b45309;
-      --warn-soft: #fffbeb;
-      --danger: #b91c1c;
-      --danger-soft: #fef2f2;
-      --radius: 14px;
-      --shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.45;
-    }
-
-    button, input, select, textarea {
-      font-family: inherit;
-    }
-
-    .container {
-      width: min(1460px, 96%);
-      margin: 0 auto;
-      padding: 16px 0 28px;
-    }
-
-    .topbar {
-      background: linear-gradient(135deg, #172554 0%, #1e40af 100%);
-      color: #fff;
-      border-radius: 18px;
-      padding: 18px 22px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
-    }
-
-    .topbar-title h1 {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .topbar-title p {
-      margin: 4px 0 0;
-      font-size: 0.88rem;
-      color: #dbeafe;
-    }
-
-    .topbar-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .user-badge {
-      background: rgba(255, 255, 255, 0.16);
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    .event-banner {
-      background: var(--card);
-      border: 2px solid #bfdbfe;
-      border-radius: 18px;
-      padding: 20px 22px;
-      margin-bottom: 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .event-banner-tag {
-      display: inline-block;
-      background: var(--primary-soft);
-      color: var(--primary);
-      font-weight: 700;
-      font-size: 0.8rem;
-      padding: 4px 10px;
-      border-radius: 999px;
-      margin-bottom: 8px;
-    }
-
-    .event-banner-name {
-      font-size: clamp(1.6rem, 4vw, 2.5rem);
-      font-weight: 900;
-      color: #0f172a;
-      line-height: 1.2;
-      letter-spacing: -0.03em;
-      margin: 0 0 8px;
-    }
-
-    .event-banner-meta {
-      color: var(--muted);
-      font-size: 0.92rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
-    }
-
-    .card-title {
-      margin: 0 0 12px;
-      font-size: 1.08rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .login-box {
-      max-width: 440px;
-      margin: 28px auto;
-    }
-
-    .form-group {
-      margin-bottom: 14px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.88rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-      color: #1e293b;
-    }
-
-    input[type="text"],
-    input[type="password"],
-    input[type="number"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      background: #fff;
-      color: var(--text);
-    }
-
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.12);
-    }
-
-    textarea {
-      min-height: 86px;
-      resize: vertical;
-    }
-
-    .subtitle-paste-area {
-      min-height: 104px;
-      font-size: 0.88rem;
-      line-height: 1.45;
-      margin-top: 8px;
-    }
-
-    .btn {
-      border: none;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: 0.15s ease;
-      text-decoration: none;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: #fff;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: var(--primary-hover);
-    }
-
-    .btn-success {
-      background: var(--success);
-      color: #fff;
-    }
-
-    .btn-warn {
-      background: var(--warn);
-      color: #fff;
-    }
-
-    .btn-danger {
-      background: var(--danger);
-      color: #fff;
-    }
-
-    .btn-outline {
-      background: #fff;
-      color: var(--text);
-      border: 1px solid #cbd5e1;
-    }
-
-    .btn-outline:hover:not(:disabled) {
-      background: #f8fafc;
-    }
-
-    .btn-ghost-light {
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .btn-sm {
-      padding: 6px 9px;
-      font-size: 0.8rem;
-      border-radius: 8px;
-    }
-
-    .btn-xs {
-      padding: 4px 7px;
-      font-size: 0.75rem;
-      border-radius: 7px;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    .tab-btn {
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: #fff;
-      font-weight: 700;
-      font-size: 0.92rem;
-      cursor: pointer;
-      color: var(--muted);
-    }
-
-    .tab-btn.active {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    @media (max-width: 720px) {
-      .grid-2, .grid-3 {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .mic-options-box {
-      margin-top: 10px;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #f8fafc;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .check-inline {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      margin: 0;
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: #1e293b;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .check-inline input[type="checkbox"] {
-      width: 17px;
-      height: 17px;
-      margin: 0;
-      accent-color: var(--primary);
-      cursor: pointer;
-    }
-
-    .stand-count-wrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-left: 24px;
-    }
-
-    .stand-count-wrap input[type="number"] {
-      width: 84px;
-      padding: 6px 10px;
-      font-size: 0.88rem;
-    }
-
-    .instrument-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    @media (min-width: 640px) {
-      .instrument-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-      }
-    }
-
-    .media-req-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    @media (max-width: 520px) {
-      .media-req-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .inst-chip {
-      border: 1.5px solid #cbd5e1;
-      background: #fff;
-      border-radius: 12px;
-      padding: 12px 10px;
-      text-align: center;
-      font-weight: 700;
-      font-size: 0.9rem;
-      cursor: pointer;
-      user-select: none;
-      transition: 0.15s ease;
-    }
-
-    .inst-chip.active {
-      border-color: var(--primary);
-      background: var(--primary-soft);
-      color: var(--primary);
-    }
-
-    .inst-chip.none-chip.active {
-      border-color: #475569;
-      background: #f1f5f9;
-      color: #1e293b;
-    }
-
-    .inst-chip.media-chip.active {
-      border-color: var(--success);
-      background: var(--success-soft);
-      color: var(--success);
-    }
-
-    .custom-sheet-box {
-      border: 1.5px dashed #93c5fd;
-      background: #f8fbff;
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 16px;
-    }
-
-    .cue-item {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 16px;
-      background: #fafbfd;
-      margin-bottom: 12px;
-    }
-
-    .cue-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-
-    .cue-num {
-      background: var(--primary);
-      color: #fff;
-      font-weight: 800;
-      font-size: 0.85rem;
-      padding: 4px 10px;
-      border-radius: 8px;
-    }
-
-    .help-box {
-      border: 1px dashed #d97706;
-      background: var(--warn-soft);
-      border-radius: 10px;
-      padding: 10px 12px;
-      margin-top: 8px;
-    }
-
-    .help-box.requested {
-      border-style: solid;
-      background: #fef3c7;
-    }
-
-    .file-list {
-      margin-top: 6px;
-      padding-left: 18px;
-      font-size: 0.84rem;
-      color: var(--muted);
-    }
-
-    .file-chip-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      padding: 4px 6px;
-      border-radius: 8px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      margin-bottom: 4px;
-      font-size: 0.78rem;
-    }
-
-    .upload-progress-box {
-      margin-top: 8px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      font-size: 0.8rem;
-      color: #1e3a8a;
-      font-weight: 600;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 0.76rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .pill-blue { background: var(--primary-soft); color: var(--primary); }
-    .pill-green { background: var(--success-soft); color: var(--success); }
-    .pill-warn { background: var(--warn-soft); color: var(--warn); }
-    .pill-red { background: var(--danger-soft); color: var(--danger); }
-
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.84rem;
-    }
-
-    th, td {
-      border-bottom: 1px solid var(--line);
-      padding: 9px 7px;
-      text-align: left;
-      vertical-align: top;
-      word-break: keep-all;
-      overflow-wrap: break-word;
-    }
-
-    th {
-      background: #f8fafc;
-      font-weight: 800;
-      color: #334155;
-      white-space: nowrap;
-    }
-
-    .nowrap-col {
-      white-space: nowrap;
-    }
-
-    .guide-list {
-      margin: 0;
-      padding-left: 20px;
-    }
-
-    .guide-list li {
-      margin-bottom: 8px;
-    }
-
-    .helper-text {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    .demo-accounts {
-      background: #f8fafc;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 0.82rem;
-      color: var(--muted);
-      margin-top: 12px;
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #0f172a;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 999px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      z-index: 9999;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    }
-
-    .hidden { display: none !important; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <!-- 상단 헤더 -->
-    <header class="topbar">
-      <div class="topbar-title">
-        <h1>구미제일감리교회 미디어팀 행사 가이드</h1>
-        <p>부서별 큐시트 · 음향/악기 · 자막 · Backblaze B2 자료 관리 (최대 500MB 지원)</p>
-      </div>
-      <div class="topbar-actions" id="topbarActions"></div>
-    </header>
-
-    <!-- 로그인 화면 -->
-    <section id="loginView" class="card login-box">
-      <h2 class="card-title">부서 / 관리자 로그인</h2>
-      <p class="helper-text" style="margin-bottom:14px;">
-        관리자에게 부여받은 아이디와 비밀번호로 로그인하세요.
-      </p>
-      <form id="loginForm">
-        <div class="form-group">
-          <label for="loginId">아이디</label>
-          <input type="text" id="loginId" placeholder="예: admin 또는 youth" required autocomplete="username" />
-        </div>
-        <div class="form-group">
-          <label for="loginPw">비밀번호</label>
-          <input type="password" id="loginPw" placeholder="비밀번호 입력" required autocomplete="current-password" />
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">로그인</button>
-      </form>
-      <div class="demo-accounts">
-        <strong>초기 테스트 계정 안내</strong><br />
-        · 관리자: <code>admin</code> / <code>1234</code><br />
-        · 청년부: <code>youth</code> / <code>1111</code> · 초등부: <code>elem</code> / <code>1111</code> · 중고등부: <code>teen</code> / <code>1111</code> · 찬양팀: <code>praise</code> / <code>1111</code>
-        <div style="margin-top:8px;">
-          <button type="button" class="btn btn-outline btn-sm" id="resetLoginStorageBtn">브라우저 저장 데이터 초기화(로그인 오류 시)</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 로그인 이후 메인 화면 -->
-    <main id="appView" class="hidden">
-      <!-- 행사명 대형 배너 -->
-      <section class="event-banner">
-        <div class="event-banner-tag">현재 진행 행사</div>
-        <h2 class="event-banner-name" id="bannerEventName">행사명이 아직 설정되지 않았습니다</h2>
-        <div class="event-banner-meta" id="bannerEventMeta"></div>
-      </section>
-
-      <!-- 네비게이션 탭 -->
-      <nav class="tabs" id="navTabs"></nav>
-
-      <!-- 1. 부서 작성 탭 -->
-      <section id="deptTab" class="hidden">
-        <div class="card">
-          <h3 class="card-title">부서 안내 및 제출 가이드</h3>
-          <ul class="guide-list" style="font-size:0.92rem;">
-            <li>상단에 표시된 <strong>현재 행사명</strong>을 확인한 뒤 우리 부서 순서와 필요 항목을 간편하게 입력해 주세요.</li>
-            <li>마이크는 유·무선 구분 없이 <strong>필요한 총 개수</strong>만 적고, <strong>마이크 스탠드</strong>(체크 시 개수 입력) 및 <strong>천장 E/L 마이크 사용</strong> 여부를 체크해 주세요.</li>
-            <li>사용하는 악기와 <strong>BGM·영상 재생 요청</strong> 여부를 선택해 주세요.</li>
-            <li>연극 대본처럼 별도로 작성된 부서 자체 큐시트가 있다면 <strong>자체 부서 큐시트 파일 업로드</strong>에 바로 첨부할 수 있습니다.</li>
-            <li>영상·음원·문서·자막 파일은 <strong>최대 500MB 이하</strong>까지 Backblaze B2로 업로드됩니다.</li>
-            <li>자막은 <strong>.txt 파일 여러 개</strong>를 한 번에 올리거나 아래 입력란에 <strong>직접 입력 / Ctrl+V 붙여넣기</strong>할 수 있으며, 어려울 경우 <strong>[미디어팀 자막 도움요청]</strong> 버튼을 눌러 주세요.</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <h3 class="card-title">
-            <span>부서 기본 정보 및 음향·악기·재생 요청</span>
-            <span class="pill pill-blue" id="deptNameBadge"></span>
-          </h3>
-
-          <div class="grid-2">
-            <div class="form-group">
-              <label for="deptContact">담당자 이름 / 연락처</label>
-              <input type="text" id="deptContact" placeholder="예: 홍길동 집사 (010-0000-0000)" />
-            </div>
-            <div class="form-group">
-              <label for="deptMicCount">필요 마이크 수량 (개)</label>
-              <input type="number" id="deptMicCount" min="0" max="50" value="0" />
-              <div class="helper-text">유·무선 구분 없이 현장에서 필요한 마이크 총 개수를 입력하세요.</div>
-
-              <div class="mic-options-box">
-                <div>
-                  <label class="check-inline" for="chkReqMicStand">
-                    <input type="checkbox" id="chkReqMicStand" />
-                    <span>마이크 스탠드 요청</span>
-                  </label>
-                  <div class="stand-count-wrap hidden" id="micStandCountWrap">
-                    <label for="deptMicStandCount" style="margin:0; font-size:0.84rem;">스탠드 수량:</label>
-                    <input type="number" id="deptMicStandCount" min="0" max="50" value="1" />
-                    <span class="helper-text" style="margin:0;">개</span>
-                  </div>
-                </div>
-
-                <label class="check-inline" for="chkCeilingMic">
-                  <input type="checkbox" id="chkCeilingMic" />
-                  <span>천장 E/L 마이크 사용</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>사용 악기 선택</label>
-            <div class="instrument-grid" id="instrumentSelector"></div>
-          </div>
-
-          <div class="form-group">
-            <label>미디어 재생 요청 (해당 시 선택)</label>
-            <div class="media-req-grid" id="mediaRequestSelector">
-              <button type="button" class="inst-chip media-chip" id="btnReqBgm">BGM 재생 요청</button>
-              <button type="button" class="inst-chip media-chip" id="btnReqVideo">영상 재생 요청</button>
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0;">
-            <label for="deptGeneralNote">기타 요청사항 / 진행 메모</label>
-            <textarea id="deptGeneralNote" placeholder="예: 조명 어둡게 부탁드립니다, 10분 전 리허설 희망 등"></textarea>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3 class="card-title">
-            <span>부서 큐시트 및 자료 업로드</span>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              <button type="button" class="btn btn-outline btn-sm" id="fillDeptSampleBtn">예시 데이터 넣어보기</button>
-              <button type="button" class="btn btn-primary btn-sm" id="addCueBtn">+ 큐시트 순서 추가</button>
-            </div>
-          </h3>
-
-          <div id="deptUploadProgress" class="upload-progress-box hidden"></div>
-
-          <!-- 자체 부서 큐시트 파일 업로드 영역 -->
-          <div class="custom-sheet-box">
-            <label for="deptCustomCueFile" style="margin-bottom:4px; color:#1e3a8a;">
-              자체 부서 큐시트 파일 업로드 (연극 대본, 세부 진행표 등 별도 문서가 있는 경우 · 최대 500MB)
-            </label>
-            <div class="helper-text" style="margin-bottom:8px;">
-              한글(.hwp/.hwpx), 워드(.doc/.docx), PDF, 엑셀(.xlsx), 텍스트(.txt) 등 부서에서 작성한 전체 큐시트·대본 파일을 올려주세요.
-            </div>
-            <input type="file" id="deptCustomCueFile" accept=".pdf,.hwp,.hwpx,.doc,.docx,.xlsx,.xls,.txt,application/pdf,text/plain" multiple />
-            <div id="customCueFileList"></div>
-          </div>
-
-          <div id="cueListContainer"></div>
-
-          <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; justify-content:space-between; align-items:center;">
-            <button type="button" class="btn btn-success" id="saveDeptBtn">제출 저장</button>
-            <span class="helper-text" id="lastSavedText"></span>
-          </div>
-        </div>
-      </section>
-
-      <!-- 2. 관리자 통합 현황 및 내보내기 탭 -->
-      <section id="adminOverviewTab" class="hidden">
-        <div class="card">
-          <h3 class="card-title">
-            <span>전체 부서 종합 큐시트 현황</span>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              <button type="button" class="btn btn-outline btn-sm" id="fillAdminSampleBtn">예시 데이터 넣어보기</button>
-              <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">전체 큐시트 엑셀(.xlsx) 내보내기</button>
-              <button type="button" class="btn btn-primary btn-sm" id="exportZipBtn">부서별 폴더 ZIP 내보내기</button>
-            </div>
-          </h3>
-          <div id="adminSummaryBadges" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;"></div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>순번</th>
-                  <th>부서</th>
-                  <th>순서명 / 주제</th>
-                  <th>시간</th>
-                  <th>마이크 / 스탠드 / E/L</th>
-                  <th>악기 / 재생요청</th>
-                  <th>자막 상태</th>
-                  <th>첨부 자료 개별 다운로드</th>
-                  <th>비고</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="masterCueTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3 class="card-title">부서별 마이크 · 스탠드 · 천장 E/L · 악기 · 재생요청 · 자체큐시트 요약</h3>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>부서</th>
-                  <th>담당자</th>
-                  <th>필요 마이크</th>
-                  <th>마이크 스탠드</th>
-                  <th>천장 E/L 마이크</th>
-                  <th>사용 악기</th>
-                  <th>재생 요청</th>
-                  <th>자체 부서 큐시트</th>
-                  <th>자막 도움 요청</th>
-                  <th>기타 메모</th>
-                  <th>부서 큐시트 관리</th>
-                </tr>
-              </thead>
-              <tbody id="deptSummaryTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Backblaze B2 업로드 파일 목록 카드 -->
-        <div class="card">
-          <h3 class="card-title">
-            <span>Backblaze B2 업로드 파일 목록 (영상 · 음원 · 자막 · 자체큐시트)</span>
-            <span class="helper-text" style="margin:0;" id="b2StatusText"></span>
-          </h3>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>부서</th>
-                  <th>구분</th>
-                  <th>파일명</th>
-                  <th>용량</th>
-                  <th>개별 다운로드</th>
-                </tr>
-              </thead>
-              <tbody id="b2FilesTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- 3. 관리자 행사 설정 / 계정 관리 / 초기화 탭 -->
-      <section id="adminManageTab" class="hidden">
-        <div class="card">
-          <h3 class="card-title">현재 행사명 설정</h3>
-          <form id="eventSettingsForm">
-            <div class="grid-2">
-              <div class="form-group">
-                <label for="cfgEventName">행사명 (로그인 후 메인에 크게 표시됨)</label>
-                <input type="text" id="cfgEventName" placeholder="예: 2026 성탄전야 발표회" required />
-              </div>
-              <div class="form-group">
-                <label for="cfgEventDate">행사 일시 / 장소</label>
-                <input type="text" id="cfgEventDate" placeholder="예: 2026.12.24(목) 19:30 / 본당" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="cfgEventNotice">공지사항 (부서 안내에 함께 표시)</label>
-              <input type="text" id="cfgEventNotice" placeholder="예: 음원·영상 및 TXT 자막은 행사 3일 전까지 업로드해 주세요." />
-            </div>
-            <button type="submit" class="btn btn-primary">행사명 저장</button>
-          </form>
-        </div>
-
-        <div class="card">
-          <h3 class="card-title">부서별 로그인 계정 관리</h3>
-          <form id="addAccountForm" class="grid-3" style="margin-bottom:16px; align-items:end;">
-            <div class="form-group" style="margin-bottom:0;">
-              <label for="newAccDept">부서명</label>
-              <input type="text" id="newAccDept" placeholder="예: 유아부" required />
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label for="newAccId">로그인 아이디</label>
-              <input type="text" id="newAccId" placeholder="예: infant" required />
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label for="newAccPw">비밀번호</label>
-              <div style="display:flex; gap:8px;">
-                <input type="text" id="newAccPw" placeholder="예: 1111" required />
-                <button type="submit" class="btn btn-primary" style="white-space:nowrap;">추가</button>
-              </div>
-            </div>
-          </form>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>부서명</th>
-                  <th>아이디</th>
-                  <th>비밀번호</th>
-                  <th>역할</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="accountTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card" style="border-color:#fecaca; background:#fffafa;">
-          <h3 class="card-title" style="color:var(--danger);">행사 종료 및 전체 초기화</h3>
-          <p class="helper-text" style="margin-bottom:12px;">
-            행사가 끝난 뒤 버튼을 누르면 <strong>행사명, 모든 부서의 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청, 업로드된 파일 데이터가 모두 초기화</strong>됩니다. (부서 계정 목록은 유지됩니다.)
-          </p>
-          <button type="button" class="btn btn-danger" id="resetEventBtn">행사 삭제 및 전체 초기화</button>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const B2_CONFIG = {
-      signerBaseUrl: "https://lingering-bread-b3e6.winnee.workers.dev",
-      bucketName: "gumimc-media-files",
-      region: "us-east-005"
-    };
-
-    const MAX_FILE_BYTES = 500 * 1024 * 1024;
-    const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
-    const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v4";
-    const IDB_NAME = "gm_media_guide_files_b2_v4";
-    const IDB_STORE = "files";
-
-    function deepClone(obj) {
-      return JSON.parse(JSON.stringify(obj));
-    }
-
-    const DEFAULT_STATE = {
-      sessionUserId: null,
-      eventInfo: {
-        name: "2026 성탄전야 발표회",
-        date: "2026.12.24(목) 19:30 / 본당",
-        notice: "음원·영상 및 TXT 자막은 행사 3일 전까지 업로드해 주세요."
+const ALLOWED_ORIGIN = "https://gumimc.github.io";
+
+function corsHeaders(extra = {}) {
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Object-Key, X-File-Name",
+    ...extra,
+  };
+}
+
+function resolveB2Config(env) {
+  const keyId = (env.B2_KEY_ID || env.KEY_ID || "").trim();
+  const appKey = (
+    env.B2_APPLICATION_KEY ||
+    env.B2_APP_KEY ||
+    env.APPLICATION_KEY ||
+    ""
+  ).trim();
+  const bucketName = (
+    env.B2_BUCKET_NAME ||
+    env.B2_BUCKET ||
+    "gumimc-media-files"
+  ).trim();
+
+  if (!keyId || !appKey) {
+    throw new Error("Worker 환경변수 B2_KEY_ID 또는 B2_APPLICATION_KEY가 없습니다.");
+  }
+  return { keyId, appKey, bucketName };
+}
+
+async function authorizeB2Account(keyId, appKey) {
+  const basicAuth = btoa(`${keyId}:${appKey}`);
+  const res = await fetch("https://api.backblazeb2.com/b2api/v2/b2_authorize_account", {
+    method: "GET",
+    headers: { Authorization: `Basic ${basicAuth}` },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.authorizationToken) {
+    throw new Error(`B2 인증 실패: ${data.message || res.status}`);
+  }
+  return data;
+}
+
+async function getBucketId(authData, bucketName) {
+  const res = await fetch(`${authData.apiUrl}/b2api/v2/b2_list_buckets`, {
+    method: "POST",
+    headers: {
+      Authorization: authData.authorizationToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      accountId: authData.accountId,
+      bucketName,
+    }),
+  });
+  const data = await res.json();
+  const bucket = (data.buckets || []).find((b) => b.bucketName === bucketName);
+  if (!res.ok || !bucket) {
+    throw new Error(`버킷(${bucketName})을 찾을 수 없습니다.`);
+  }
+  return bucket.bucketId;
+}
+
+async function sha1Hex(arrayBuffer) {
+  const hash = await crypto.subtle.digest("SHA-1", arrayBuffer);
+  return [...new Uint8Array(hash)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function encodeB2FileName(objectKey) {
+  return objectKey
+    .split("/")
+    .filter(Boolean)
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+}
+
+async function handleListFiles(env) {
+  const { keyId, appKey, bucketName } = resolveB2Config(env);
+  const authData = await authorizeB2Account(keyId, appKey);
+  const bucketId = await getBucketId(authData, bucketName);
+
+  const files = [];
+  let startFileName = null;
+
+  while (true) {
+    const body = { bucketId, maxFileCount: 1000 };
+    if (startFileName) body.startFileName = startFileName;
+
+    const res = await fetch(`${authData.apiUrl}/b2api/v2/b2_list_file_names`, {
+      method: "POST",
+      headers: {
+        Authorization: authData.authorizationToken,
+        "Content-Type": "application/json",
       },
-      accounts: [
-        { id: "admin", pw: "1234", deptName: "미디어팀(관리자)", role: "admin" },
-        { id: "youth", pw: "1111", deptName: "청년부", role: "dept" },
-        { id: "teen", pw: "1111", deptName: "중고등부", role: "dept" },
-        { id: "elem", pw: "1111", deptName: "초등부", role: "dept" },
-        { id: "praise", pw: "1111", deptName: "찬양팀", role: "dept" }
-      ],
-      deptSubmissions: {}
-    };
-
-    function loadState() {
-      const fallback = deepClone(DEFAULT_STATE);
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== "object") return fallback;
-
-        const validAccounts = Array.isArray(parsed.accounts) && parsed.accounts.length
-          ? parsed.accounts.filter((a) => a && a.id && a.pw && a.deptName && a.role)
-          : fallback.accounts;
-
-        return {
-          sessionUserId: parsed.sessionUserId || null,
-          eventInfo: {
-            ...fallback.eventInfo,
-            ...(parsed.eventInfo && typeof parsed.eventInfo === "object" ? parsed.eventInfo : {})
-          },
-          accounts: validAccounts.length ? validAccounts : fallback.accounts,
-          deptSubmissions: parsed.deptSubmissions && typeof parsed.deptSubmissions === "object" ? parsed.deptSubmissions : {}
-        };
-      } catch {
-        return fallback;
-      }
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(`B2 파일 목록 조회 실패: ${data.message || res.status}`);
     }
 
-    let state = loadState();
-    let activeTab = null;
-    let fileCache = {};
-    let downloadableFileRegistry = {};
+    for (const f of data.files || []) {
+      const parts = String(f.fileName || "").split("/");
+      const deptName = parts[1] || "기타";
+      const kind = parts[2] || "file";
+      const rawName = parts.slice(3).join("/") || f.fileName;
+      const cleanName = rawName.replace(/^f_\d+_[a-z0-9]+_/i, "");
 
-    function buildWorkerDownloadUrl(objectKey, fileName = "") {
-      if (!objectKey || !B2_CONFIG.signerBaseUrl) return "";
-      const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
-      const params = new URLSearchParams({ objectKey });
-      if (fileName) params.set("fileName", fileName);
-      return `${base}?${params.toString()}`;
-    }
-
-    function registerDownloadableFile(meta, fallbackText = "") {
-      if (!meta || !meta.name) return "";
-      const id = "dl_" + Math.random().toString(36).slice(2, 10);
-      downloadableFileRegistry[id] = {
-        key: meta.key || "",
-        name: meta.name,
-        b2Key: meta.b2Key || "",
-        url: meta.publicUrl || buildWorkerDownloadUrl(meta.b2Key, meta.name),
-        fallbackText
-      };
-      return id;
-    }
-
-    async function triggerSingleFileDownload(dlId) {
-      const item = downloadableFileRegistry[dlId];
-      if (!item) {
-        showToast("다운로드할 파일 정보를 찾을 수 없습니다.");
-        return;
-      }
-
-      try {
-        if (item.key) {
-          const rec = await getFileRecord(item.key);
-          if (rec && rec.dataUrl) {
-            const bytes = dataUrlToUint8Array(rec.dataUrl);
-            const blob = new Blob([bytes], { type: rec.type || "application/octet-stream" });
-            saveBlobAsFile(blob, item.name);
-            showToast(`'${item.name}' 다운로드 시작`);
-            return;
-          }
-        }
-
-        if (item.fallbackText) {
-          const blob = new Blob(["\uFEFF" + item.fallbackText], { type: "text/plain;charset=utf-8" });
-          saveBlobAsFile(blob, item.name);
-          showToast(`'${item.name}' 다운로드 시작`);
-          return;
-        }
-
-        const dlUrl = item.b2Key ? buildWorkerDownloadUrl(item.b2Key, item.name) : item.url;
-        if (dlUrl) {
-          showToast(`'${item.name}' 다운로드 중...`);
-          const res = await fetch(dlUrl);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const blob = await res.blob();
-          saveBlobAsFile(blob, item.name);
-          showToast(`'${item.name}' 다운로드 완료`);
-          return;
-        }
-
-        showToast("다운로드 가능한 파일 경로가 없습니다.");
-      } catch (err) {
-        alert(`파일 다운로드에 실패했습니다.\n사유: ${err.message}`);
-      }
-    }
-
-    function saveBlobAsFile(blob, fileName) {
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = fileName || "download";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
-    }
-
-    function isB2Configured() {
-      return Boolean(B2_CONFIG.signerBaseUrl && B2_CONFIG.bucketName);
-    }
-
-    function setUploadProgressText(text) {
-      const box = document.getElementById("deptUploadProgress");
-      if (!box) return;
-      if (!text) {
-        box.classList.add("hidden");
-        box.textContent = "";
-      } else {
-        box.classList.remove("hidden");
-        box.textContent = text;
-      }
-    }
-
-    function showToast(msg) {
-      const el = document.createElement("div");
-      el.className = "toast";
-      el.textContent = msg;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 2600);
-    }
-
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
-        console.warn("localStorage save failed:", e);
-      }
-    }
-
-    function openDB() {
-      return new Promise((resolve, reject) => {
-        if (!window.indexedDB) {
-          reject(new Error("IndexedDB not supported"));
-          return;
-        }
-        const req = indexedDB.open(IDB_NAME, 1);
-        req.onupgradeneeded = () => {
-          const db = req.result;
-          if (!db.objectStoreNames.contains(IDB_STORE)) {
-            db.createObjectStore(IDB_STORE, { keyPath: "key" });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
-
-    async function putFileRecord(record) {
-      fileCache[record.key] = record;
-      try {
-        const db = await openDB();
-        const tx = db.transaction(IDB_STORE, "readwrite");
-        tx.objectStore(IDB_STORE).put(record);
-      } catch (e) {
-        console.warn("IndexedDB save fallback:", e);
-      }
-    }
-
-    async function getFileRecord(key) {
-      if (fileCache[key]) return fileCache[key];
-      try {
-        const db = await openDB();
-        return await new Promise((resolve) => {
-          const tx = db.transaction(IDB_STORE, "readonly");
-          const req = tx.objectStore(IDB_STORE).get(key);
-          req.onsuccess = () => {
-            if (req.result) fileCache[key] = req.result;
-            resolve(req.result || null);
-          };
-          req.onerror = () => resolve(null);
-        });
-      } catch {
-        return null;
-      }
-    }
-
-    async function deleteFileRecords(keys) {
-      const uniqueKeys = [...new Set((keys || []).filter(Boolean))];
-      if (!uniqueKeys.length) return;
-      uniqueKeys.forEach((k) => { delete fileCache[k]; });
-      try {
-        const db = await openDB();
-        const tx = db.transaction(IDB_STORE, "readwrite");
-        const store = tx.objectStore(IDB_STORE);
-        uniqueKeys.forEach((k) => store.delete(k));
-      } catch (e) {
-        console.warn("IndexedDB delete fallback:", e);
-      }
-    }
-
-    async function clearAllFileRecords() {
-      fileCache = {};
-      try {
-        const db = await openDB();
-        const tx = db.transaction(IDB_STORE, "readwrite");
-        tx.objectStore(IDB_STORE).clear();
-      } catch {}
-    }
-
-    function formatFileSize(bytes) {
-      const n = Number(bytes || 0);
-      if (!n) return "-";
-      if (n < 1024) return `${n} B`;
-      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-      return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-    }
-
-    function sendFileViaWorker(endpointUrl, file, onProgress) {
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", endpointUrl, true);
-        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable && onProgress) {
-            onProgress(Math.round((e.loaded / e.total) * 100));
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              resolve(JSON.parse(xhr.responseText || "{}"));
-            } catch {
-              resolve({});
-            }
-          } else {
-            let errMsg = `HTTP ${xhr.status}`;
-            try {
-              const j = JSON.parse(xhr.responseText || "{}");
-              if (j.error) errMsg = j.error;
-            } catch {}
-            reject(new Error(errMsg));
-          }
-        };
-        xhr.onerror = () => reject(new Error("네트워크 오류로 업로드에 실패했습니다."));
-        xhr.send(file);
-      });
-    }
-
-    async function uploadFileToB2(file, kind, deptName, key) {
-      const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
-      const safeDept = sanitizeName(deptName);
-      const safeFile = sanitizeName(file.name);
-      const objectKey = `event_files/${safeDept}/${kind}/${key}_${safeFile}`;
-      const uploadEndpoint = `${base}?objectKey=${encodeURIComponent(objectKey)}`;
-
-      setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) 업로드 중... 0%`);
-      const result = await sendFileViaWorker(uploadEndpoint, file, (pct) => {
-        setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) 업로드 중... ${pct}%`);
-      });
-      setUploadProgressText("");
-
-      return {
-        b2Key: objectKey,
-        publicUrl: result.downloadUrl || buildWorkerDownloadUrl(objectKey, file.name)
-      };
-    }
-
-    async function processAndStoreUploadedFile(file, kind, deptName = "부서") {
-      if ((file.size || 0) > MAX_FILE_BYTES) {
-        alert(`'${file.name}' 파일이 최대 허용 용량(500MB)을 초과합니다.`);
-        return null;
-      }
-
-      const key = "f_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      let b2Result = null;
-
-      if (isB2Configured()) {
-        try {
-          b2Result = await uploadFileToB2(file, kind, deptName, key);
-          showToast(`'${file.name}' Backblaze B2 업로드 완료`);
-        } catch (err) {
-          setUploadProgressText("");
-          console.warn("B2 upload failed:", err);
-          alert(`Backblaze B2 업로드에 실패했습니다.\n사유: ${err.message}`);
-        }
-      }
-
-      let savedLocal = false;
-      if ((file.size || 0) <= LOCAL_CACHE_MAX_BYTES) {
-        try {
-          const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(reader.error);
-            reader.readAsDataURL(file);
-          });
-          await putFileRecord({
-            key,
-            name: file.name,
-            type: file.type || "application/octet-stream",
-            size: file.size,
-            dataUrl,
-            kind
-          });
-          savedLocal = true;
-        } catch (e) {
-          console.warn("Local cache skip:", e);
-        }
-      }
-
-      return {
-        key,
-        name: file.name,
-        type: file.type || "application/octet-stream",
-        size: file.size,
-        savedLocal,
-        b2Key: b2Result?.b2Key || "",
-        publicUrl: b2Result?.publicUrl || ""
-      };
-    }
-
-    function getCurrentUser() {
-      if (!state.sessionUserId) return null;
-      return state.accounts.find((a) => a.id === state.sessionUserId) || null;
-    }
-
-    function ensureDeptSubmission(deptId, deptName) {
-      if (!state.deptSubmissions[deptId]) {
-        state.deptSubmissions[deptId] = {
-          deptId,
-          deptName,
-          contact: "",
-          micCount: 0,
-          requestMicStand: false,
-          micStandCount: 0,
-          useCeilingMic: false,
-          instruments: [],
-          requestBgm: false,
-          requestVideo: false,
-          customCueFiles: [],
-          generalNote: "",
-          updatedAt: "",
-          cues: [createEmptyCue()]
-        };
-      } else {
-        const sub = state.deptSubmissions[deptId];
-        sub.deptName = deptName;
-        if (typeof sub.requestMicStand !== "boolean") sub.requestMicStand = false;
-        if (typeof sub.micStandCount !== "number") sub.micStandCount = Number(sub.micStandCount || 0);
-        if (typeof sub.useCeilingMic !== "boolean") sub.useCeilingMic = false;
-        if (!Array.isArray(sub.instruments)) sub.instruments = [];
-        if (typeof sub.requestBgm !== "boolean") sub.requestBgm = false;
-        if (typeof sub.requestVideo !== "boolean") sub.requestVideo = false;
-        if (!Array.isArray(sub.customCueFiles)) sub.customCueFiles = [];
-        if (!Array.isArray(sub.cues) || !sub.cues.length) sub.cues = [createEmptyCue()];
-        sub.cues.forEach((c) => {
-          if (!Array.isArray(c.subtitleFiles)) {
-            c.subtitleFiles = (c.subtitleFileKey && c.subtitleFileName)
-              ? [{ key: c.subtitleFileKey, name: c.subtitleFileName }]
-              : [];
-          }
-          if (!Array.isArray(c.mediaFiles)) c.mediaFiles = [];
-        });
-      }
-      return state.deptSubmissions[deptId];
-    }
-
-    function createEmptyCue() {
-      return {
-        id: "cue_" + Math.random().toString(36).slice(2, 9),
-        title: "",
-        topic: "",
-        duration: "",
-        note: "",
-        subtitleHelp: false,
-        subtitleText: "",
-        subtitleFiles: [],
-        mediaFiles: []
-      };
-    }
-
-    function sanitizeName(str) {
-      return (str || "항목").trim().replace(/[\\/:*?"<>|]+/g, "_").slice(0, 40) || "항목";
-    }
-
-    function dataUrlToUint8Array(dataUrl) {
-      const base64 = dataUrl.split(",")[1] || "";
-      const binary = atob(base64);
-      const len = binary.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-      return bytes;
-    }
-
-    function textToDataUrl(text, mimeType = "text/plain;charset=utf-8") {
-      const bytes = new TextEncoder().encode("\uFEFF" + text);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      return `data:${mimeType};base64,${btoa(binary)}`;
-    }
-
-    async function createSampleSubtitleFileRecord(fileName, content) {
-      const key = "sample_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-      const rec = {
-        key,
-        name: fileName,
-        type: "text/plain",
-        size: new Blob([content]).size,
-        dataUrl: textToDataUrl(content),
-        kind: "subtitle"
-      };
-      await putFileRecord(rec);
-      return { key: rec.key, name: rec.name, type: rec.type, size: rec.size, savedLocal: true };
-    }
-
-    async function buildSampleSubmissionForDept(deptId, deptName) {
-      const nowStr = new Date().toLocaleString("ko-KR");
-      if (deptId === "youth") {
-        const sub1 = await createSampleSubtitleFileRecord(
-          "청년부_오프닝_자막.txt",
-          "[1절]\n어두운 밤하늘에 밝은 빛 비추네\n기쁨의 소식 온 땅에 울려 퍼지네"
-        );
-        return {
-          deptId,
-          deptName,
-          contact: "김청년 리더 (010-2345-6789)",
-          micCount: 4,
-          requestMicStand: true,
-          micStandCount: 3,
-          useCeilingMic: false,
-          instruments: ["어쿠스틱피아노", "신디", "드럼", "베이스기타"],
-          requestBgm: true,
-          requestVideo: false,
-          customCueFiles: [],
-          generalNote: "30분 전 밴드 라인체크 희망",
-          updatedAt: nowStr,
-          cues: [
-            {
-              id: "sample_youth_1",
-              title: "오프닝 찬양",
-              topic: "기쁨의 빛",
-              duration: "약 5분",
-              note: "인트로 BGM 재생 후 밴드 인",
-              subtitleHelp: false,
-              subtitleText: "[청년부_오프닝_자막.txt]\n[1절]\n어두운 밤하늘에 밝은 빛 비추네\n기쁨의 소식 온 땅에 울려 퍼지네",
-              subtitleFiles: [sub1],
-              mediaFiles: []
-            }
-          ]
-        };
-      }
-      const defaultSub = await createSampleSubtitleFileRecord(
-        `${sanitizeName(deptName)}_예시_자막.txt`,
-        `${deptName} 예시 자막입니다.\n실제 행사 순서에 맞게 수정해 주세요.`
-      );
-      return {
-        deptId,
+      files.push({
+        objectKey: f.fileName,
         deptName,
-        contact: "홍길동 집사 (010-0000-0000)",
-        micCount: 2,
-        requestMicStand: true,
-        micStandCount: 1,
-        useCeilingMic: false,
-        instruments: ["어쿠스틱피아노"],
-        requestBgm: true,
-        requestVideo: false,
-        customCueFiles: [],
-        generalNote: "예시 데이터입니다.",
-        updatedAt: nowStr,
-        cues: [
-          {
-            id: "sample_generic_1",
-            title: `${deptName} 특별 순서`,
-            topic: "성탄의 기쁨",
-            duration: "약 5분",
-            note: "예시 메모",
-            subtitleHelp: false,
-            subtitleText: `[${sanitizeName(deptName)}_예시_자막.txt]\n${deptName} 예시 자막입니다.`,
-            subtitleFiles: [defaultSub],
-            mediaFiles: []
-          }
-        ]
-      };
+        kind,
+        fileName: cleanName || rawName,
+        size: Number(f.contentLength || 0),
+        uploadTimestamp: Number(f.uploadTimestamp || 0),
+      });
     }
 
-    async function fillDeptSampleData(user) {
-      const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
-      if (!ok) return;
-      state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName);
-      saveState();
-      renderDeptView(user);
-      showToast(`${user.deptName} 예시 데이터가 입력되었습니다.`);
+    if (!data.nextFileName) break;
+    startFileName = data.nextFileName;
+  }
+
+  return new Response(JSON.stringify({ ok: true, files }), {
+    status: 200,
+    headers: corsHeaders({ "Content-Type": "application/json" }),
+  });
+}
+
+async function handleUpload(request, env, url) {
+  const { keyId, appKey, bucketName } = resolveB2Config(env);
+  const rawKey =
+    url.searchParams.get("objectKey") ||
+    request.headers.get("X-Object-Key") ||
+    "";
+  const objectKey = decodeURIComponent(rawKey).trim();
+
+  if (!objectKey) {
+    return new Response(JSON.stringify({ error: "objectKey가 필요합니다." }), {
+      status: 400,
+      headers: corsHeaders({ "Content-Type": "application/json" }),
+    });
+  }
+
+  const fileBuffer = await request.arrayBuffer();
+  const sha1 = await sha1Hex(fileBuffer);
+  const contentType = request.headers.get("Content-Type") || "b2/x-auto";
+
+  const authData = await authorizeB2Account(keyId, appKey);
+  const bucketId = await getBucketId(authData, bucketName);
+
+  const upUrlRes = await fetch(`${authData.apiUrl}/b2api/v2/b2_get_upload_url`, {
+    method: "POST",
+    headers: {
+      Authorization: authData.authorizationToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ bucketId }),
+  });
+  const upUrlData = await upUrlRes.json();
+  if (!upUrlRes.ok || !upUrlData.uploadUrl) {
+    throw new Error(`B2 uploadUrl 발급 실패: ${upUrlData.message || upUrlRes.status}`);
+  }
+
+  const uploadRes = await fetch(upUrlData.uploadUrl, {
+    method: "POST",
+    headers: {
+      Authorization: upUrlData.authorizationToken,
+      "X-Bz-File-Name": encodeB2FileName(objectKey),
+      "Content-Type": contentType,
+      "Content-Length": String(fileBuffer.byteLength),
+      "X-Bz-Content-Sha1": sha1,
+    },
+    body: fileBuffer,
+  });
+  const uploadJson = await uploadRes.json().catch(() => ({}));
+  if (!uploadRes.ok) {
+    throw new Error(`B2 파일 업로드 실패: ${uploadJson.message || uploadRes.status}`);
+  }
+
+  const downloadUrl = `${url.origin}${url.pathname}?objectKey=${encodeURIComponent(objectKey)}`;
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      objectKey,
+      fileId: uploadJson.fileId || "",
+      downloadUrl,
+    }),
+    {
+      status: 200,
+      headers: corsHeaders({ "Content-Type": "application/json" }),
+    }
+  );
+}
+
+async function handleDownload(request, env, url) {
+  const { keyId, appKey, bucketName } = resolveB2Config(env);
+  const objectKey = (url.searchParams.get("objectKey") || "").trim();
+  const fileName = (url.searchParams.get("fileName") || "").trim();
+
+  if (!objectKey) {
+    return new Response(JSON.stringify({ error: "objectKey가 필요합니다." }), {
+      status: 400,
+      headers: corsHeaders({ "Content-Type": "application/json" }),
+    });
+  }
+
+  const authData = await authorizeB2Account(keyId, appKey);
+  const dlUrl = `${authData.downloadUrl}/file/${encodeURIComponent(bucketName)}/${encodeB2FileName(objectKey)}`;
+
+  const b2Res = await fetch(dlUrl, {
+    method: "GET",
+    headers: {
+      Authorization: authData.authorizationToken,
+    },
+  });
+
+  if (!b2Res.ok) {
+    const errText = await b2Res.text().catch(() => "");
+    return new Response(errText || `다운로드 실패 (${b2Res.status})`, {
+      status: b2Res.status,
+      headers: corsHeaders({ "Content-Type": "text/plain; charset=utf-8" }),
+    });
+  }
+
+  const headers = corsHeaders({
+    "Content-Type": b2Res.headers.get("Content-Type") || "application/octet-stream",
+  });
+  if (fileName) {
+    const safeAscii = fileName.replace(/[^\x20-\x7E]/g, "_");
+    headers["Content-Disposition"] = `attachment; filename="${safeAscii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+  }
+
+  return new Response(b2Res.body, {
+    status: 200,
+    headers,
+  });
+}
+
+export default {
+  async fetch(request, env) {
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders() });
     }
 
-    async function fillAdminSampleData() {
-      const ok = confirm("청년부·초등부·중고등부·찬양팀의 가이드용 예시 데이터를 채우시겠습니까?");
-      if (!ok) return;
-      for (const id of ["youth", "elem", "teen", "praise"]) {
-        const acc = state.accounts.find((a) => a.id === id);
-        if (acc) {
-          state.deptSubmissions[id] = await buildSampleSubmissionForDept(acc.id, acc.deptName);
+    const url = new URL(request.url);
+
+    try {
+      if (request.method === "POST") {
+        return await handleUpload(request, env, url);
+      }
+      if (request.method === "GET") {
+        if (url.searchParams.get("action") === "list") {
+          return await handleListFiles(env);
         }
+        return await handleDownload(request, env, url);
       }
-      saveState();
-      renderAdminOverview();
-      showToast("예시 데이터가 입력되었습니다.");
-    }
-
-    function escapeHtml(str) {
-      return String(str || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    function formatStandText(sub) {
-      if (!sub.requestMicStand) return "미요청";
-      const cnt = Math.max(0, Number(sub.micStandCount || 0));
-      return cnt > 0 ? `요청 (${cnt}개)` : "요청";
-    }
-
-    function formatCeilingMicText(sub) {
-      return sub.useCeilingMic ? "사용" : "미사용";
-    }
-
-    function formatMediaReqText(sub) {
-      const list = [];
-      if (sub.requestBgm) list.push("BGM 재생");
-      if (sub.requestVideo) list.push("영상 재생");
-      return list.length ? list.join(", ") : "-";
-    }
-
-    async function deleteDeptSubmission(deptId) {
-      const sub = state.deptSubmissions[deptId];
-      if (!sub) return;
-      const deptLabel = sub.deptName || deptId;
-      const ok = confirm(`'${deptLabel}' 부서의 제출 큐시트 및 첨부 파일 내역을 삭제하시겠습니까?`);
-      if (!ok) return;
-
-      const fileKeys = [];
-      (sub.customCueFiles || []).forEach((cf) => { if (cf?.key) fileKeys.push(cf.key); });
-      (sub.cues || []).forEach((cue) => {
-        if (cue.subtitleFileKey) fileKeys.push(cue.subtitleFileKey);
-        (cue.subtitleFiles || []).forEach((sf) => { if (sf?.key) fileKeys.push(sf.key); });
-        (cue.mediaFiles || []).forEach((mf) => { if (mf?.key) fileKeys.push(mf.key); });
+      return new Response(JSON.stringify({ error: "지원하지 않는 메서드" }), {
+        status: 405,
+        headers: corsHeaders({ "Content-Type": "application/json" }),
       });
-
-      delete state.deptSubmissions[deptId];
-      saveState();
-      await deleteFileRecords(fileKeys);
-      renderAdminOverview();
-      showToast(`'${deptLabel}' 부서 큐시트가 삭제되었습니다.`);
-    }
-
-    function collectAllB2Files() {
-      const items = [];
-      Object.values(state.deptSubmissions || {}).forEach((sub) => {
-        (sub.customCueFiles || []).forEach((cf) => {
-          items.push({
-            deptName: sub.deptName,
-            category: "자체 큐시트",
-            key: cf.key || "",
-            name: cf.name,
-            size: cf.size || 0,
-            b2Key: cf.b2Key || "",
-            publicUrl: cf.publicUrl || buildWorkerDownloadUrl(cf.b2Key, cf.name)
-          });
-        });
-        (sub.cues || []).forEach((cue, idx) => {
-          const orderLabel = cue.title ? `순서 ${idx + 1} (${cue.title})` : `순서 ${idx + 1}`;
-          (cue.mediaFiles || []).forEach((mf) => {
-            items.push({
-              deptName: sub.deptName,
-              category: `${orderLabel} · 영상/음원`,
-              key: mf.key || "",
-              name: mf.name,
-              size: mf.size || 0,
-              b2Key: mf.b2Key || "",
-              publicUrl: mf.publicUrl || buildWorkerDownloadUrl(mf.b2Key, mf.name)
-            });
-          });
-          getCueSubtitleFiles(cue).forEach((sf) => {
-            items.push({
-              deptName: sub.deptName,
-              category: `${orderLabel} · 자막`,
-              key: sf.key || "",
-              name: sf.name,
-              size: sf.size || 0,
-              b2Key: sf.b2Key || "",
-              publicUrl: sf.publicUrl || buildWorkerDownloadUrl(sf.b2Key, sf.name)
-            });
-          });
-        });
-      });
-      return items;
-    }
-
-    function renderB2FilesTable() {
-      const tbody = document.getElementById("b2FilesTableBody");
-      const statusText = document.getElementById("b2StatusText");
-      if (!tbody) return;
-
-      const items = collectAllB2Files();
-      if (statusText) {
-        statusText.textContent = isB2Configured()
-          ? `버킷: ${B2_CONFIG.bucketName} (워커 중계) · 등록 ${items.length}개`
-          : "B2_CONFIG 미설정 (로컬 백업 모드)";
-      }
-
-      if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">등록된 파일이 없습니다.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = items.map((it) => {
-        const dlId = registerDownloadableFile(it);
-        const dlBtn = dlId
-          ? `<button type="button" class="btn btn-primary btn-sm" data-dl-file="${escapeHtml(dlId)}">개별 다운로드</button>`
-          : `<span class="helper-text">파일 없음</span>`;
-        return `
-          <tr>
-            <td class="nowrap-col"><strong>${escapeHtml(it.deptName)}</strong></td>
-            <td>${escapeHtml(it.category)}</td>
-            <td><strong>${escapeHtml(it.name)}</strong></td>
-            <td class="nowrap-col">${escapeHtml(formatFileSize(it.size))}</td>
-            <td class="nowrap-col">${dlBtn}</td>
-          </tr>
-        `;
-      }).join("");
-
-      bindIndividualDownloadButtons();
-    }
-
-    function bindIndividualDownloadButtons() {
-      document.querySelectorAll("[data-dl-file]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          await triggerSingleFileDownload(btn.dataset.dlFile);
-        });
-      });
-    }
-
-    function renderTopbar() {
-      const user = getCurrentUser();
-      const topbarActions = document.getElementById("topbarActions");
-      if (!user) {
-        topbarActions.innerHTML = "";
-        return;
-      }
-
-      const b2Badge = isB2Configured() ? `✓ B2 (${B2_CONFIG.bucketName})` : "B2 미연결";
-      topbarActions.innerHTML = `
-        <span class="user-badge">${escapeHtml(user.deptName)} (${escapeHtml(user.id)})</span>
-        <span class="user-badge">${escapeHtml(b2Badge)}</span>
-        <button type="button" class="btn btn-ghost-light btn-sm" id="logoutBtn">로그아웃</button>
-      `;
-
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        state.sessionUserId = null;
-        activeTab = null;
-        saveState();
-        renderAll();
-      });
-    }
-
-    function renderAll() {
-      const user = getCurrentUser();
-      if (!user) {
-        document.getElementById("loginView").classList.remove("hidden");
-        document.getElementById("appView").classList.add("hidden");
-        renderTopbar();
-        return;
-      }
-
-      document.getElementById("loginView").classList.add("hidden");
-      document.getElementById("appView").classList.remove("hidden");
-      renderTopbar();
-
-      document.getElementById("bannerEventName").textContent = state.eventInfo.name || "행사명 미지정";
-      document.getElementById("bannerEventMeta").innerHTML = `
-        <span><strong>일시/장소:</strong> ${escapeHtml(state.eventInfo.date || "-")}</span>
-        <span><strong>안내:</strong> ${escapeHtml(state.eventInfo.notice || "-")}</span>
-      `;
-
-      const navTabs = document.getElementById("navTabs");
-      if (user.role === "admin") {
-        if (!["adminOverview", "adminManage"].includes(activeTab)) activeTab = "adminOverview";
-        navTabs.innerHTML = `
-          <button type="button" class="tab-btn ${activeTab === "adminOverview" ? "active" : ""}" data-tab="adminOverview">종합 큐시트 현황 · 내보내기</button>
-          <button type="button" class="tab-btn ${activeTab === "adminManage" ? "active" : ""}" data-tab="adminManage">행사명 · 계정 · 초기화</button>
-        `;
-      } else {
-        activeTab = "dept";
-        navTabs.innerHTML = `
-          <button type="button" class="tab-btn active" data-tab="dept">${escapeHtml(user.deptName)} 큐시트 및 자료 제출</button>
-        `;
-      }
-
-      navTabs.querySelectorAll(".tab-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          activeTab = btn.dataset.tab;
-          renderAll();
-        });
-      });
-
-      document.getElementById("deptTab").classList.toggle("hidden", activeTab !== "dept");
-      document.getElementById("adminOverviewTab").classList.toggle("hidden", activeTab !== "adminOverview");
-      document.getElementById("adminManageTab").classList.toggle("hidden", activeTab !== "adminManage");
-
-      if (activeTab === "dept") renderDeptView(user);
-      else if (activeTab === "adminOverview") renderAdminOverview();
-      else if (activeTab === "adminManage") renderAdminManage();
-    }
-
-    function renderDeptView(user) {
-      const sub = ensureDeptSubmission(user.id, user.deptName);
-      document.getElementById("deptNameBadge").textContent = user.deptName;
-      document.getElementById("deptContact").value = sub.contact || "";
-      document.getElementById("deptMicCount").value = sub.micCount ?? 0;
-      document.getElementById("deptGeneralNote").value = sub.generalNote || "";
-      document.getElementById("lastSavedText").textContent = sub.updatedAt ? `최근 저장: ${sub.updatedAt}` : "";
-
-      renderMicOptionsControl(sub);
-      renderInstrumentButtons(sub);
-      renderMediaReqButtons(sub);
-      renderCustomCueFiles(sub);
-      renderCueList(sub);
-    }
-
-    function renderMicOptionsControl(sub) {
-      const chkStand = document.getElementById("chkReqMicStand");
-      const wrap = document.getElementById("micStandCountWrap");
-      const countInput = document.getElementById("deptMicStandCount");
-      const chkCeiling = document.getElementById("chkCeilingMic");
-
-      chkStand.checked = !!sub.requestMicStand;
-      chkCeiling.checked = !!sub.useCeilingMic;
-
-      if (sub.requestMicStand) {
-        wrap.classList.remove("hidden");
-        countInput.value = Math.max(0, Number(sub.micStandCount || 1));
-      } else {
-        wrap.classList.add("hidden");
-      }
-    }
-
-    function renderInstrumentButtons(sub) {
-      const instContainer = document.getElementById("instrumentSelector");
-      instContainer.innerHTML = INSTRUMENTS.map((inst) => {
-        const selected = (sub.instruments || []).includes(inst);
-        const extraClass = inst === "악기 사용안함" ? "none-chip" : "";
-        return `<button type="button" class="inst-chip ${extraClass} ${selected ? "active" : ""}" data-inst="${inst}">${inst}</button>`;
-      }).join("");
-
-      instContainer.querySelectorAll(".inst-chip").forEach((chip) => {
-        chip.addEventListener("click", () => {
-          const inst = chip.dataset.inst;
-          if (inst === "악기 사용안함") {
-            const already = sub.instruments.includes("악기 사용안함");
-            sub.instruments = already ? [] : ["악기 사용안함"];
-          } else {
-            sub.instruments = sub.instruments.filter((x) => x !== "악기 사용안함");
-            const idx = sub.instruments.indexOf(inst);
-            if (idx >= 0) sub.instruments.splice(idx, 1);
-            else sub.instruments.push(inst);
-          }
-          renderInstrumentButtons(sub);
-        });
-      });
-    }
-
-    function renderMediaReqButtons(sub) {
-      const btnBgm = document.getElementById("btnReqBgm");
-      const btnVideo = document.getElementById("btnReqVideo");
-      btnBgm.classList.toggle("active", !!sub.requestBgm);
-      btnVideo.classList.toggle("active", !!sub.requestVideo);
-      btnBgm.textContent = sub.requestBgm ? "✓ BGM 재생 요청됨" : "BGM 재생 요청";
-      btnVideo.textContent = sub.requestVideo ? "✓ 영상 재생 요청됨" : "영상 재생 요청";
-    }
-
-    function renderCustomCueFiles(sub) {
-      const box = document.getElementById("customCueFileList");
-      if (!sub.customCueFiles || !sub.customCueFiles.length) {
-        box.innerHTML = `<div class="helper-text">등록된 자체 부서 큐시트 파일이 없습니다.</div>`;
-        return;
-      }
-      box.innerHTML = `
-        <ul class="file-list" style="margin-top:8px;">
-          ${sub.customCueFiles.map((f, idx) => `
-            <li style="margin-bottom:4px; color:#1e3a8a; font-weight:600;">
-              ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">B2 저장됨</span>' : ''}
-              <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px;" data-del-custom-cue="${idx}">삭제</button>
-            </li>
-          `).join("")}
-        </ul>
-      `;
-
-      box.querySelectorAll("[data-del-custom-cue]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const idx = Number(btn.dataset.delCustomCue);
-          const target = sub.customCueFiles[idx];
-          sub.customCueFiles.splice(idx, 1);
-          saveState();
-          if (target?.key) await deleteFileRecords([target.key]);
-          renderCustomCueFiles(sub);
-        });
-      });
-    }
-
-    function renderCueList(sub) {
-      const container = document.getElementById("cueListContainer");
-      if (!sub.cues || !sub.cues.length) {
-        sub.cues = [createEmptyCue()];
-      }
-
-      container.innerHTML = sub.cues.map((cue, idx) => {
-        const subFiles = Array.isArray(cue.subtitleFiles) ? cue.subtitleFiles : [];
-
-        const mediaHtml = (cue.mediaFiles || []).length
-          ? `<ul class="file-list">${cue.mediaFiles.map((f, fIdx) => `
-              <li>
-                ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">B2 저장됨</span>' : ''}
-                <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px;" data-del-media="${idx}:${fIdx}">삭제</button>
-              </li>
-            `).join("")}</ul>`
-          : `<div class="helper-text">등록된 영상/음원 파일이 없습니다. (최대 500MB)</div>`;
-
-        const txtStatusHtml = subFiles.length
-          ? `<ul class="file-list" style="color:var(--success); font-weight:700;">
-              ${subFiles.map((sf, sIdx) => `
-                <li style="margin-bottom:3px;">
-                  ${escapeHtml(sf.name)}
-                  <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px; font-weight:600;" data-del-txt="${idx}:${sIdx}">삭제</button>
-                </li>
-              `).join("")}
-             </ul>`
-          : `<div class="helper-text">TXT 파일 미등록 (여러 개 선택 가능 · 아래 칸에 직접 붙여넣기 가능)</div>`;
-
-        const pastedLen = (cue.subtitleText || "").trim().length;
-        const pasteInfoHtml = pastedLen > 0
-          ? `<div class="helper-text" style="color:var(--primary); font-weight:600;">자막 텍스트 ${pastedLen}자 저장됨</div>`
-          : `<div class="helper-text">메모장·카톡·문서에서 복사한 자막을 여기에 <strong>Ctrl + V</strong>로 붙여넣을 수 있습니다.</div>`;
-
-        return `
-          <div class="cue-item" data-cue-idx="${idx}">
-            <div class="cue-header">
-              <span class="cue-num">순서 ${idx + 1}</span>
-              <div style="display:flex; gap:6px;">
-                <button type="button" class="btn btn-outline btn-sm" data-move-up="${idx}" ${idx === 0 ? "disabled" : ""}>▲</button>
-                <button type="button" class="btn btn-outline btn-sm" data-move-down="${idx}" ${idx === sub.cues.length - 1 ? "disabled" : ""}>▼</button>
-                <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" data-del-cue="${idx}" ${sub.cues.length === 1 ? "disabled" : ""}>삭제</button>
-              </div>
-            </div>
-
-            <div class="grid-3">
-              <div class="form-group">
-                <label>순서명</label>
-                <input type="text" class="cue-title" value="${escapeHtml(cue.title)}" placeholder="예: 오프닝 찬양, 연극, 특별워십" />
-              </div>
-              <div class="form-group">
-                <label>행사 주제 / 내용</label>
-                <input type="text" class="cue-topic" value="${escapeHtml(cue.topic)}" placeholder="예: 성탄의 기쁨" />
-              </div>
-              <div class="form-group">
-                <label>진행 시간 / 비고</label>
-                <input type="text" class="cue-duration" value="${escapeHtml(cue.duration)}" placeholder="예: 약 4분" />
-              </div>
-            </div>
-
-            <div class="grid-2">
-              <div class="form-group" style="margin-bottom:8px;">
-                <label>영상 / 음원 파일 업로드 (최대 500MB)</label>
-                <input type="file" class="cue-media-input" accept="video/*,audio/*,.mp4,.mov,.mp3,.wav,.m4a" multiple />
-                ${mediaHtml}
-              </div>
-
-              <div class="form-group" style="margin-bottom:8px;">
-                <label>자막 (.txt 여러 개 업로드 또는 직접 Ctrl+V 붙여넣기)</label>
-                <input type="file" class="cue-txt-input" accept=".txt,text/plain" multiple />
-                ${txtStatusHtml}
-
-                <textarea class="subtitle-paste-area cue-sub-text" placeholder="여기에 자막 가사/대사를 직접 입력하거나 Ctrl+V로 붙여넣으세요...">${escapeHtml(cue.subtitleText || "")}</textarea>
-                ${pasteInfoHtml}
-
-                <div class="help-box ${cue.subtitleHelp ? "requested" : ""}">
-                  <button type="button" class="btn ${cue.subtitleHelp ? "btn-warn" : "btn-outline"} btn-sm" data-toggle-help="${idx}">
-                    ${cue.subtitleHelp ? "✓ 미디어팀 자막 도움요청 신청됨 (취소하려면 클릭)" : "미디어팀 자막 도움요청"}
-                  </button>
-                  <div class="helper-text">
-                    ${cue.subtitleHelp ? "미디어팀에 자막 제작 도움이 전달됩니다." : "자막 준비가 어렵다면 버튼을 눌러 요청하세요."}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-bottom:0;">
-              <label>순서별 세부 메모</label>
-              <input type="text" class="cue-note" value="${escapeHtml(cue.note)}" placeholder="예: 1절 후 간주에서 암전, 영상 시작 시 음향 볼륨 올림" />
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      container.querySelectorAll(".cue-item").forEach((el) => {
-        const idx = Number(el.dataset.cueIdx);
-        const cue = sub.cues[idx];
-        el.querySelector(".cue-title").addEventListener("input", (e) => { cue.title = e.target.value; });
-        el.querySelector(".cue-topic").addEventListener("input", (e) => { cue.topic = e.target.value; });
-        el.querySelector(".cue-duration").addEventListener("input", (e) => { cue.duration = e.target.value; });
-        el.querySelector(".cue-note").addEventListener("input", (e) => { cue.note = e.target.value; });
-
-        const subTextArea = el.querySelector(".cue-sub-text");
-        subTextArea.addEventListener("input", (e) => {
-          cue.subtitleText = e.target.value;
-          if (cue.subtitleText.trim().length > 0) cue.subtitleHelp = false;
-        });
-        subTextArea.addEventListener("paste", () => {
-          setTimeout(() => {
-            cue.subtitleText = subTextArea.value;
-            if (cue.subtitleText.trim().length > 0) cue.subtitleHelp = false;
-            showToast("자막이 붙여넣기되었습니다.");
-          }, 0);
-        });
-
-        el.querySelector(".cue-media-input").addEventListener("change", async (e) => {
-          const files = Array.from(e.target.files || []);
-          for (const f of files) {
-            const meta = await processAndStoreUploadedFile(f, "media", sub.deptName);
-            if (meta) cue.mediaFiles.push(meta);
-          }
-          e.target.value = "";
-          saveState();
-          renderCueList(sub);
-        });
-
-        el.querySelector(".cue-txt-input").addEventListener("change", async (e) => {
-          const files = Array.from(e.target.files || []);
-          if (!files.length) return;
-          if (!Array.isArray(cue.subtitleFiles)) cue.subtitleFiles = [];
-
-          const appendedTexts = [];
-          for (const f of files) {
-            const meta = await processAndStoreUploadedFile(f, "subtitle", sub.deptName);
-            if (meta) cue.subtitleFiles.push(meta);
-            try {
-              const txt = await f.text();
-              if (txt.trim()) appendedTexts.push(`[${f.name}]\n${txt.trim()}`);
-            } catch {}
-          }
-          cue.subtitleHelp = false;
-          if (appendedTexts.length) {
-            const currentTrim = (cue.subtitleText || "").trim();
-            cue.subtitleText = currentTrim
-              ? `${currentTrim}\n\n${appendedTexts.join("\n\n")}`
-              : appendedTexts.join("\n\n");
-          }
-          e.target.value = "";
-          saveState();
-          renderCueList(sub);
-          showToast(`자막 TXT 파일 ${files.length}개가 등록되었습니다.`);
-        });
-      });
-
-      container.querySelectorAll("[data-move-up]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const i = Number(btn.dataset.moveUp);
-          if (i > 0) {
-            [sub.cues[i - 1], sub.cues[i]] = [sub.cues[i], sub.cues[i - 1]];
-            renderCueList(sub);
-          }
-        });
-      });
-
-      container.querySelectorAll("[data-move-down]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const i = Number(btn.dataset.moveDown);
-          if (i < sub.cues.length - 1) {
-            [sub.cues[i + 1], sub.cues[i]] = [sub.cues[i], sub.cues[i + 1]];
-            renderCueList(sub);
-          }
-        });
-      });
-
-      container.querySelectorAll("[data-del-cue]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const i = Number(btn.dataset.delCue);
-          sub.cues.splice(i, 1);
-          renderCueList(sub);
-        });
-      });
-
-      container.querySelectorAll("[data-del-media]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const [cIdx, fIdx] = btn.dataset.delMedia.split(":").map(Number);
-          const target = sub.cues[cIdx].mediaFiles[fIdx];
-          sub.cues[cIdx].mediaFiles.splice(fIdx, 1);
-          saveState();
-          if (target?.key) await deleteFileRecords([target.key]);
-          renderCueList(sub);
-        });
-      });
-
-      container.querySelectorAll("[data-del-txt]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const [cIdx, sIdx] = btn.dataset.delTxt.split(":").map(Number);
-          const target = sub.cues[cIdx].subtitleFiles[sIdx];
-          sub.cues[cIdx].subtitleFiles.splice(sIdx, 1);
-          saveState();
-          if (target?.key) await deleteFileRecords([target.key]);
-          renderCueList(sub);
-        });
-      });
-
-      container.querySelectorAll("[data-toggle-help]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const i = Number(btn.dataset.toggleHelp);
-          sub.cues[i].subtitleHelp = !sub.cues[i].subtitleHelp;
-          renderCueList(sub);
-        });
-      });
-    }
-
-    function collectDeptFormIntoState(user) {
-      const sub = ensureDeptSubmission(user.id, user.deptName);
-      sub.contact = document.getElementById("deptContact").value.trim();
-      sub.micCount = Math.max(0, Number(document.getElementById("deptMicCount").value || 0));
-      sub.requestMicStand = !!document.getElementById("chkReqMicStand").checked;
-      sub.micStandCount = sub.requestMicStand
-        ? Math.max(0, Number(document.getElementById("deptMicStandCount").value || 0))
-        : 0;
-      sub.useCeilingMic = !!document.getElementById("chkCeilingMic").checked;
-      sub.generalNote = document.getElementById("deptGeneralNote").value.trim();
-      sub.updatedAt = new Date().toLocaleString("ko-KR");
-      saveState();
-      return sub;
-    }
-
-    function getCueSubtitleFiles(cue) {
-      if (Array.isArray(cue.subtitleFiles) && cue.subtitleFiles.length) return cue.subtitleFiles;
-      if (cue.subtitleFileKey && cue.subtitleFileName) {
-        return [{ key: cue.subtitleFileKey, name: cue.subtitleFileName }];
-      }
-      return [];
-    }
-
-    function getAllRows() {
-      const subs = Object.values(state.deptSubmissions || {});
-      const rows = [];
-      let seq = 1;
-      subs.forEach((sub) => {
-        const customFiles = Array.isArray(sub.customCueFiles) ? sub.customCueFiles : [];
-        const customNames = customFiles.map((f) => f.name).join(", ");
-        (sub.cues || []).forEach((cue, idx) => {
-          const subFiles = getCueSubtitleFiles(cue);
-          const hasSubText = !!(cue.subtitleText && cue.subtitleText.trim().length > 0);
-          const hasAny = cue.title || cue.topic || cue.note || (cue.mediaFiles && cue.mediaFiles.length) || subFiles.length || hasSubText || cue.subtitleHelp || customFiles.length;
-          if (!hasAny && (sub.cues || []).length > 1) return;
-          rows.push({
-            seq: seq++,
-            orderInDept: idx + 1,
-            deptId: sub.deptId,
-            deptName: sub.deptName,
-            contact: sub.contact || "-",
-            micCount: sub.micCount || 0,
-            standText: formatStandText(sub),
-            ceilingText: formatCeilingMicText(sub),
-            instruments: (sub.instruments || []).join(", ") || "-",
-            mediaReq: formatMediaReqText(sub),
-            customCueFiles: customFiles,
-            customCueNames: customNames || "-",
-            title: cue.title || (customNames ? "(자체 부서 큐시트 첨부)" : "(순서명 미입력)"),
-            topic: cue.topic || "-",
-            duration: cue.duration || "-",
-            note: cue.note || "-",
-            subtitleFiles: subFiles,
-            subtitleText: cue.subtitleText || "",
-            hasSubText,
-            subtitleHelp: !!cue.subtitleHelp,
-            mediaFiles: cue.mediaFiles || [],
-            cue
-          });
-        });
-      });
-      return rows;
-    }
-
-    function renderAdminOverview() {
-      downloadableFileRegistry = {};
-
-      const rows = getAllRows();
-      const subs = Object.values(state.deptSubmissions || {});
-      const totalMics = subs.reduce((acc, s) => acc + Number(s.micCount || 0), 0);
-      const totalStands = subs.reduce((acc, s) => acc + (s.requestMicStand ? Number(s.micStandCount || 0) : 0), 0);
-      const ceilingDeptCount = subs.filter((s) => s.useCeilingMic).length;
-      const helpCount = rows.filter((r) => r.subtitleHelp).length;
-      const customFileCount = subs.reduce((acc, s) => acc + (s.customCueFiles || []).length, 0);
-      const fileCount = rows.reduce((acc, r) => acc + r.mediaFiles.length + r.subtitleFiles.length, 0) + customFileCount;
-
-      document.getElementById("adminSummaryBadges").innerHTML = `
-        <span class="pill pill-blue">총 큐시트 ${rows.length}건</span>
-        <span class="pill pill-green">총 필요 마이크 ${totalMics}개</span>
-        <span class="pill pill-blue">총 스탠드 ${totalStands}개</span>
-        <span class="pill pill-green">천장 E/L 사용 ${ceilingDeptCount}개 부서</span>
-        <span class="pill pill-warn">자막 도움요청 ${helpCount}건</span>
-        <span class="pill pill-blue">등록 파일 ${fileCount}개</span>
-      `;
-
-      const tbody = document.getElementById("masterCueTableBody");
-      if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--muted); padding:24px;">아직 제출된 큐시트가 없습니다.</td></tr>`;
-      } else {
-        tbody.innerHTML = rows.map((r) => {
-          const subNames = r.subtitleFiles.map((f) => f.name).join(", ");
-          const subBadge = r.subtitleFiles.length
-            ? `<span class="pill pill-green">TXT ${r.subtitleFiles.length}개: ${escapeHtml(subNames)}</span>`
-            : r.hasSubText
-              ? `<span class="pill pill-blue">직접입력 (${r.subtitleText.trim().length}자)</span>`
-              : r.subtitleHelp
-                ? `<span class="pill pill-warn">도움요청</span>`
-                : `<span class="pill pill-red">없음</span>`;
-
-          const attachEntries = [];
-          r.mediaFiles.forEach((f) => {
-            const dlId = registerDownloadableFile(f);
-            attachEntries.push({
-              label: `${f.name} (${formatFileSize(f.size)})`,
-              dlId
-            });
-          });
-          r.subtitleFiles.forEach((f) => {
-            const dlId = registerDownloadableFile(f);
-            attachEntries.push({
-              label: `${f.name}`,
-              dlId
-            });
-          });
-          if (!r.subtitleFiles.length && r.hasSubText) {
-            const autoTxtName = `${sanitizeName(r.title)}_자막.txt`;
-            const dlId = registerDownloadableFile({ name: autoTxtName }, r.subtitleText);
-            attachEntries.push({
-              label: autoTxtName,
-              dlId
-            });
-          }
-
-          const filesHtml = attachEntries.length
-            ? attachEntries.map((entry) => `
-                <div class="file-chip-row">
-                  <span>${escapeHtml(entry.label)}</span>
-                  ${entry.dlId ? `<button type="button" class="btn btn-outline btn-xs" style="color:var(--primary); border-color:#93c5fd;" data-dl-file="${escapeHtml(entry.dlId)}">다운로드</button>` : ""}
-                </div>
-              `).join("")
-            : "-";
-
-          const instAndReq = `
-            <div>${escapeHtml(r.instruments)}</div>
-            ${r.mediaReq !== "-" ? `<div style="margin-top:4px;"><span class="pill pill-green">${escapeHtml(r.mediaReq)}</span></div>` : ""}
-          `;
-
-          return `
-            <tr>
-              <td class="nowrap-col"><strong>${r.seq}</strong></td>
-              <td class="nowrap-col"><strong>${escapeHtml(r.deptName)}</strong></td>
-              <td>
-                <div><strong>${escapeHtml(r.title)}</strong></div>
-                <div class="helper-text">${escapeHtml(r.topic)}</div>
-              </td>
-              <td class="nowrap-col">${escapeHtml(r.duration)}</td>
-              <td class="nowrap-col">
-                <div><strong>${r.micCount}개</strong></div>
-                <div class="helper-text">스탠드: ${escapeHtml(r.standText)}</div>
-                <div class="helper-text">천장 E/L: ${escapeHtml(r.ceilingText)}</div>
-              </td>
-              <td>${instAndReq}</td>
-              <td>${subBadge}</td>
-              <td>${filesHtml}</td>
-              <td>${escapeHtml(r.note)}</td>
-              <td class="nowrap-col">
-                <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" data-del-dept-cue="${escapeHtml(r.deptId)}">부서 삭제</button>
-              </td>
-            </tr>
-          `;
-        }).join("");
-      }
-
-      const deptTbody = document.getElementById("deptSummaryTableBody");
-      if (!subs.length) {
-        deptTbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--muted); padding:20px;">부서 제출 내역이 없습니다.</td></tr>`;
-      } else {
-        deptTbody.innerHTML = subs.map((s) => {
-          const helps = (s.cues || []).filter((c) => c.subtitleHelp).map((c, i) => c.title || `순서${i + 1}`);
-          const customFiles = Array.isArray(s.customCueFiles) ? s.customCueFiles : [];
-          const customDocsHtml = customFiles.length
-            ? customFiles.map((cf) => {
-                const dlId = registerDownloadableFile(cf);
-                return `
-                  <div class="file-chip-row">
-                    <span>${escapeHtml(cf.name)}</span>
-                    ${dlId ? `<button type="button" class="btn btn-outline btn-xs" style="color:var(--primary); border-color:#93c5fd;" data-dl-file="${escapeHtml(dlId)}">다운로드</button>` : ""}
-                  </div>
-                `;
-              }).join("")
-            : "없음";
-
-          const mediaReq = formatMediaReqText(s);
-          const bgmOrVideoBadge = (s.requestBgm || s.requestVideo)
-            ? `<span class="pill pill-green">${escapeHtml(mediaReq)}</span>`
-            : "없음";
-          return `
-            <tr>
-              <td class="nowrap-col"><strong>${escapeHtml(s.deptName)}</strong></td>
-              <td>${escapeHtml(s.contact || "-")}</td>
-              <td class="nowrap-col"><strong>${Number(s.micCount || 0)}개</strong></td>
-              <td class="nowrap-col">${escapeHtml(formatStandText(s))}</td>
-              <td class="nowrap-col">${escapeHtml(formatCeilingMicText(s))}</td>
-              <td>${escapeHtml((s.instruments || []).join(", ") || "미선택")}</td>
-              <td class="nowrap-col">${bgmOrVideoBadge}</td>
-              <td>${customDocsHtml}</td>
-              <td>${helps.length ? `<span class="pill pill-warn">${escapeHtml(helps.join(", "))}</span>` : "없음"}</td>
-              <td>${escapeHtml(s.generalNote || "-")}</td>
-              <td class="nowrap-col">
-                <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" data-del-dept-cue="${escapeHtml(s.deptId)}">부서 큐시트 삭제</button>
-              </td>
-            </tr>
-          `;
-        }).join("");
-      }
-
-      document.querySelectorAll("[data-del-dept-cue]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          await deleteDeptSubmission(btn.dataset.delDeptCue);
-        });
-      });
-
-      renderB2FilesTable();
-      bindIndividualDownloadButtons();
-    }
-
-    function renderAdminManage() {
-      document.getElementById("cfgEventName").value = state.eventInfo.name || "";
-      document.getElementById("cfgEventDate").value = state.eventInfo.date || "";
-      document.getElementById("cfgEventNotice").value = state.eventInfo.notice || "";
-
-      const accTbody = document.getElementById("accountTableBody");
-      accTbody.innerHTML = state.accounts.map((acc, idx) => `
-        <tr>
-          <td class="nowrap-col"><strong>${escapeHtml(acc.deptName)}</strong></td>
-          <td><code>${escapeHtml(acc.id)}</code></td>
-          <td><code>${escapeHtml(acc.pw)}</code></td>
-          <td class="nowrap-col">${acc.role === "admin" ? '<span class="pill pill-blue">관리자</span>' : '<span class="pill pill-green">부서</span>'}</td>
-          <td class="nowrap-col">
-            ${acc.role === "admin"
-              ? `<span class="helper-text">기본 관리자</span>`
-              : `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" data-del-acc="${idx}">삭제</button>`}
-          </td>
-        </tr>
-      `).join("");
-
-      accTbody.querySelectorAll("[data-del-acc]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const i = Number(btn.dataset.delAcc);
-          const target = state.accounts[i];
-          if (!target || target.role === "admin") return;
-          delete state.deptSubmissions[target.id];
-          state.accounts.splice(i, 1);
-          saveState();
-          renderAdminManage();
-          showToast("계정이 삭제되었습니다.");
-        });
-      });
-    }
-
-    function exportExcel() {
-      const rows = getAllRows();
-      if (!rows.length) {
-        showToast("내보낼 큐시트 데이터가 없습니다.");
-        return;
-      }
-
-      const eventPrefix = sanitizeName(state.eventInfo.name || "행사");
-      const dataRows = rows.map((r) => ({
-        "연번": r.seq,
-        "행사명": state.eventInfo.name || "",
-        "부서명": r.deptName,
-        "담당자": r.contact,
-        "순서명": r.title,
-        "주제/내용": r.topic,
-        "시간": r.duration,
-        "필요마이크": `${r.micCount}개`,
-        "마이크스탠드": r.standText,
-        "천장E/L마이크": r.ceilingText,
-        "사용악기": r.instruments,
-        "재생요청": r.mediaReq,
-        "자체부서큐시트": r.customCueNames,
-        "비고/메모": r.note
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(dataRows);
-      worksheet["!cols"] = [
-        { wch: 8 },
-        { wch: 24 },
-        { wch: 14 },
-        { wch: 24 },
-        { wch: 22 },
-        { wch: 24 },
-        { wch: 12 },
-        { wch: 14 },
-        { wch: 16 },
-        { wch: 15 },
-        { wch: 24 },
-        { wch: 18 },
-        { wch: 24 },
-        { wch: 32 }
-      ];
-
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "종합큐시트");
-      XLSX.writeFile(workbook, `${eventPrefix}_종합큐시트.xlsx`);
-      showToast("엑셀(.xlsx) 파일이 다운로드되었습니다.");
-    }
-
-    async function exportZip() {
-      const rows = getAllRows();
-      const subs = Object.values(state.deptSubmissions || {});
-      const hasCustomFiles = subs.some((s) => (s.customCueFiles || []).length > 0);
-      const hasCueFiles = rows.some((r) => r.mediaFiles.length > 0 || r.subtitleFiles.length > 0 || r.hasSubText);
-
-      if (!rows.length && !hasCustomFiles) {
-        showToast("내보낼 데이터가 없습니다.");
-        return;
-      }
-      if (!hasCueFiles && !hasCustomFiles) {
-        showToast("로컬에 보관된 파일(80MB 이하)이 없습니다. 대용량 파일은 B2 목록에서 다운로드하세요.");
-        return;
-      }
-
-      const zip = new JSZip();
-      const eventFolder = zip.folder(sanitizeName(state.eventInfo.name || "행사_자료"));
-
-      for (const s of subs) {
-        if ((s.customCueFiles || []).length > 0) {
-          const deptFolder = eventFolder.folder(sanitizeName(s.deptName));
-          const customFolder = deptFolder.folder("00_부서자체큐시트");
-          for (const cf of s.customCueFiles) {
-            const rec = await getFileRecord(cf.key);
-            if (rec && rec.dataUrl) {
-              customFolder.file(cf.name, dataUrlToUint8Array(rec.dataUrl));
-            }
-          }
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ error: err.message || "워커 처리 오류" }),
+        {
+          status: 500,
+          headers: corsHeaders({ "Content-Type": "application/json" }),
         }
-      }
-
-      for (const r of rows) {
-        if (!r.mediaFiles.length && !r.subtitleFiles.length && !r.hasSubText) continue;
-        const deptFolder = eventFolder.folder(sanitizeName(r.deptName));
-        const cueFolderName = `${String(r.orderInDept).padStart(2, "0")}_${sanitizeName(r.title)}`;
-        const cueFolder = deptFolder.folder(cueFolderName);
-
-        for (const mf of r.mediaFiles) {
-          const rec = await getFileRecord(mf.key);
-          if (rec && rec.dataUrl) {
-            cueFolder.file(mf.name, dataUrlToUint8Array(rec.dataUrl));
-          }
-        }
-
-        if (r.subtitleFiles.length) {
-          for (const sf of r.subtitleFiles) {
-            const sRec = await getFileRecord(sf.key);
-            if (sRec && sRec.dataUrl) {
-              cueFolder.file(sf.name, dataUrlToUint8Array(sRec.dataUrl));
-            }
-          }
-        } else if (r.hasSubText) {
-          const txtFileName = `${sanitizeName(r.title)}_자막.txt`;
-          cueFolder.file(txtFileName, "\uFEFF" + r.subtitleText);
-        }
-      }
-
-      const blob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${sanitizeName(state.eventInfo.name || "행사")}_부서별_순서별_자료.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("부서별/순서별 폴더 ZIP 파일이 생성되었습니다.");
+      );
     }
-
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const id = document.getElementById("loginId").value.trim();
-      const pw = document.getElementById("loginPw").value.trim();
-      const found = state.accounts.find((a) => String(a.id).trim() === id && String(a.pw).trim() === pw);
-      if (!found) {
-        alert("아이디 또는 비밀번호가 올바르지 않습니다.");
-        return;
-      }
-      state.sessionUserId = found.id;
-      activeTab = found.role === "admin" ? "adminOverview" : "dept";
-      saveState();
-      document.getElementById("loginForm").reset();
-      renderAll();
-    });
-
-    document.getElementById("resetLoginStorageBtn").addEventListener("click", async () => {
-      if (!confirm("브라우저에 저장된 이 앱의 데이터를 초기화하고 기본 계정으로 복구하시겠습니까?")) return;
-      localStorage.removeItem(STORAGE_KEY);
-      await clearAllFileRecords();
-      state = deepClone(DEFAULT_STATE);
-      activeTab = null;
-      renderAll();
-      showToast("브라우저 저장 데이터가 초기화되었습니다.");
-    });
-
-    document.getElementById("chkReqMicStand").addEventListener("change", (e) => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user.id, user.deptName);
-      sub.requestMicStand = !!e.target.checked;
-      if (sub.requestMicStand && (!sub.micStandCount || sub.micStandCount < 1)) {
-        sub.micStandCount = 1;
-      }
-      renderMicOptionsControl(sub);
-    });
-
-    document.getElementById("chkCeilingMic").addEventListener("change", (e) => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user.id, user.deptName);
-      sub.useCeilingMic = !!e.target.checked;
-    });
-
-    document.getElementById("btnReqBgm").addEventListener("click", () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user.id, user.deptName);
-      sub.requestBgm = !sub.requestBgm;
-      renderMediaReqButtons(sub);
-    });
-
-    document.getElementById("btnReqVideo").addEventListener("click", () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user.id, user.deptName);
-      sub.requestVideo = !sub.requestVideo;
-      renderMediaReqButtons(sub);
-    });
-
-    document.getElementById("deptCustomCueFile").addEventListener("change", async (e) => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user.id, user.deptName);
-      const files = Array.from(e.target.files || []);
-      for (const f of files) {
-        const meta = await processAndStoreUploadedFile(f, "custom_cue", sub.deptName);
-        if (meta) sub.customCueFiles.push(meta);
-      }
-      e.target.value = "";
-      saveState();
-      renderCustomCueFiles(sub);
-    });
-
-    document.getElementById("fillDeptSampleBtn").addEventListener("click", async () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      await fillDeptSampleData(user);
-    });
-
-    document.getElementById("fillAdminSampleBtn").addEventListener("click", async () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "admin") return;
-      await fillAdminSampleData();
-    });
-
-    document.getElementById("addCueBtn").addEventListener("click", () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user.id, user.deptName);
-      sub.cues.push(createEmptyCue());
-      renderCueList(sub);
-    });
-
-    document.getElementById("saveDeptBtn").addEventListener("click", () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = collectDeptFormIntoState(user);
-      document.getElementById("lastSavedText").textContent = `최근 저장: ${sub.updatedAt}`;
-      showToast("부서 내용이 저장되었습니다.");
-    });
-
-    document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
-    document.getElementById("exportZipBtn").addEventListener("click", exportZip);
-
-    document.getElementById("eventSettingsForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      state.eventInfo.name = document.getElementById("cfgEventName").value.trim();
-      state.eventInfo.date = document.getElementById("cfgEventDate").value.trim();
-      state.eventInfo.notice = document.getElementById("cfgEventNotice").value.trim();
-      saveState();
-      renderAll();
-      showToast("행사명이 저장되었습니다.");
-    });
-
-    document.getElementById("addAccountForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const deptName = document.getElementById("newAccDept").value.trim();
-      const id = document.getElementById("newAccId").value.trim();
-      const pw = document.getElementById("newAccPw").value.trim();
-      if (!deptName || !id || !pw) return;
-      if (state.accounts.some((a) => a.id === id)) {
-        alert("이미 사용 중인 아이디입니다.");
-        return;
-      }
-      state.accounts.push({ id, pw, deptName, role: "dept" });
-      saveState();
-      document.getElementById("addAccountForm").reset();
-      renderAdminManage();
-      showToast(`${deptName} 계정이 추가되었습니다.`);
-    });
-
-    document.getElementById("resetEventBtn").addEventListener("click", async () => {
-      const ok = confirm("행사명, 제출된 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청 및 업로드 파일이 모두 초기화됩니다. 진행하시겠습니까?");
-      if (!ok) return;
-      state.eventInfo = {
-        name: "새 행사를 설정해 주세요",
-        date: "",
-        notice: ""
-      };
-      state.deptSubmissions = {};
-      saveState();
-      await clearAllFileRecords();
-      renderAll();
-      showToast("행사 데이터가 모두 초기화되었습니다.");
-    });
-
-    renderAll();
-  </script>
-</body>
-</html>
+  },
+};
