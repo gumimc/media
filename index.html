@@ -953,10 +953,8 @@
 
     function getDeptOrderKey(sub) {
       if (!sub) return Number.MAX_SAFE_INTEGER;
-      const ord = Number(sub.uploadOrder);
-      if (Number.isFinite(ord) && ord > 0) return ord;
-      const syn = Number(sub.syncedAt);
-      if (Number.isFinite(syn) && syn > 0) return syn;
+      const subTime = Number(sub.submittedAt || sub.syncedAt);
+      if (Number.isFinite(subTime) && subTime > 0) return subTime;
       return Number.MAX_SAFE_INTEGER;
     }
 
@@ -1066,7 +1064,9 @@
 
     async function syncSubmissionToB2(sub) {
       if (!sub || !sub.deptId || !isB2Configured()) return;
-      if (!sub.syncedAt) sub.syncedAt = Date.now();
+      const now = Date.now();
+      if (!sub.syncedAt) sub.syncedAt = now;
+      if (!sub.submittedAt) sub.submittedAt = sub.syncedAt;
       try {
         const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
         const res = await fetch(`${base}?action=save_submission`, {
@@ -1101,26 +1101,27 @@
           const targetId = rSub.deptId || deptId;
           const lSub = state.deptSubmissions[targetId];
 
-          const rOrder = Number(rSub.uploadOrder);
-          const lOrder = Number(lSub?.uploadOrder);
-          const resolvedOrder =
-            Number.isFinite(rOrder) && rOrder > 0
-              ? rOrder
-              : (Number.isFinite(lOrder) && lOrder > 0 ? lOrder : idx + 1);
-
+          const rSubmitted = Number(rSub.submittedAt);
+          const lSubmitted = Number(lSub?.submittedAt);
           const rSynced = Number(rSub.syncedAt);
           const lSynced = Number(lSub?.syncedAt);
+
           const resolvedSyncedAt =
             Number.isFinite(rSynced) && rSynced > 0
               ? rSynced
               : (Number.isFinite(lSynced) && lSynced > 0 ? lSynced : Date.now() + idx * 1000);
 
+          const resolvedSubmittedAt =
+            Number.isFinite(rSubmitted) && rSubmitted > 0
+              ? rSubmitted
+              : (Number.isFinite(lSubmitted) && lSubmitted > 0 ? lSubmitted : resolvedSyncedAt);
+
           nextSubmissions[targetId] = {
             ...(lSub || {}),
             ...rSub,
             deptId: targetId,
-            uploadOrder: resolvedOrder,
-            syncedAt: resolvedSyncedAt
+            syncedAt: resolvedSyncedAt,
+            submittedAt: resolvedSubmittedAt
           };
         });
 
@@ -1387,6 +1388,7 @@
 
     function ensureDeptSubmission(deptId, deptName) {
       if (!state.deptSubmissions[deptId]) {
+        const now = Date.now();
         state.deptSubmissions[deptId] = {
           deptId,
           deptName,
@@ -1401,15 +1403,15 @@
           customCueFiles: [],
           generalNote: "",
           updatedAt: "",
-          syncedAt: Date.now(),
-          uploadOrder: 0,
+          syncedAt: now,
+          submittedAt: now,
           cues: [createEmptyCue()]
         };
       } else {
         const sub = state.deptSubmissions[deptId];
         sub.deptName = deptName;
         if (typeof sub.syncedAt !== "number" || sub.syncedAt <= 0) sub.syncedAt = Date.now();
-        if (typeof sub.uploadOrder !== "number") sub.uploadOrder = Number(sub.uploadOrder || 0);
+        if (typeof sub.submittedAt !== "number" || sub.submittedAt <= 0) sub.submittedAt = sub.syncedAt;
         if (typeof sub.requestMicStand !== "boolean") sub.requestMicStand = false;
         if (typeof sub.micStandCount !== "number") sub.micStandCount = Number(sub.micStandCount || 0);
         if (typeof sub.useCeilingMic !== "boolean") sub.useCeilingMic = false;
@@ -1478,8 +1480,8 @@
       return { key: rec.key, name: rec.name, type: rec.type, size: rec.size, savedLocal: true };
     }
 
-    async function buildSampleSubmissionForDept(deptId, deptName, syncedAt = Date.now(), uploadOrder = 0) {
-      const nowStr = new Date(syncedAt).toLocaleString("ko-KR");
+    async function buildSampleSubmissionForDept(deptId, deptName, submittedAt = Date.now()) {
+      const nowStr = new Date(submittedAt).toLocaleString("ko-KR");
       if (deptId === "youth") {
         const sub1 = await createSampleSubtitleFileRecord(
           "청년부_오프닝_자막.txt",
@@ -1499,8 +1501,8 @@
           customCueFiles: [],
           generalNote: "30분 전 밴드 라인체크 희망",
           updatedAt: nowStr,
-          syncedAt,
-          uploadOrder,
+          syncedAt: submittedAt,
+          submittedAt,
           cues: [
             {
               id: "sample_youth_1",
@@ -1534,8 +1536,8 @@
         customCueFiles: [],
         generalNote: "예시 데이터입니다.",
         updatedAt: nowStr,
-        syncedAt,
-        uploadOrder,
+        syncedAt: submittedAt,
+        submittedAt,
         cues: [
           {
             id: `sample_${deptId}_1`,
@@ -1555,14 +1557,8 @@
     async function fillDeptSampleData(user) {
       const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
       if (!ok) return;
-      const existing = state.deptSubmissions[user.id];
-      const syncedAt = (typeof existing?.syncedAt === "number" && existing.syncedAt > 0) ? existing.syncedAt : Date.now();
-      const maxOrder = Object.values(state.deptSubmissions || {}).reduce((m, s) => {
-        const o = Number(s?.uploadOrder || 0);
-        return o > m ? o : m;
-      }, 0);
-      const uploadOrder = (Number(existing?.uploadOrder) > 0) ? Number(existing.uploadOrder) : maxOrder + 1;
-      state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName, syncedAt, uploadOrder);
+      const now = Date.now();
+      state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName, now);
       saveState();
       await syncSubmissionToB2(state.deptSubmissions[user.id]);
       renderDeptView(user);
@@ -1578,9 +1574,8 @@
         const id = orderIds[i];
         const acc = state.accounts.find((a) => a.id === id);
         if (acc) {
-          const uploadOrder = i + 1;
-          const syncedAt = baseTime + i * 1000;
-          const sampleSub = await buildSampleSubmissionForDept(acc.id, acc.deptName, syncedAt, uploadOrder);
+          const submittedAt = baseTime + i * 1000;
+          const sampleSub = await buildSampleSubmissionForDept(acc.id, acc.deptName, submittedAt);
           state.deptSubmissions[id] = sampleSub;
           await syncSubmissionToB2(sampleSub);
         }
@@ -2163,15 +2158,11 @@
         : 0;
       sub.useCeilingMic = !!document.getElementById("chkCeilingMic").checked;
       sub.generalNote = document.getElementById("deptGeneralNote").value.trim();
-      sub.updatedAt = new Date().toLocaleString("ko-KR");
-      if (!sub.syncedAt) sub.syncedAt = Date.now();
-      if (!sub.uploadOrder || Number(sub.uploadOrder) <= 0) {
-        const maxOrder = Object.values(state.deptSubmissions || {}).reduce((m, s) => {
-          const o = Number(s?.uploadOrder || 0);
-          return o > m ? o : m;
-        }, 0);
-        sub.uploadOrder = maxOrder + 1;
-      }
+
+      const now = Date.now();
+      sub.updatedAt = new Date(now).toLocaleString("ko-KR");
+      sub.syncedAt = now;
+      sub.submittedAt = now;
       saveState();
       return sub;
     }
