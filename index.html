@@ -723,14 +723,12 @@
           <h3 class="card-title">
             <span>전체 부서 종합 큐시트 현황</span>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <button type="button" class="btn btn-outline btn-sm" id="refreshAllSyncBtn">전체 동기화 새로고침</button>
               <button type="button" class="btn btn-outline btn-sm" id="fillAdminSampleBtn">예시 데이터 넣어보기</button>
               <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">전체 큐시트 엑셀(.xlsx) 내보내기</button>
               <button type="button" class="btn btn-primary btn-sm" id="exportZipBtn">부서별 폴더 ZIP 내보내기</button>
             </div>
           </h3>
-          <div class="helper-text" style="margin-bottom:10px;">
-            ※ 큐시트 텍스트·메모는 입력한 기기 브라우저에 저장됩니다. 다른 기기(휴대폰 등)에서 업로드한 파일은 아래 <strong>Backblaze B2 업로드 파일 목록</strong>에서 PC로 바로 다운로드할 수 있습니다.
-          </div>
           <div id="adminSummaryBadges" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;"></div>
           <div class="table-wrap">
             <table>
@@ -793,7 +791,7 @@
                   <th>구분</th>
                   <th>파일명</th>
                   <th>용량</th>
-                  <th>개별 다운로드</th>
+                  <th>개별 다운로드 · 삭제</th>
                 </tr>
               </thead>
               <tbody id="b2FilesTableBody"></tbody>
@@ -1000,6 +998,83 @@
         showToast("다운로드 가능한 파일 경로가 없습니다.");
       } catch (err) {
         alert(`파일 다운로드에 실패했습니다.\n사유: ${err.message}`);
+      }
+    }
+
+    async function deleteB2FileByKey(objectKey, displayName = "") {
+      if (!objectKey || !isB2Configured()) return;
+      const ok = confirm(`Backblaze B2에서 '${displayName || objectKey}' 파일을 영구 삭제하시겠습니까?`);
+      if (!ok) return;
+
+      try {
+        const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+        const res = await fetch(`${base}?action=delete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ objectKey })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+
+        Object.values(state.deptSubmissions || {}).forEach((sub) => {
+          sub.customCueFiles = (sub.customCueFiles || []).filter((f) => f.b2Key !== objectKey);
+          (sub.cues || []).forEach((c) => {
+            c.mediaFiles = (c.mediaFiles || []).filter((f) => f.b2Key !== objectKey);
+            c.subtitleFiles = (c.subtitleFiles || []).filter((f) => f.b2Key !== objectKey);
+          });
+        });
+        saveState();
+
+        remoteB2Files = remoteB2Files.filter((f) => f.objectKey !== objectKey);
+        renderAdminOverview();
+        showToast(`'${displayName || objectKey}' 삭제 완료`);
+      } catch (err) {
+        alert(`B2 파일 삭제에 실패했습니다.\n사유: ${err.message}`);
+      }
+    }
+
+    async function syncSubmissionToB2(sub) {
+      if (!sub || !sub.deptId || !isB2Configured()) return;
+      try {
+        const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+        const res = await fetch(`${base}?action=save_submission`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deptId: sub.deptId, submission: sub })
+        });
+        if (!res.ok) {
+          console.warn("B2 submission sync failed:", res.status);
+        }
+      } catch (e) {
+        console.warn("B2 submission sync error:", e);
+      }
+    }
+
+    async function fetchRemoteSubmissions(showMessage = false) {
+      if (!isB2Configured()) return;
+      try {
+        const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+        const res = await fetch(`${base}?action=submissions`);
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+
+        const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
+        Object.keys(remoteSubs).forEach((deptId) => {
+          const rSub = remoteSubs[deptId];
+          const lSub = state.deptSubmissions[deptId];
+          if (!lSub || String(rSub.updatedAt || "") >= String(lSub.updatedAt || "")) {
+            state.deptSubmissions[deptId] = rSub;
+          }
+        });
+        saveState();
+        renderAdminOverview();
+        if (showMessage) showToast("전체 부서 큐시트와 B2 파일을 동기화했습니다.");
+      } catch (err) {
+        console.warn("Remote submissions fetch failed:", err);
       }
     }
 
@@ -1419,8 +1494,9 @@
       if (!ok) return;
       state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName);
       saveState();
+      await syncSubmissionToB2(state.deptSubmissions[user.id]);
       renderDeptView(user);
-      showToast(`${user.deptName} 예시 데이터가 입력되었습니다.`);
+      showToast(`${user.deptName} 예시 데이터가 입력 및 동기화되었습니다.`);
     }
 
     async function fillAdminSampleData() {
@@ -1430,11 +1506,12 @@
         const acc = state.accounts.find((a) => a.id === id);
         if (acc) {
           state.deptSubmissions[id] = await buildSampleSubmissionForDept(acc.id, acc.deptName);
+          await syncSubmissionToB2(state.deptSubmissions[id]);
         }
       }
       saveState();
       renderAdminOverview();
-      showToast("예시 데이터가 입력되었습니다.");
+      showToast("예시 데이터가 입력 및 동기화되었습니다.");
     }
 
     function escapeHtml(str) {
@@ -1480,6 +1557,18 @@
       delete state.deptSubmissions[deptId];
       saveState();
       await deleteFileRecords(fileKeys);
+
+      if (isB2Configured()) {
+        try {
+          const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+          await fetch(`${base}?action=delete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ objectKey: `${SUBMISSIONS_PREFIX}${encodeURIComponent(deptId)}.json` })
+          });
+        } catch {}
+      }
+
       renderAdminOverview();
       showToast(`'${deptLabel}' 부서 큐시트가 삭제되었습니다.`);
     }
@@ -1568,16 +1657,25 @@
         const dlBtn = dlId
           ? `<button type="button" class="btn btn-primary btn-sm" data-dl-file="${escapeHtml(dlId)}">개별 다운로드</button>`
           : `<span class="helper-text">파일 없음</span>`;
+        const delBtn = it.b2Key
+          ? `<button type="button" class="btn btn-outline btn-sm" style="color:var(--danger); margin-left:6px;" data-del-b2-key="${escapeHtml(it.b2Key)}" data-del-b2-name="${escapeHtml(it.name)}">삭제</button>`
+          : "";
         return `
           <tr>
             <td class="nowrap-col"><strong>${escapeHtml(it.deptName)}</strong></td>
             <td>${escapeHtml(it.category)}</td>
             <td><strong>${escapeHtml(it.name)}</strong></td>
             <td class="nowrap-col">${escapeHtml(formatFileSize(it.size))}</td>
-            <td class="nowrap-col">${dlBtn}</td>
+            <td class="nowrap-col">${dlBtn}${delBtn}</td>
           </tr>
         `;
       }).join("");
+
+      tbody.querySelectorAll("[data-del-b2-key]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await deleteB2FileByKey(btn.dataset.delB2Key, btn.dataset.delB2Name);
+        });
+      });
 
       bindIndividualDownloadButtons();
     }
@@ -1660,6 +1758,7 @@
       if (activeTab === "dept") renderDeptView(user);
       else if (activeTab === "adminOverview") {
         renderAdminOverview();
+        fetchRemoteSubmissions(false);
         fetchRemoteB2Files(false);
       }
       else if (activeTab === "adminManage") renderAdminManage();
@@ -1754,6 +1853,7 @@
           const target = sub.customCueFiles[idx];
           sub.customCueFiles.splice(idx, 1);
           saveState();
+          await syncSubmissionToB2(sub);
           if (target?.key) await deleteFileRecords([target.key]);
           renderCustomCueFiles(sub);
         });
@@ -1883,6 +1983,7 @@
           }
           e.target.value = "";
           saveState();
+          await syncSubmissionToB2(sub);
           renderCueList(sub);
         });
 
@@ -1909,6 +2010,7 @@
           }
           e.target.value = "";
           saveState();
+          await syncSubmissionToB2(sub);
           renderCueList(sub);
           showToast(`자막 TXT 파일 ${files.length}개가 등록되었습니다.`);
         });
@@ -1948,6 +2050,7 @@
           const target = sub.cues[cIdx].mediaFiles[fIdx];
           sub.cues[cIdx].mediaFiles.splice(fIdx, 1);
           saveState();
+          await syncSubmissionToB2(sub);
           if (target?.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
         });
@@ -1959,6 +2062,7 @@
           const target = sub.cues[cIdx].subtitleFiles[sIdx];
           sub.cues[cIdx].subtitleFiles.splice(sIdx, 1);
           saveState();
+          await syncSubmissionToB2(sub);
           if (target?.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
         });
@@ -2061,7 +2165,7 @@
 
       const tbody = document.getElementById("masterCueTableBody");
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--muted); padding:24px;">이 기기 브라우저에 제출된 큐시트 항목이 없습니다. (다른 기기에서 올린 파일은 아래 B2 목록에서 확인하세요.)</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--muted); padding:24px;">아직 제출된 큐시트가 없습니다.</td></tr>`;
       } else {
         tbody.innerHTML = rows.map((r) => {
           const subNames = r.subtitleFiles.map((f) => f.name).join(", ");
@@ -2139,7 +2243,7 @@
 
       const deptTbody = document.getElementById("deptSummaryTableBody");
       if (!subs.length) {
-        deptTbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--muted); padding:20px;">이 기기 브라우저에 저장된 부서 제출 내역이 없습니다.</td></tr>`;
+        deptTbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--muted); padding:20px;">부서 제출 내역이 없습니다.</td></tr>`;
       } else {
         deptTbody.innerHTML = subs.map((s) => {
           const helps = (s.cues || []).filter((c) => c.subtitleHelp).map((c, i) => c.title || `순서${i + 1}`);
@@ -2411,6 +2515,7 @@
       }
       e.target.value = "";
       saveState();
+      await syncSubmissionToB2(sub);
       renderCustomCueFiles(sub);
     });
 
@@ -2434,12 +2539,19 @@
       renderCueList(sub);
     });
 
-    document.getElementById("saveDeptBtn").addEventListener("click", () => {
+    document.getElementById("saveDeptBtn").addEventListener("click", async () => {
       const user = getCurrentUser();
       if (!user || user.role !== "dept") return;
       const sub = collectDeptFormIntoState(user);
       document.getElementById("lastSavedText").textContent = `최근 저장: ${sub.updatedAt}`;
-      showToast("부서 내용이 저장되었습니다.");
+      showToast("부서 내용 저장 및 동기화 중...");
+      await syncSubmissionToB2(sub);
+      showToast("부서 내용이 저장 및 동기화되었습니다.");
+    });
+
+    document.getElementById("refreshAllSyncBtn").addEventListener("click", async () => {
+      await fetchRemoteSubmissions(false);
+      await fetchRemoteB2Files(true);
     });
 
     document.getElementById("refreshB2FilesBtn").addEventListener("click", async () => {
