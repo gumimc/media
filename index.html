@@ -261,6 +261,12 @@
       border-radius: 8px;
     }
 
+    .btn-xs {
+      padding: 4px 7px;
+      font-size: 0.75rem;
+      border-radius: 7px;
+    }
+
     .tabs {
       display: flex;
       gap: 8px;
@@ -454,6 +460,19 @@
       padding-left: 18px;
       font-size: 0.84rem;
       color: var(--muted);
+    }
+
+    .file-chip-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 4px;
+      font-size: 0.78rem;
     }
 
     .upload-progress-box {
@@ -729,7 +748,7 @@
                   <th>마이크 / 스탠드 / E/L</th>
                   <th>악기 / 재생요청</th>
                   <th>자막 상태</th>
-                  <th>첨부 자료(영상/음원/자막)</th>
+                  <th>첨부 자료 개별 다운로드</th>
                   <th>비고</th>
                   <th>관리</th>
                 </tr>
@@ -777,7 +796,7 @@
                   <th>구분</th>
                   <th>파일명</th>
                   <th>용량</th>
-                  <th>다운로드</th>
+                  <th>개별 다운로드</th>
                 </tr>
               </thead>
               <tbody id="b2FilesTableBody"></tbody>
@@ -920,6 +939,77 @@
     let state = loadState();
     let activeTab = null;
     let fileCache = {};
+    let downloadableFileRegistry = {};
+
+    function registerDownloadableFile(meta, fallbackText = "") {
+      if (!meta || !meta.name) return "";
+      const id = "dl_" + Math.random().toString(36).slice(2, 10);
+      downloadableFileRegistry[id] = {
+        key: meta.key || "",
+        name: meta.name,
+        url: meta.publicUrl || (meta.b2Key ? buildPublicB2Url(meta.b2Key) : ""),
+        fallbackText
+      };
+      return id;
+    }
+
+    async function triggerSingleFileDownload(dlId) {
+      const item = downloadableFileRegistry[dlId];
+      if (!item) {
+        showToast("다운로드할 파일 정보를 찾을 수 없습니다.");
+        return;
+      }
+
+      try {
+        if (item.key) {
+          const rec = await getFileRecord(item.key);
+          if (rec && rec.dataUrl) {
+            const bytes = dataUrlToUint8Array(rec.dataUrl);
+            const blob = new Blob([bytes], { type: rec.type || "application/octet-stream" });
+            saveBlobAsFile(blob, item.name);
+            showToast(`'${item.name}' 다운로드 시작`);
+            return;
+          }
+        }
+
+        if (item.fallbackText) {
+          const blob = new Blob(["\uFEFF" + item.fallbackText], { type: "text/plain;charset=utf-8" });
+          saveBlobAsFile(blob, item.name);
+          showToast(`'${item.name}' 다운로드 시작`);
+          return;
+        }
+
+        if (item.url) {
+          showToast(`'${item.name}' 파일 불러오는 중...`);
+          const res = await fetch(item.url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const blob = await res.blob();
+          saveBlobAsFile(blob, item.name);
+          showToast(`'${item.name}' 다운로드 완료`);
+          return;
+        }
+
+        showToast("다운로드 가능한 파일 경로가 없습니다.");
+      } catch (err) {
+        if (item.url) {
+          window.open(item.url, "_blank", "noopener,noreferrer");
+          showToast("새 탭에서 파일을 열었습니다.");
+        } else {
+          alert(`파일 다운로드에 실패했습니다.\n사유: ${err.message}`);
+        }
+      }
+    }
+
+    function saveBlobAsFile(blob, fileName) {
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = fileName || "download";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+    }
 
     function isB2Configured() {
       return Boolean(B2_CONFIG.signerBaseUrl && B2_CONFIG.bucketName);
@@ -1383,6 +1473,7 @@
           items.push({
             deptName: sub.deptName,
             category: "자체 큐시트",
+            key: cf.key || "",
             name: cf.name,
             size: cf.size || 0,
             b2Key: cf.b2Key || "",
@@ -1395,6 +1486,7 @@
             items.push({
               deptName: sub.deptName,
               category: `${orderLabel} · 영상/음원`,
+              key: mf.key || "",
               name: mf.name,
               size: mf.size || 0,
               b2Key: mf.b2Key || "",
@@ -1405,6 +1497,7 @@
             items.push({
               deptName: sub.deptName,
               category: `${orderLabel} · 자막`,
+              key: sf.key || "",
               name: sf.name,
               size: sf.size || 0,
               b2Key: sf.b2Key || "",
@@ -1434,9 +1527,10 @@
       }
 
       tbody.innerHTML = items.map((it) => {
-        const dlBtn = it.publicUrl
-          ? `<a href="${escapeHtml(it.publicUrl)}" target="_blank" rel="noopener noreferrer" download="${escapeHtml(it.name)}" class="btn btn-primary btn-sm">다운로드</a>`
-          : `<span class="helper-text">B2 링크 없음</span>`;
+        const dlId = registerDownloadableFile(it);
+        const dlBtn = dlId
+          ? `<button type="button" class="btn btn-primary btn-sm" data-dl-file="${escapeHtml(dlId)}">개별 다운로드</button>`
+          : `<span class="helper-text">파일 없음</span>`;
         return `
           <tr>
             <td class="nowrap-col"><strong>${escapeHtml(it.deptName)}</strong></td>
@@ -1447,6 +1541,16 @@
           </tr>
         `;
       }).join("");
+
+      bindIndividualDownloadButtons();
+    }
+
+    function bindIndividualDownloadButtons() {
+      document.querySelectorAll("[data-dl-file]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await triggerSingleFileDownload(btn.dataset.dlFile);
+        });
+      });
     }
 
     function renderTopbar() {
@@ -1857,11 +1961,12 @@
       const rows = [];
       let seq = 1;
       subs.forEach((sub) => {
-        const customNames = (sub.customCueFiles || []).map((f) => f.name).join(", ");
+        const customFiles = Array.isArray(sub.customCueFiles) ? sub.customCueFiles : [];
+        const customNames = customFiles.map((f) => f.name).join(", ");
         (sub.cues || []).forEach((cue, idx) => {
           const subFiles = getCueSubtitleFiles(cue);
           const hasSubText = !!(cue.subtitleText && cue.subtitleText.trim().length > 0);
-          const hasAny = cue.title || cue.topic || cue.note || (cue.mediaFiles && cue.mediaFiles.length) || subFiles.length || hasSubText || cue.subtitleHelp || (sub.customCueFiles && sub.customCueFiles.length);
+          const hasAny = cue.title || cue.topic || cue.note || (cue.mediaFiles && cue.mediaFiles.length) || subFiles.length || hasSubText || cue.subtitleHelp || customFiles.length;
           if (!hasAny && (sub.cues || []).length > 1) return;
           rows.push({
             seq: seq++,
@@ -1874,6 +1979,7 @@
             ceilingText: formatCeilingMicText(sub),
             instruments: (sub.instruments || []).join(", ") || "-",
             mediaReq: formatMediaReqText(sub),
+            customCueFiles: customFiles,
             customCueNames: customNames || "-",
             title: cue.title || (customNames ? "(자체 부서 큐시트 첨부)" : "(순서명 미입력)"),
             topic: cue.topic || "-",
@@ -1892,6 +1998,8 @@
     }
 
     function renderAdminOverview() {
+      downloadableFileRegistry = {};
+
       const rows = getAllRows();
       const subs = Object.values(state.deptSubmissions || {});
       const totalMics = subs.reduce((acc, s) => acc + Number(s.micCount || 0), 0);
@@ -1924,11 +2032,38 @@
                 ? `<span class="pill pill-warn">도움요청</span>`
                 : `<span class="pill pill-red">없음</span>`;
 
-          const filesText = [
-            ...r.mediaFiles.map((f) => `${f.name} (${formatFileSize(f.size)})`),
-            ...r.subtitleFiles.map((f) => f.name),
-            ...(!r.subtitleFiles.length && r.hasSubText ? [`${sanitizeName(r.title)}_자막.txt`] : [])
-          ].join(", ") || "-";
+          const attachEntries = [];
+          r.mediaFiles.forEach((f) => {
+            const dlId = registerDownloadableFile(f);
+            attachEntries.push({
+              label: `${f.name} (${formatFileSize(f.size)})`,
+              dlId
+            });
+          });
+          r.subtitleFiles.forEach((f) => {
+            const dlId = registerDownloadableFile(f);
+            attachEntries.push({
+              label: `${f.name}`,
+              dlId
+            });
+          });
+          if (!r.subtitleFiles.length && r.hasSubText) {
+            const autoTxtName = `${sanitizeName(r.title)}_자막.txt`;
+            const dlId = registerDownloadableFile({ name: autoTxtName }, r.subtitleText);
+            attachEntries.push({
+              label: autoTxtName,
+              dlId
+            });
+          }
+
+          const filesHtml = attachEntries.length
+            ? attachEntries.map((entry) => `
+                <div class="file-chip-row">
+                  <span>${escapeHtml(entry.label)}</span>
+                  ${entry.dlId ? `<button type="button" class="btn btn-outline btn-xs" style="color:var(--primary); border-color:#93c5fd;" data-dl-file="${escapeHtml(entry.dlId)}">다운로드</button>` : ""}
+                </div>
+              `).join("")
+            : "-";
 
           const instAndReq = `
             <div>${escapeHtml(r.instruments)}</div>
@@ -1951,7 +2086,7 @@
               </td>
               <td>${instAndReq}</td>
               <td>${subBadge}</td>
-              <td>${escapeHtml(filesText)}</td>
+              <td>${filesHtml}</td>
               <td>${escapeHtml(r.note)}</td>
               <td class="nowrap-col">
                 <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" data-del-dept-cue="${escapeHtml(r.deptId)}">부서 삭제</button>
@@ -1967,7 +2102,19 @@
       } else {
         deptTbody.innerHTML = subs.map((s) => {
           const helps = (s.cues || []).filter((c) => c.subtitleHelp).map((c, i) => c.title || `순서${i + 1}`);
-          const customDocs = (s.customCueFiles || []).map((f) => f.name).join(", ");
+          const customFiles = Array.isArray(s.customCueFiles) ? s.customCueFiles : [];
+          const customDocsHtml = customFiles.length
+            ? customFiles.map((cf) => {
+                const dlId = registerDownloadableFile(cf);
+                return `
+                  <div class="file-chip-row">
+                    <span>${escapeHtml(cf.name)}</span>
+                    ${dlId ? `<button type="button" class="btn btn-outline btn-xs" style="color:var(--primary); border-color:#93c5fd;" data-dl-file="${escapeHtml(dlId)}">다운로드</button>` : ""}
+                  </div>
+                `;
+              }).join("")
+            : "없음";
+
           const mediaReq = formatMediaReqText(s);
           const bgmOrVideoBadge = (s.requestBgm || s.requestVideo)
             ? `<span class="pill pill-green">${escapeHtml(mediaReq)}</span>`
@@ -1981,7 +2128,7 @@
               <td class="nowrap-col">${escapeHtml(formatCeilingMicText(s))}</td>
               <td>${escapeHtml((s.instruments || []).join(", ") || "미선택")}</td>
               <td class="nowrap-col">${bgmOrVideoBadge}</td>
-              <td>${customDocs ? `<span class="pill pill-blue">${escapeHtml(customDocs)}</span>` : "없음"}</td>
+              <td>${customDocsHtml}</td>
               <td>${helps.length ? `<span class="pill pill-warn">${escapeHtml(helps.join(", "))}</span>` : "없음"}</td>
               <td>${escapeHtml(s.generalNote || "-")}</td>
               <td class="nowrap-col">
@@ -1999,6 +2146,7 @@
       });
 
       renderB2FilesTable();
+      bindIndividualDownloadButtons();
     }
 
     function renderAdminManage() {
