@@ -885,8 +885,8 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v3";
-    const IDB_NAME = "gm_media_guide_files_b2_v3";
+    const STORAGE_KEY = "gm_media_guide_b2_v4";
+    const IDB_NAME = "gm_media_guide_files_b2_v4";
     const IDB_STORE = "files";
 
     function deepClone(obj) {
@@ -941,13 +941,22 @@
     let fileCache = {};
     let downloadableFileRegistry = {};
 
+    function buildWorkerDownloadUrl(objectKey, fileName = "") {
+      if (!objectKey || !B2_CONFIG.signerBaseUrl) return "";
+      const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+      const params = new URLSearchParams({ objectKey });
+      if (fileName) params.set("fileName", fileName);
+      return `${base}?${params.toString()}`;
+    }
+
     function registerDownloadableFile(meta, fallbackText = "") {
       if (!meta || !meta.name) return "";
       const id = "dl_" + Math.random().toString(36).slice(2, 10);
       downloadableFileRegistry[id] = {
         key: meta.key || "",
         name: meta.name,
-        url: meta.publicUrl || (meta.b2Key ? buildPublicB2Url(meta.b2Key) : ""),
+        b2Key: meta.b2Key || "",
+        url: meta.publicUrl || buildWorkerDownloadUrl(meta.b2Key, meta.name),
         fallbackText
       };
       return id;
@@ -979,9 +988,10 @@
           return;
         }
 
-        if (item.url) {
-          showToast(`'${item.name}' 파일 불러오는 중...`);
-          const res = await fetch(item.url);
+        const dlUrl = item.b2Key ? buildWorkerDownloadUrl(item.b2Key, item.name) : item.url;
+        if (dlUrl) {
+          showToast(`'${item.name}' 다운로드 중...`);
+          const res = await fetch(dlUrl);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const blob = await res.blob();
           saveBlobAsFile(blob, item.name);
@@ -991,12 +1001,7 @@
 
         showToast("다운로드 가능한 파일 경로가 없습니다.");
       } catch (err) {
-        if (item.url) {
-          window.open(item.url, "_blank", "noopener,noreferrer");
-          showToast("새 탭에서 파일을 열었습니다.");
-        } else {
-          alert(`파일 다운로드에 실패했습니다.\n사유: ${err.message}`);
-        }
+        alert(`파일 다운로드에 실패했습니다.\n사유: ${err.message}`);
       }
     }
 
@@ -1013,12 +1018,6 @@
 
     function isB2Configured() {
       return Boolean(B2_CONFIG.signerBaseUrl && B2_CONFIG.bucketName);
-    }
-
-    function buildPublicB2Url(objectKey) {
-      if (!objectKey) return "";
-      const encodedPath = objectKey.split("/").map(encodeURIComponent).join("/");
-      return `https://${B2_CONFIG.bucketName}.s3.${B2_CONFIG.region}.backblazeb2.com/${encodedPath}`;
     }
 
     function setUploadProgressText(text) {
@@ -1127,10 +1126,11 @@
       return `${(n / (1024 * 1024)).toFixed(1)} MB`;
     }
 
-    function uploadFileWithProgress(url, file, onProgress) {
+    function sendFileViaWorker(endpointUrl, file, onProgress) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open("PUT", url, true);
+        xhr.open("POST", endpointUrl, true);
+        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable && onProgress) {
             onProgress(Math.round((e.loaded / e.total) * 100));
@@ -1138,9 +1138,18 @@
         };
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
+            try {
+              resolve(JSON.parse(xhr.responseText || "{}"));
+            } catch {
+              resolve({});
+            }
           } else {
-            reject(new Error(`업로드 실패 (HTTP ${xhr.status})`));
+            let errMsg = `HTTP ${xhr.status}`;
+            try {
+              const j = JSON.parse(xhr.responseText || "{}");
+              if (j.error) errMsg = j.error;
+            } catch {}
+            reject(new Error(errMsg));
           }
         };
         xhr.onerror = () => reject(new Error("네트워크 오류로 업로드에 실패했습니다."));
@@ -1153,28 +1162,17 @@
       const safeDept = sanitizeName(deptName);
       const safeFile = sanitizeName(file.name);
       const objectKey = `event_files/${safeDept}/${kind}/${key}_${safeFile}`;
+      const uploadEndpoint = `${base}?objectKey=${encodeURIComponent(objectKey)}`;
 
-      const presignRes = await fetch(base, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ objectKey })
-      });
-      if (!presignRes.ok) {
-        throw new Error("업로드 URL 발급에 실패했습니다.");
-      }
-      const data = await presignRes.json();
-      if (!data.uploadUrl) {
-        throw new Error("유효한 uploadUrl이 반환되지 않았습니다.");
-      }
-
-      setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... 0%`);
-      await uploadFileWithProgress(data.uploadUrl, file, (pct) => {
-        setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... ${pct}%`);
+      setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) 업로드 중... 0%`);
+      const result = await sendFileViaWorker(uploadEndpoint, file, (pct) => {
+        setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) 업로드 중... ${pct}%`);
       });
       setUploadProgressText("");
+
       return {
         b2Key: objectKey,
-        publicUrl: data.publicUrl || buildPublicB2Url(objectKey)
+        publicUrl: result.downloadUrl || buildWorkerDownloadUrl(objectKey, file.name)
       };
     }
 
@@ -1477,7 +1475,7 @@
             name: cf.name,
             size: cf.size || 0,
             b2Key: cf.b2Key || "",
-            publicUrl: cf.publicUrl || buildPublicB2Url(cf.b2Key)
+            publicUrl: cf.publicUrl || buildWorkerDownloadUrl(cf.b2Key, cf.name)
           });
         });
         (sub.cues || []).forEach((cue, idx) => {
@@ -1490,7 +1488,7 @@
               name: mf.name,
               size: mf.size || 0,
               b2Key: mf.b2Key || "",
-              publicUrl: mf.publicUrl || buildPublicB2Url(mf.b2Key)
+              publicUrl: mf.publicUrl || buildWorkerDownloadUrl(mf.b2Key, mf.name)
             });
           });
           getCueSubtitleFiles(cue).forEach((sf) => {
@@ -1501,7 +1499,7 @@
               name: sf.name,
               size: sf.size || 0,
               b2Key: sf.b2Key || "",
-              publicUrl: sf.publicUrl || buildPublicB2Url(sf.b2Key)
+              publicUrl: sf.publicUrl || buildWorkerDownloadUrl(sf.b2Key, sf.name)
             });
           });
         });
@@ -1517,7 +1515,7 @@
       const items = collectAllB2Files();
       if (statusText) {
         statusText.textContent = isB2Configured()
-          ? `버킷: ${B2_CONFIG.bucketName} (직접 PUT) · 등록 ${items.length}개`
+          ? `버킷: ${B2_CONFIG.bucketName} (워커 중계) · 등록 ${items.length}개`
           : "B2_CONFIG 미설정 (로컬 백업 모드)";
       }
 
