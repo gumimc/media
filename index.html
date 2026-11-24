@@ -697,10 +697,7 @@
           <div id="cueListContainer"></div>
 
           <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; justify-content:space-between; align-items:center;">
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              <button type="button" class="btn btn-success" id="saveDeptBtn">제출 저장</button>
-              <button type="button" class="btn btn-outline" id="exportDeptJsonBtn">관리자 전달용 파일(.json) 저장</button>
-            </div>
+            <button type="button" class="btn btn-success" id="saveDeptBtn">제출 저장</button>
             <span class="helper-text" id="lastSavedText"></span>
           </div>
         </div>
@@ -713,8 +710,6 @@
             <span>전체 부서 종합 큐시트 현황</span>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
               <button type="button" class="btn btn-outline btn-sm" id="fillAdminSampleBtn">예시 데이터 넣어보기</button>
-              <button type="button" class="btn btn-outline btn-sm" id="importDeptJsonTrigger">+ 부서 제출파일(.json) 불러오기</button>
-              <input type="file" id="importDeptJsonInput" accept=".json,application/json" multiple class="hidden" />
               <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">전체 큐시트 엑셀(.xls) 내보내기</button>
               <button type="button" class="btn btn-primary btn-sm" id="exportZipBtn">부서별 폴더 ZIP 내보내기</button>
             </div>
@@ -866,13 +861,13 @@
       signerBaseUrl: "https://lingering-bread-b3e6.winnee.workers.dev",
       bucketName: "gumimc-media-files",
       region: "us-east-005"
-    }; //[cite: 6]
+    };
 
     const MAX_FILE_BYTES = 500 * 1024 * 1024; // 최대 500MB
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024; // 80MB 이하만 로컬 IndexedDB/ZIP 캐시 보관
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v1";
-    const IDB_NAME = "gm_media_guide_files_b2_v1";
+    const STORAGE_KEY = "gm_media_guide_b2_v2";
+    const IDB_NAME = "gm_media_guide_files_b2_v2";
     const IDB_STORE = "files";
 
     const DEFAULT_STATE = {
@@ -2028,7 +2023,7 @@
       });
     }
 
-    function exportExcel() {
+function exportExcel() {
       const rows = getAllRows();
       if (!rows.length) {
         showToast("내보낼 큐시트 데이터가 없습니다.");
@@ -2036,22 +2031,46 @@
       }
 
       const eventPrefix = sanitizeName(state.eventInfo.name || "행사");
-      const headers = [
-        "연번",
-        "행사명",
-        "부서명",
-        "담당자",
-        "순서명",
-        "주제/내용",
-        "시간",
-        "필요마이크",
-        "마이크스탠드",
-        "천장E/L마이크",
-        "사용악기",
-        "재생요청",
-        "자체부서큐시트",
-        "비고/메모"
+      const dataRows = rows.map((r) => ({
+        "연번": r.seq,
+        "행사명": state.eventInfo.name || "",
+        "부서명": r.deptName,
+        "담당자": r.contact,
+        "순서명": r.title,
+        "주제/내용": r.topic,
+        "시간": r.duration,
+        "필요마이크": `${r.micCount}개`,
+        "마이크스탠드": r.standText,
+        "천장E/L마이크": r.ceilingText,
+        "사용악기": r.instruments,
+        "재생요청": r.mediaReq,
+        "자체부서큐시트": r.customCueNames,
+        "비고/메모": r.note
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dataRows);
+      worksheet["!cols"] = [
+        { wch: 8 },
+        { wch: 24 },
+        { wch: 14 },
+        { wch: 24 },
+        { wch: 22 },
+        { wch: 24 },
+        { wch: 12 },
+        { wch: 14 },
+        { wch: 16 },
+        { wch: 15 },
+        { wch: 24 },
+        { wch: 18 },
+        { wch: 24 },
+        { wch: 32 }
       ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "종합큐시트");
+      XLSX.writeFile(workbook, `${eventPrefix}_종합큐시트.xlsx`);
+      showToast("엑셀(.xlsx) 파일이 다운로드되었습니다.");
+    }
 
       const colWidths = [70, 175, 110, 180, 165, 175, 95, 105, 120, 115, 175, 135, 180, 240];
 
@@ -2316,158 +2335,6 @@
       const sub = collectDeptFormIntoState(user);
       document.getElementById("lastSavedText").textContent = `최근 저장: ${sub.updatedAt}`;
       showToast("부서 내용이 저장되었습니다.");
-    });
-
-    document.getElementById("exportDeptJsonBtn").addEventListener("click", async () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = collectDeptFormIntoState(user);
-
-      const packedCustomFiles = [];
-      for (const cf of (sub.customCueFiles || [])) {
-        const rec = cf.savedLocal ? await getFileRecord(cf.key) : null;
-        packedCustomFiles.push({ ...cf, dataUrl: rec ? rec.dataUrl : null });
-      }
-
-      const packedCues = [];
-      for (const cue of sub.cues) {
-        const packedMedia = [];
-        for (const mf of (cue.mediaFiles || [])) {
-          const rec = mf.savedLocal ? await getFileRecord(mf.key) : null;
-          packedMedia.push({ ...mf, dataUrl: rec ? rec.dataUrl : null });
-        }
-        const packedSubs = [];
-        for (const sf of getCueSubtitleFiles(cue)) {
-          const sRec = sf.savedLocal ? await getFileRecord(sf.key) : null;
-          packedSubs.push({ ...sf, dataUrl: sRec ? sRec.dataUrl : null });
-        }
-        packedCues.push({ ...cue, mediaFiles: packedMedia, subtitleFiles: packedSubs });
-      }
-
-      const payload = {
-        eventName: state.eventInfo.name,
-        submission: { ...sub, customCueFiles: packedCustomFiles, cues: packedCues }
-      };
-
-      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${sanitizeName(user.deptName)}_제출데이터.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("관리자 전달용 .json 파일이 저장되었습니다.");
-    });
-
-    document.getElementById("importDeptJsonTrigger").addEventListener("click", () => {
-      document.getElementById("importDeptJsonInput").click();
-    });
-
-    document.getElementById("importDeptJsonInput").addEventListener("change", async (e) => {
-      const files = Array.from(e.target.files || []);
-      for (const file of files) {
-        try {
-          const text = await file.text();
-          const parsed = JSON.parse(text);
-          const sub = parsed.submission || parsed;
-          if (!sub || !sub.deptId) continue;
-
-          const cleanCustomFiles = [];
-          for (const cf of (sub.customCueFiles || [])) {
-            const key = cf.key || ("cf_" + Math.random().toString(36).slice(2, 9));
-            if (cf.dataUrl) {
-              await putFileRecord({ key, name: cf.name, type: cf.type || "application/octet-stream", size: cf.size || 0, dataUrl: cf.dataUrl, kind: "custom_cue" });
-            }
-            cleanCustomFiles.push({
-              key,
-              name: cf.name,
-              type: cf.type,
-              size: cf.size,
-              savedLocal: Boolean(cf.dataUrl),
-              b2Key: cf.b2Key || "",
-              publicUrl: cf.publicUrl || buildPublicB2Url(cf.b2Key)
-            });
-          }
-
-          const cleanCues = [];
-          for (const cue of (sub.cues || [])) {
-            const cleanMedia = [];
-            for (const mf of (cue.mediaFiles || [])) {
-              const key = mf.key || ("f_" + Math.random().toString(36).slice(2, 9));
-              if (mf.dataUrl) {
-                await putFileRecord({ key, name: mf.name, type: mf.type || "application/octet-stream", size: mf.size || 0, dataUrl: mf.dataUrl, kind: "media" });
-              }
-              cleanMedia.push({
-                key,
-                name: mf.name,
-                type: mf.type,
-                size: mf.size,
-                savedLocal: Boolean(mf.dataUrl),
-                b2Key: mf.b2Key || "",
-                publicUrl: mf.publicUrl || buildPublicB2Url(mf.b2Key)
-              });
-            }
-
-            const cleanSubs = [];
-            const rawSubs = Array.isArray(cue.subtitleFiles) && cue.subtitleFiles.length
-              ? cue.subtitleFiles
-              : (cue.subtitleDataUrl && cue.subtitleFileName)
-                ? [{ key: cue.subtitleFileKey, name: cue.subtitleFileName, dataUrl: cue.subtitleDataUrl }]
-                : [];
-            for (const sf of rawSubs) {
-              const sKey = sf.key || ("s_" + Math.random().toString(36).slice(2, 9));
-              if (sf.dataUrl) {
-                await putFileRecord({ key: sKey, name: sf.name, type: sf.type || "text/plain", size: sf.size || sf.dataUrl.length, dataUrl: sf.dataUrl, kind: "subtitle" });
-              }
-              cleanSubs.push({
-                key: sKey,
-                name: sf.name,
-                type: sf.type || "text/plain",
-                size: sf.size || 0,
-                savedLocal: Boolean(sf.dataUrl),
-                b2Key: sf.b2Key || "",
-                publicUrl: sf.publicUrl || buildPublicB2Url(sf.b2Key)
-              });
-            }
-
-            cleanCues.push({
-              id: cue.id || ("cue_" + Math.random().toString(36).slice(2, 9)),
-              title: cue.title || "",
-              topic: cue.topic || "",
-              duration: cue.duration || "",
-              note: cue.note || "",
-              subtitleHelp: !!cue.subtitleHelp,
-              subtitleText: cue.subtitleText || "",
-              subtitleFiles: cleanSubs,
-              mediaFiles: cleanMedia
-            });
-          }
-
-          state.deptSubmissions[sub.deptId] = {
-            deptId: sub.deptId,
-            deptName: sub.deptName || sub.deptId,
-            contact: sub.contact || "",
-            micCount: Number(sub.micCount || 0),
-            requestMicStand: !!sub.requestMicStand,
-            micStandCount: Number(sub.micStandCount || 0),
-            useCeilingMic: !!sub.useCeilingMic,
-            instruments: Array.isArray(sub.instruments) ? sub.instruments : [],
-            requestBgm: !!sub.requestBgm,
-            requestVideo: !!sub.requestVideo,
-            customCueFiles: cleanCustomFiles,
-            generalNote: sub.generalNote || "",
-            updatedAt: sub.updatedAt || new Date().toLocaleString("ko-KR"),
-            cues: cleanCues.length ? cleanCues : [createEmptyCue()]
-          };
-        } catch (err) {
-          console.error(err);
-          alert(`${file.name} 파일을 불러오는 중 오류가 발생했습니다.`);
-        }
-      }
-      e.target.value = "";
-      saveState();
-      renderAdminOverview();
-      showToast("부서 제출파일이 종합 현황에 반영되었습니다.");
     });
 
     document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
