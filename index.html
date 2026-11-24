@@ -1167,9 +1167,9 @@
         throw new Error("유효한 uploadUrl이 반환되지 않았습니다.");
       }
 
-      setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... 0%`);
+      setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) 업로드 중... 0%`);
       await uploadFileWithProgress(data.uploadUrl, file, (pct) => {
-        setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... ${pct}%`);
+        setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) 업로드 중... ${pct}%`);
       });
       setUploadProgressText("");
       return {
@@ -1517,7 +1517,7 @@
       const items = collectAllB2Files();
       if (statusText) {
         statusText.textContent = isB2Configured()
-          ? `버킷: ${B2_CONFIG.bucketName} (Public) · 등록 ${items.length}개`
+          ? `버킷: ${B2_CONFIG.bucketName} (워커 중계) · 등록 ${items.length}개`
           : "B2_CONFIG 미설정 (로컬 백업 모드)";
       }
 
