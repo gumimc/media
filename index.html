@@ -898,12 +898,29 @@
       accounts: [
         { id: "admin", pw: "1234", deptName: "미디어팀(관리자)", role: "admin" },
         { id: "youth", pw: "1111", deptName: "청년부", role: "dept" },
-        { id: "teen", pw: "1111", deptName: "중고등부", role: "dept" },
         { id: "elem", pw: "1111", deptName: "초등부", role: "dept" },
+        { id: "teen", pw: "1111", deptName: "중고등부", role: "dept" },
         { id: "praise", pw: "1111", deptName: "찬양팀", role: "dept" }
       ],
       deptSubmissions: {}
     };
+
+    function mergeWithDefaultAccounts(parsedAccounts) {
+      const defaults = deepClone(DEFAULT_STATE.accounts);
+      const list = Array.isArray(parsedAccounts)
+        ? parsedAccounts.filter((a) => a && a.id && a.pw && a.deptName && a.role)
+        : [];
+      if (!list.length) return defaults;
+
+      const map = new Map();
+      defaults.forEach((acc) => map.set(acc.id, acc));
+      list.forEach((acc) => map.set(acc.id, {
+        ...acc,
+        id: String(acc.id).trim(),
+        pw: String(acc.pw).trim()
+      }));
+      return Array.from(map.values());
+    }
 
     function loadState() {
       const fallback = deepClone(DEFAULT_STATE);
@@ -913,17 +930,13 @@
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return fallback;
 
-        const validAccounts = Array.isArray(parsed.accounts) && parsed.accounts.length
-          ? parsed.accounts.filter((a) => a && a.id && a.pw && a.deptName && a.role)
-          : fallback.accounts;
-
         return {
           sessionUserId: parsed.sessionUserId || null,
           eventInfo: {
             ...fallback.eventInfo,
             ...(parsed.eventInfo && typeof parsed.eventInfo === "object" ? parsed.eventInfo : {})
           },
-          accounts: validAccounts.length ? validAccounts : fallback.accounts,
+          accounts: mergeWithDefaultAccounts(parsed.accounts),
           deptSubmissions: parsed.deptSubmissions && typeof parsed.deptSubmissions === "object" ? parsed.deptSubmissions : {}
         };
       } catch {
@@ -1054,6 +1067,7 @@
 
     async function syncSubmissionToB2(sub) {
       if (!sub || !sub.deptId || !isB2Configured()) return;
+      if (!sub.syncedAt) sub.syncedAt = Date.now();
       try {
         const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
         const res = await fetch(`${base}?action=save_submission`, {
@@ -1080,11 +1094,17 @@
         }
 
         const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
-        Object.keys(remoteSubs).forEach((deptId) => {
+        Object.keys(remoteSubs).forEach((deptId, idx) => {
           const rSub = remoteSubs[deptId];
           if (!rSub || typeof rSub !== "object") return;
           const targetId = rSub.deptId || deptId;
           const lSub = state.deptSubmissions[targetId];
+          const resolvedSyncedAt =
+            typeof rSub.syncedAt === "number" && rSub.syncedAt > 0
+              ? rSub.syncedAt
+              : (lSub && typeof lSub.syncedAt === "number" && lSub.syncedAt > 0
+                ? lSub.syncedAt
+                : Date.now() + idx);
 
           const remoteHasContent =
             Boolean((rSub.contact || "").trim()) ||
@@ -1098,7 +1118,11 @@
             (Array.isArray(rSub.cues) && rSub.cues.some((c) => c && (c.title || c.topic || c.duration || c.note || c.subtitleText || c.subtitleHelp || (c.mediaFiles && c.mediaFiles.length) || (c.subtitleFiles && c.subtitleFiles.length))));
 
           if (!lSub || remoteHasContent || !lSub.updatedAt) {
-            state.deptSubmissions[targetId] = { ...rSub, deptId: targetId };
+            state.deptSubmissions[targetId] = {
+              ...rSub,
+              deptId: targetId,
+              syncedAt: resolvedSyncedAt
+            };
           }
         });
 
@@ -1378,11 +1402,13 @@
           customCueFiles: [],
           generalNote: "",
           updatedAt: "",
+          syncedAt: Date.now(),
           cues: [createEmptyCue()]
         };
       } else {
         const sub = state.deptSubmissions[deptId];
         sub.deptName = deptName;
+        if (typeof sub.syncedAt !== "number" || sub.syncedAt <= 0) sub.syncedAt = Date.now();
         if (typeof sub.requestMicStand !== "boolean") sub.requestMicStand = false;
         if (typeof sub.micStandCount !== "number") sub.micStandCount = Number(sub.micStandCount || 0);
         if (typeof sub.useCeilingMic !== "boolean") sub.useCeilingMic = false;
@@ -1451,8 +1477,8 @@
       return { key: rec.key, name: rec.name, type: rec.type, size: rec.size, savedLocal: true };
     }
 
-    async function buildSampleSubmissionForDept(deptId, deptName) {
-      const nowStr = new Date().toLocaleString("ko-KR");
+    async function buildSampleSubmissionForDept(deptId, deptName, syncedAt = Date.now()) {
+      const nowStr = new Date(syncedAt).toLocaleString("ko-KR");
       if (deptId === "youth") {
         const sub1 = await createSampleSubtitleFileRecord(
           "청년부_오프닝_자막.txt",
@@ -1472,6 +1498,7 @@
           customCueFiles: [],
           generalNote: "30분 전 밴드 라인체크 희망",
           updatedAt: nowStr,
+          syncedAt,
           cues: [
             {
               id: "sample_youth_1",
@@ -1505,9 +1532,10 @@
         customCueFiles: [],
         generalNote: "예시 데이터입니다.",
         updatedAt: nowStr,
+        syncedAt,
         cues: [
           {
-            id: "sample_generic_1",
+            id: `sample_${deptId}_1`,
             title: `${deptName} 특별 순서`,
             topic: "성탄의 기쁨",
             duration: "약 5분",
@@ -1524,7 +1552,9 @@
     async function fillDeptSampleData(user) {
       const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
       if (!ok) return;
-      state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName);
+      const existing = state.deptSubmissions[user.id];
+      const syncedAt = (typeof existing?.syncedAt === "number" && existing.syncedAt > 0) ? existing.syncedAt : Date.now();
+      state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName, syncedAt);
       saveState();
       await syncSubmissionToB2(state.deptSubmissions[user.id]);
       renderDeptView(user);
@@ -1534,10 +1564,14 @@
     async function fillAdminSampleData() {
       const ok = confirm("청년부·초등부·중고등부·찬양팀의 가이드용 예시 데이터를 채우시겠습니까?");
       if (!ok) return;
-      for (const id of ["youth", "elem", "teen", "praise"]) {
+      const baseTime = Date.now();
+      const orderIds = ["youth", "elem", "teen", "praise"];
+      for (let i = 0; i < orderIds.length; i++) {
+        const id = orderIds[i];
         const acc = state.accounts.find((a) => a.id === id);
         if (acc) {
-          state.deptSubmissions[id] = await buildSampleSubmissionForDept(acc.id, acc.deptName);
+          const syncedAt = baseTime + i * 1000;
+          state.deptSubmissions[id] = await buildSampleSubmissionForDept(acc.id, acc.deptName, syncedAt);
           await syncSubmissionToB2(state.deptSubmissions[id]);
         }
       }
@@ -2120,6 +2154,7 @@
       sub.useCeilingMic = !!document.getElementById("chkCeilingMic").checked;
       sub.generalNote = document.getElementById("deptGeneralNote").value.trim();
       sub.updatedAt = new Date().toLocaleString("ko-KR");
+      if (!sub.syncedAt) sub.syncedAt = Date.now();
       saveState();
       return sub;
     }
@@ -2478,11 +2513,12 @@
 
     document.getElementById("loginForm").addEventListener("submit", (e) => {
       e.preventDefault();
+      state.accounts = mergeWithDefaultAccounts(state.accounts);
       const id = document.getElementById("loginId").value.trim();
       const pw = document.getElementById("loginPw").value.trim();
       const found = state.accounts.find((a) => String(a.id).trim() === id && String(a.pw).trim() === pw);
       if (!found) {
-        alert("아이디 또는 비밀번호가 올바르지 않습니다.");
+        alert("아이디 또는 비밀번호가 올바르지 않습니다.\n테스트 계정: admin / 1234 또는 youth / 1111");
         return;
       }
       state.sessionUserId = found.id;
