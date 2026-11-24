@@ -938,16 +938,21 @@
     let remoteB2Files = [];
     let remoteB2Loaded = false;
 
-    function getDeptOrderIndex(deptId) {
-      const deptAccounts = state.accounts.filter((a) => a.role === "dept");
-      const idx = deptAccounts.findIndex((a) => a.id === deptId);
-      return idx >= 0 ? idx : 9999;
+    function getDeptSyncedTime(sub) {
+      if (!sub) return Number.MAX_SAFE_INTEGER;
+      if (typeof sub.syncedAt === "number" && sub.syncedAt > 0) return sub.syncedAt;
+      if (sub.updatedAt) {
+        const parsed = Date.parse(sub.updatedAt);
+        if (!Number.isNaN(parsed)) return parsed;
+      }
+      return Number.MAX_SAFE_INTEGER;
     }
 
     function getSortedSubmissions() {
       return Object.values(state.deptSubmissions || {}).sort(
-        (a, b) => getDeptOrderIndex(a.deptId) - getDeptOrderIndex(b.deptId)
+        (a, b) => getDeptSyncedTime(a) - getDeptSyncedTime(b)
       );
+    }
     }
 
     function buildWorkerDownloadUrl(objectKey, fileName = "") {
