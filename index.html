@@ -953,8 +953,10 @@
 
     function getDeptOrderKey(sub) {
       if (!sub) return Number.MAX_SAFE_INTEGER;
-      const subTime = Number(sub.submittedAt || sub.syncedAt);
+      const subTime = Number(sub.submittedAt);
       if (Number.isFinite(subTime) && subTime > 0) return subTime;
+      const synTime = Number(sub.syncedAt);
+      if (Number.isFinite(synTime) && synTime > 0) return synTime;
       return Number.MAX_SAFE_INTEGER;
     }
 
@@ -1111,6 +1113,7 @@
               ? rSynced
               : (Number.isFinite(lSynced) && lSynced > 0 ? lSynced : Date.now() + idx * 1000);
 
+          // 최초 제출 시각을 유지하되, 양쪽 모두 없을 때만 확정
           const resolvedSubmittedAt =
             Number.isFinite(rSubmitted) && rSubmitted > 0
               ? rSubmitted
@@ -1557,8 +1560,15 @@
     async function fillDeptSampleData(user) {
       const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
       if (!ok) return;
+      const existing = state.deptSubmissions[user.id];
       const now = Date.now();
-      state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName, now);
+      const submittedAt =
+        Number.isFinite(Number(existing?.submittedAt)) && Number(existing.submittedAt) > 0
+          ? Number(existing.submittedAt)
+          : now;
+      state.deptSubmissions[user.id] = await buildSampleSubmissionForDept(user.id, user.deptName, submittedAt);
+      state.deptSubmissions[user.id].syncedAt = now;
+      state.deptSubmissions[user.id].updatedAt = new Date(now).toLocaleString("ko-KR");
       saveState();
       await syncSubmissionToB2(state.deptSubmissions[user.id]);
       renderDeptView(user);
@@ -2162,7 +2172,10 @@
       const now = Date.now();
       sub.updatedAt = new Date(now).toLocaleString("ko-KR");
       sub.syncedAt = now;
-      sub.submittedAt = now;
+      // 최초 제출 시각은 한 번 정해지면 재수정 시에도 유지
+      if (!(Number.isFinite(Number(sub.submittedAt)) && Number(sub.submittedAt) > 0)) {
+        sub.submittedAt = now;
+      }
       saveState();
       return sub;
     }
