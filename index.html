@@ -2588,20 +2588,37 @@
     });
 
     document.getElementById("resetEventBtn").addEventListener("click", async () => {
-      const ok = confirm("행사명, 제출된 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청 및 업로드 파일이 모두 초기화됩니다. 진행하시겠습니까?");
+      const ok = confirm("행사명, 제출된 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청 및 업로드 파일(B2 포함)이 모두 영구 삭제됩니다. 진행하시겠습니까?");
       if (!ok) return;
-      state.eventInfo = {
-        name: "새 행사를 설정해 주세요",
-        date: "",
-        notice: ""
-      };
-      state.deptSubmissions = {};
-      remoteB2Files = [];
-      remoteB2Loaded = false;
-      saveState();
-      await clearAllFileRecords();
-      renderAll();
-      showToast("행사 데이터가 모두 초기화되었습니다.");
+
+      try {
+        if (isB2Configured()) {
+          const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+          const res = await fetch(`${base}?action=reset_all`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || `HTTP ${res.status}`);
+          }
+        }
+
+        state.eventInfo = {
+          name: "새 행사를 설정해 주세요",
+          date: "",
+          notice: ""
+        };
+        state.deptSubmissions = {};
+        remoteB2Files = [];
+        remoteB2Loaded = false;
+        saveState();
+        await clearAllFileRecords();
+        renderAll();
+        showToast("행사 데이터와 B2 파일이 모두 완전히 삭제되었습니다.");
+      } catch (err) {
+        alert(`전체 초기화 중 오류가 발생했습니다.\n사유: ${err.message}`);
+      }
     });
 
     renderAll();
