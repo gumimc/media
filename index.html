@@ -882,6 +882,7 @@
     };
 
     const SUBMISSIONS_PREFIX = "_submissions/";
+    const SYSTEM_META_KEY = "__system_meta__";
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
@@ -898,7 +899,8 @@
       eventInfo: {
         name: "2026 성탄전야 발표회",
         date: "2026.12.24(목) 19:30 / 본당",
-        notice: "음원·영상 및 TXT 자막은 행사 3일 전까지 업로드해 주세요."
+        notice: "음원·영상 및 TXT 자막은 행사 3일 전까지 업로드해 주세요.",
+        updatedAt: 0
       },
       accounts: [
         { id: "admin", pw: "1234", deptName: "미디어팀(관리자)", role: "admin", deptUid: "uid_admin" },
@@ -958,7 +960,7 @@
         const normalizedSubs = {};
 
         Object.entries(rawSubs).forEach(([key, sub]) => {
-          if (!sub || typeof sub !== "object") return;
+          if (!sub || typeof sub !== "object" || key === SYSTEM_META_KEY || sub.deptUid === SYSTEM_META_KEY) return;
           const accByUid = accounts.find((a) => a.deptUid === (sub.deptUid || key));
           const accById = accounts.find((a) => a.id === (sub.deptId || key));
           const matchedAcc = accByUid || accById;
@@ -1012,10 +1014,109 @@
       if (el) el.textContent = text;
     }
 
+    function applyRemoteSystemMeta(metaObj) {
+      if (!metaObj || typeof metaObj !== "object") return false;
+      let changed = false;
+
+      if (metaObj.eventInfo && typeof metaObj.eventInfo === "object") {
+        const remoteUpdated = Number(metaObj.eventInfo.updatedAt || metaObj.syncedAt || 0);
+        const localUpdated = Number(state.eventInfo?.updatedAt || 0);
+        if (remoteUpdated >= localUpdated || !state.eventInfo?.name || state.eventInfo.name === "새 행사를 설정해 주세요") {
+          state.eventInfo = {
+            name: metaObj.eventInfo.name || "",
+            date: metaObj.eventInfo.date || "",
+            notice: metaObj.eventInfo.notice || "",
+            updatedAt: remoteUpdated || Date.now()
+          };
+          changed = true;
+        }
+      }
+
+      if (Array.isArray(metaObj.accounts) && metaObj.accounts.length > 0) {
+        state.accounts = mergeWithDefaultAccounts(metaObj.accounts);
+        state.accounts.forEach((a) => ensureAccountUid(a));
+        changed = true;
+      }
+
+      if (changed) {
+        saveState();
+        updateEventBannerUI();
+      }
+      return changed;
+    }
+
+    function updateEventBannerUI() {
+      const nameEl = document.getElementById("bannerEventName");
+      const metaEl = document.getElementById("bannerEventMeta");
+      if (nameEl) {
+        nameEl.textContent = state.eventInfo?.name || "행사명 미지정";
+      }
+      if (metaEl) {
+        metaEl.innerHTML = `
+          <span><strong>일시/장소:</strong> ${escapeHtml(state.eventInfo?.date || "-")}</span>
+          <span><strong>안내:</strong> ${escapeHtml(state.eventInfo?.notice || "-")}</span>
+        `;
+      }
+    }
+
+    async function syncSystemMetaToB2({ silent = false } = {}) {
+      if (!isB2Configured()) return false;
+      const now = Date.now();
+      state.eventInfo.updatedAt = now;
+      saveState();
+
+      const payload = {
+        isSystemMeta: true,
+        deptUid: SYSTEM_META_KEY,
+        deptId: SYSTEM_META_KEY,
+        syncedAt: now,
+        eventInfo: state.eventInfo,
+        accounts: state.accounts
+      };
+
+      try {
+        const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+        const res = await fetch(`${base}?action=save_submission`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deptId: SYSTEM_META_KEY, submission: payload }),
+          keepalive: true
+        });
+        if (!res.ok) {
+          if (!silent) console.warn("System meta sync failed:", res.status);
+          return false;
+        }
+        return true;
+      } catch (e) {
+        if (!silent) console.warn("System meta sync error:", e);
+        return false;
+      }
+    }
+
+    async function fetchRemoteSystemMeta() {
+      if (!isB2Configured()) return false;
+      try {
+        const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+        const res = await fetch(`${base}?action=submissions&_t=${Date.now()}`, { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok || !data.ok) return false;
+
+        const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
+        const meta = remoteSubs[SYSTEM_META_KEY] || Object.values(remoteSubs).find((s) => s && (s.isSystemMeta || s.deptUid === SYSTEM_META_KEY));
+        if (meta) {
+          return applyRemoteSystemMeta(meta);
+        }
+        return false;
+      } catch (e) {
+        console.warn("Remote system meta fetch failed:", e);
+        return false;
+      }
+    }
+
     function getNextDeptOrderSeq(excludeUid = "") {
       let maxSeq = 0;
       Object.values(state.deptSubmissions || {}).forEach((sub) => {
-        if (!sub || sub.deptUid === excludeUid) return;
+        if (!sub || sub.deptUid === excludeUid || sub.deptUid === SYSTEM_META_KEY) return;
         const n = Number(sub.orderSeq);
         if (Number.isInteger(n) && n > maxSeq) {
           maxSeq = n;
@@ -1042,11 +1143,13 @@
     }
 
     function getSortedSubmissions() {
-      return Object.values(state.deptSubmissions || {}).sort((a, b) => {
-        const diff = getDeptOrderKey(a) - getDeptOrderKey(b);
-        if (diff !== 0) return diff;
-        return String(a?.deptUid || a?.deptId || "").localeCompare(String(b?.deptUid || b?.deptId || ""));
-      });
+      return Object.values(state.deptSubmissions || {})
+        .filter((s) => s && !s.isSystemMeta && s.deptUid !== SYSTEM_META_KEY && s.deptId !== SYSTEM_META_KEY)
+        .sort((a, b) => {
+          const diff = getDeptOrderKey(a) - getDeptOrderKey(b);
+          if (diff !== 0) return diff;
+          return String(a?.deptUid || a?.deptId || "").localeCompare(String(b?.deptUid || b?.deptId || ""));
+        });
     }
 
     function getSubmissionStorageKey(sub) {
@@ -1243,10 +1346,16 @@
         if (!res.ok || !data.ok) return null;
 
         const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
+
+        const meta = remoteSubs[SYSTEM_META_KEY] || Object.values(remoteSubs).find((s) => s && (s.isSystemMeta || s.deptUid === SYSTEM_META_KEY));
+        if (meta) {
+          applyRemoteSystemMeta(meta);
+        }
+
         let matchedRemote = null;
 
         for (const key of candidates) {
-          if (remoteSubs[key]) {
+          if (remoteSubs[key] && !remoteSubs[key].isSystemMeta) {
             matchedRemote = remoteSubs[key];
             break;
           }
@@ -1254,7 +1363,7 @@
 
         if (!matchedRemote) {
           matchedRemote = Object.values(remoteSubs).find(
-            (s) => s && (s.deptUid === uid || candidates.includes(s.deptId))
+            (s) => s && !s.isSystemMeta && (s.deptUid === uid || candidates.includes(s.deptId))
           ) || null;
         }
 
@@ -1299,10 +1408,16 @@
         }
 
         const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
+
+        const meta = remoteSubs[SYSTEM_META_KEY] || Object.values(remoteSubs).find((s) => s && (s.isSystemMeta || s.deptUid === SYSTEM_META_KEY));
+        if (meta) {
+          applyRemoteSystemMeta(meta);
+        }
+
         const nextSubmissions = {};
 
         Object.entries(remoteSubs).forEach(([rawKey, rSub]) => {
-          if (!rSub || typeof rSub !== "object") return;
+          if (!rSub || typeof rSub !== "object" || rawKey === SYSTEM_META_KEY || rSub.isSystemMeta || rSub.deptUid === SYSTEM_META_KEY) return;
           const accByUid = state.accounts.find((a) => a.deptUid === (rSub.deptUid || rawKey));
           const accById = state.accounts.find((a) => a.id === (rSub.deptId || rawKey));
           const matchedAcc = accByUid || accById;
@@ -1331,7 +1446,7 @@
         });
 
         Object.entries(state.deptSubmissions || {}).forEach(([lKey, lSub]) => {
-          if (!lSub || typeof lSub !== "object") return;
+          if (!lSub || typeof lSub !== "object" || lKey === SYSTEM_META_KEY || lSub.isSystemMeta || lSub.deptUid === SYSTEM_META_KEY) return;
           const uid = lSub.deptUid || lKey;
           if (!nextSubmissions[uid]) {
             const acc = state.accounts.find((a) => a.deptUid === uid || a.id === lSub.deptId);
@@ -1359,7 +1474,8 @@
         state.deptSubmissions = nextSubmissions;
         saveState();
         renderAdminOverview();
-        if (showMessage) showToast("고정 식별번호(orderSeq)와 전체 부서 큐시트를 동기화했습니다.");
+        if (activeTab === "adminManage") renderAdminManage();
+        if (showMessage) showToast("현재 행사명, 고정 식별번호 및 전체 부서 큐시트를 동기화했습니다.");
       } catch (err) {
         console.warn("Remote submissions fetch failed:", err);
       }
@@ -2070,12 +2186,7 @@
       document.getElementById("loginView").classList.add("hidden");
       document.getElementById("appView").classList.remove("hidden");
       renderTopbar();
-
-      document.getElementById("bannerEventName").textContent = state.eventInfo.name || "행사명 미지정";
-      document.getElementById("bannerEventMeta").innerHTML = `
-        <span><strong>일시/장소:</strong> ${escapeHtml(state.eventInfo.date || "-")}</span>
-        <span><strong>안내:</strong> ${escapeHtml(state.eventInfo.notice || "-")}</span>
-      `;
+      updateEventBannerUI();
 
       const navTabs = document.getElementById("navTabs");
       if (user.role === "admin") {
@@ -2103,13 +2214,16 @@
       document.getElementById("adminOverviewTab").classList.toggle("hidden", activeTab !== "adminOverview");
       document.getElementById("adminManageTab").classList.toggle("hidden", activeTab !== "adminManage");
 
-      if (activeTab === "dept") renderDeptView(user);
-      else if (activeTab === "adminOverview") {
+      if (activeTab === "dept") {
+        renderDeptView(user);
+      } else if (activeTab === "adminOverview") {
         renderAdminOverview();
         fetchRemoteSubmissions(false);
         fetchRemoteB2Files(false);
+      } else if (activeTab === "adminManage") {
+        renderAdminManage();
+        fetchRemoteSubmissions(false);
       }
-      else if (activeTab === "adminManage") renderAdminManage();
     }
 
     async function renderDeptView(user) {
@@ -2133,8 +2247,8 @@
 
       const remoteSub = await fetchSingleDeptSubmissionFromB2(user);
       const activeUser = getCurrentUser();
-      if (!remoteSub || !activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
-      if (hasDirtyDeptChanges) return;
+      if (!activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
+      if (!remoteSub || hasDirtyDeptChanges) return;
 
       const latest = ensureDeptSubmission(activeUser);
       document.getElementById("deptContact").value = latest.contact || "";
@@ -2764,8 +2878,9 @@
           }
 
           saveState();
+          await syncSystemMetaToB2({ silent: true });
           renderAdminManage();
-          showToast(`'${nextDeptName}' (${nextId}) 계정 정보가 저장되었습니다.`);
+          showToast(`'${nextDeptName}' (${nextId}) 계정 정보가 저장 및 동기화되었습니다.`);
         });
       });
 
@@ -2781,8 +2896,9 @@
           saveState();
           await deleteB2SubmissionObject(uid);
           await deleteB2SubmissionObject(target.id);
+          await syncSystemMetaToB2({ silent: true });
           renderAdminManage();
-          showToast("계정이 삭제되었습니다.");
+          showToast("계정이 삭제 및 동기화되었습니다.");
         });
       });
     }
@@ -2907,8 +3023,9 @@
       showToast("부서별/순서별 폴더 ZIP 파일이 생성되었습니다.");
     }
 
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      await fetchRemoteSystemMeta();
       state.accounts = mergeWithDefaultAccounts(state.accounts);
       const id = document.getElementById("loginId").value.trim();
       const pw = document.getElementById("loginPw").value.trim();
@@ -2934,6 +3051,7 @@
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
       activeTab = null;
+      await fetchRemoteSystemMeta();
       renderAll();
       showToast("브라우저 저장 데이터가 초기화되었습니다.");
     });
@@ -3056,17 +3174,19 @@
     document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
     document.getElementById("exportZipBtn").addEventListener("click", exportZip);
 
-    document.getElementById("eventSettingsForm").addEventListener("submit", (e) => {
+    document.getElementById("eventSettingsForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       state.eventInfo.name = document.getElementById("cfgEventName").value.trim();
       state.eventInfo.date = document.getElementById("cfgEventDate").value.trim();
       state.eventInfo.notice = document.getElementById("cfgEventNotice").value.trim();
+      state.eventInfo.updatedAt = Date.now();
       saveState();
       renderAll();
-      showToast("행사명이 저장되었습니다.");
+      const ok = await syncSystemMetaToB2({ silent: true });
+      showToast(ok ? "행사명이 저장 및 모든 기기에 동기화되었습니다." : "로컬에 저장되었습니다. 네트워크를 확인해 주세요.");
     });
 
-    document.getElementById("addAccountForm").addEventListener("submit", (e) => {
+    document.getElementById("addAccountForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const deptName = document.getElementById("newAccDept").value.trim();
       const id = document.getElementById("newAccId").value.trim();
@@ -3081,8 +3201,9 @@
       state.accounts.push({ id, pw, deptName, role: "dept", deptUid });
       saveState();
       document.getElementById("addAccountForm").reset();
+      await syncSystemMetaToB2({ silent: true });
       renderAdminManage();
-      showToast(`${deptName} 계정이 추가되었습니다.`);
+      showToast(`${deptName} 계정이 추가 및 동기화되었습니다.`);
     });
 
     document.getElementById("resetEventBtn").addEventListener("click", async () => {
@@ -3107,21 +3228,24 @@
         state.eventInfo = {
           name: "새 행사를 설정해 주세요",
           date: "",
-          notice: ""
+          notice: "",
+          updatedAt: Date.now()
         };
         state.deptSubmissions = {};
         remoteB2Files = [];
         remoteB2Loaded = false;
         saveState();
+        await syncSystemMetaToB2({ silent: true });
         await clearAllFileRecords();
         renderAll();
-        showToast("행사 데이터와 B2 파일이 모두 완전히 삭제되었습니다.");
+        showToast("행사 데이터와 B2 파일이 모두 완전히 삭제 및 동기화되었습니다.");
       } catch (err) {
         alert(`전체 초기화 중 오류가 발생했습니다.\n사유: ${err.message}`);
       }
     });
 
     renderAll();
+    fetchRemoteSystemMeta();
   </script>
 </body>
 </html>
