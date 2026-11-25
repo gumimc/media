@@ -982,9 +982,11 @@
     }
 
     function getSortedSubmissions() {
-      return Object.values(state.deptSubmissions || {}).sort(
-        (a, b) => getDeptOrderKey(a) - getDeptOrderKey(b)
-      );
+      return Object.values(state.deptSubmissions || {}).sort((a, b) => {
+        const diff = getDeptOrderKey(a) - getDeptOrderKey(b);
+        if (diff !== 0) return diff;
+        return String(a?.deptId || "").localeCompare(String(b?.deptId || ""));
+      });
     }
 
     function buildWorkerDownloadUrl(objectKey, fileName = "") {
@@ -1135,7 +1137,7 @@
             ? `자동저장 및 B2 동기화 완료 (${sub.updatedAt})`
             : `로컬 자동저장됨 (${sub.updatedAt}) · 네트워크 확인 필요`
         );
-      }, 1800);
+      }, 1000);
     }
 
     async function flushPendingDeptChanges({ keepaliveOnly = false } = {}) {
@@ -1172,18 +1174,24 @@
 
           const rSubmitted = Number(rSub.submittedAt);
           const lSubmitted = Number(lSub?.submittedAt);
+          const validRSub = Number.isFinite(rSubmitted) && rSubmitted > 0 ? rSubmitted : 0;
+          const validLSub = Number.isFinite(lSubmitted) && lSubmitted > 0 ? lSubmitted : 0;
+
           const rSynced = Number(rSub.syncedAt);
           const lSynced = Number(lSub?.syncedAt);
-
           const resolvedSyncedAt =
             Number.isFinite(rSynced) && rSynced > 0
               ? rSynced
               : (Number.isFinite(lSynced) && lSynced > 0 ? lSynced : Date.now() + idx * 1000);
 
-          const resolvedSubmittedAt =
-            Number.isFinite(rSubmitted) && rSubmitted > 0
-              ? rSubmitted
-              : (Number.isFinite(lSubmitted) && lSubmitted > 0 ? lSubmitted : resolvedSyncedAt);
+          let resolvedSubmittedAt = resolvedSyncedAt;
+          if (validRSub > 0 && validLSub > 0) {
+            resolvedSubmittedAt = Math.min(validRSub, validLSub);
+          } else if (validRSub > 0) {
+            resolvedSubmittedAt = validRSub;
+          } else if (validLSub > 0) {
+            resolvedSubmittedAt = validLSub;
+          }
 
           nextSubmissions[targetId] = {
             ...(lSub || {}),
