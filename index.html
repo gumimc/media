@@ -1014,18 +1014,37 @@
       if (el) el.textContent = text;
     }
 
-    function applyRemoteSystemMeta(metaObj) {
+    function fillAdminEventInputs() {
+      const nameInput = document.getElementById("cfgEventName");
+      const dateInput = document.getElementById("cfgEventDate");
+      const noticeInput = document.getElementById("cfgEventNotice");
+      if (nameInput) nameInput.value = state.eventInfo?.name ?? "";
+      if (dateInput) dateInput.value = state.eventInfo?.date ?? "";
+      if (noticeInput) noticeInput.value = state.eventInfo?.notice ?? "";
+    }
+
+    function applyRemoteSystemMeta(metaObj, forceApply = false) {
       if (!metaObj || typeof metaObj !== "object") return false;
       let changed = false;
 
       if (metaObj.eventInfo && typeof metaObj.eventInfo === "object") {
-        const remoteUpdated = Number(metaObj.eventInfo.updatedAt || metaObj.syncedAt || 0);
+        const rInfo = metaObj.eventInfo;
+        const remoteUpdated = Number(rInfo.updatedAt || metaObj.syncedAt || 0);
         const localUpdated = Number(state.eventInfo?.updatedAt || 0);
-        if (remoteUpdated >= localUpdated || !state.eventInfo?.name || state.eventInfo.name === "새 행사를 설정해 주세요") {
+        const hasRemoteDateOrNotice = Boolean((rInfo.date || "").trim() || (rInfo.notice || "").trim());
+        const missingLocalDateOrNotice = !((state.eventInfo?.date || "").trim() || (state.eventInfo?.notice || "").trim());
+
+        if (
+          forceApply ||
+          remoteUpdated >= localUpdated ||
+          !state.eventInfo?.name ||
+          state.eventInfo.name === "새 행사를 설정해 주세요" ||
+          (hasRemoteDateOrNotice && missingLocalDateOrNotice)
+        ) {
           state.eventInfo = {
-            name: metaObj.eventInfo.name || "",
-            date: metaObj.eventInfo.date || "",
-            notice: metaObj.eventInfo.notice || "",
+            name: String(rInfo.name ?? state.eventInfo?.name ?? ""),
+            date: String(rInfo.date ?? ""),
+            notice: String(rInfo.notice ?? ""),
             updatedAt: remoteUpdated || Date.now()
           };
           changed = true;
@@ -1041,6 +1060,9 @@
       if (changed) {
         saveState();
         updateEventBannerUI();
+        if (activeTab === "adminManage") {
+          fillAdminEventInputs();
+        }
       }
       return changed;
     }
@@ -1049,12 +1071,14 @@
       const nameEl = document.getElementById("bannerEventName");
       const metaEl = document.getElementById("bannerEventMeta");
       if (nameEl) {
-        nameEl.textContent = state.eventInfo?.name || "행사명 미지정";
+        nameEl.textContent = state.eventInfo?.name || "행사명이 아직 설정되지 않았습니다";
       }
       if (metaEl) {
+        const dateText = (state.eventInfo?.date || "").trim() || "-";
+        const noticeText = (state.eventInfo?.notice || "").trim() || "-";
         metaEl.innerHTML = `
-          <span><strong>일시/장소:</strong> ${escapeHtml(state.eventInfo?.date || "-")}</span>
-          <span><strong>안내:</strong> ${escapeHtml(state.eventInfo?.notice || "-")}</span>
+          <span><strong>일시/장소:</strong> ${escapeHtml(dateText)}</span>
+          <span><strong>안내:</strong> ${escapeHtml(noticeText)}</span>
         `;
       }
     }
@@ -1062,7 +1086,12 @@
     async function syncSystemMetaToB2({ silent = false } = {}) {
       if (!isB2Configured()) return false;
       const now = Date.now();
-      state.eventInfo.updatedAt = now;
+      state.eventInfo = {
+        name: String(state.eventInfo?.name ?? ""),
+        date: String(state.eventInfo?.date ?? ""),
+        notice: String(state.eventInfo?.notice ?? ""),
+        updatedAt: now
+      };
       saveState();
 
       const payload = {
@@ -1070,7 +1099,12 @@
         deptUid: SYSTEM_META_KEY,
         deptId: SYSTEM_META_KEY,
         syncedAt: now,
-        eventInfo: state.eventInfo,
+        eventInfo: {
+          name: state.eventInfo.name,
+          date: state.eventInfo.date,
+          notice: state.eventInfo.notice,
+          updatedAt: now
+        },
         accounts: state.accounts
       };
 
@@ -1093,7 +1127,7 @@
       }
     }
 
-    async function fetchRemoteSystemMeta() {
+    async function fetchRemoteSystemMeta(forceApply = false) {
       if (!isB2Configured()) return false;
       try {
         const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
@@ -1104,7 +1138,7 @@
         const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
         const meta = remoteSubs[SYSTEM_META_KEY] || Object.values(remoteSubs).find((s) => s && (s.isSystemMeta || s.deptUid === SYSTEM_META_KEY));
         if (meta) {
-          return applyRemoteSystemMeta(meta);
+          return applyRemoteSystemMeta(meta, forceApply);
         }
         return false;
       } catch (e) {
@@ -1349,7 +1383,7 @@
 
         const meta = remoteSubs[SYSTEM_META_KEY] || Object.values(remoteSubs).find((s) => s && (s.isSystemMeta || s.deptUid === SYSTEM_META_KEY));
         if (meta) {
-          applyRemoteSystemMeta(meta);
+          applyRemoteSystemMeta(meta, false);
         }
 
         let matchedRemote = null;
@@ -1411,7 +1445,7 @@
 
         const meta = remoteSubs[SYSTEM_META_KEY] || Object.values(remoteSubs).find((s) => s && (s.isSystemMeta || s.deptUid === SYSTEM_META_KEY));
         if (meta) {
-          applyRemoteSystemMeta(meta);
+          applyRemoteSystemMeta(meta, false);
         }
 
         const nextSubmissions = {};
@@ -1475,7 +1509,7 @@
         saveState();
         renderAdminOverview();
         if (activeTab === "adminManage") renderAdminManage();
-        if (showMessage) showToast("현재 행사명, 고정 식별번호 및 전체 부서 큐시트를 동기화했습니다.");
+        if (showMessage) showToast("현재 행사 정보 및 전체 부서 큐시트를 동기화했습니다.");
       } catch (err) {
         console.warn("Remote submissions fetch failed:", err);
       }
@@ -2222,7 +2256,9 @@
         fetchRemoteB2Files(false);
       } else if (activeTab === "adminManage") {
         renderAdminManage();
-        fetchRemoteSubmissions(false);
+        fetchRemoteSystemMeta(true).then(() => {
+          renderAdminManage();
+        });
       }
     }
 
@@ -2805,9 +2841,7 @@
     }
 
     function renderAdminManage() {
-      document.getElementById("cfgEventName").value = state.eventInfo.name || "";
-      document.getElementById("cfgEventDate").value = state.eventInfo.date || "";
-      document.getElementById("cfgEventNotice").value = state.eventInfo.notice || "";
+      fillAdminEventInputs();
 
       const accTbody = document.getElementById("accountTableBody");
       accTbody.innerHTML = state.accounts.map((acc, idx) => {
@@ -3025,7 +3059,7 @@
 
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      await fetchRemoteSystemMeta();
+      await fetchRemoteSystemMeta(true);
       state.accounts = mergeWithDefaultAccounts(state.accounts);
       const id = document.getElementById("loginId").value.trim();
       const pw = document.getElementById("loginPw").value.trim();
@@ -3051,7 +3085,7 @@
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
       activeTab = null;
-      await fetchRemoteSystemMeta();
+      await fetchRemoteSystemMeta(true);
       renderAll();
       showToast("브라우저 저장 데이터가 초기화되었습니다.");
     });
@@ -3176,14 +3210,16 @@
 
     document.getElementById("eventSettingsForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      state.eventInfo.name = document.getElementById("cfgEventName").value.trim();
-      state.eventInfo.date = document.getElementById("cfgEventDate").value.trim();
-      state.eventInfo.notice = document.getElementById("cfgEventNotice").value.trim();
-      state.eventInfo.updatedAt = Date.now();
+      state.eventInfo = {
+        name: document.getElementById("cfgEventName").value.trim(),
+        date: document.getElementById("cfgEventDate").value.trim(),
+        notice: document.getElementById("cfgEventNotice").value.trim(),
+        updatedAt: Date.now()
+      };
       saveState();
-      renderAll();
+      updateEventBannerUI();
       const ok = await syncSystemMetaToB2({ silent: true });
-      showToast(ok ? "행사명이 저장 및 모든 기기에 동기화되었습니다." : "로컬에 저장되었습니다. 네트워크를 확인해 주세요.");
+      showToast(ok ? "행사명·일시·공지가 모두 저장 및 동기화되었습니다." : "로컬에 저장되었습니다. 네트워크를 확인해 주세요.");
     });
 
     document.getElementById("addAccountForm").addEventListener("submit", async (e) => {
@@ -3245,7 +3281,7 @@
     });
 
     renderAll();
-    fetchRemoteSystemMeta();
+    fetchRemoteSystemMeta(true);
   </script>
 </body>
 </html>
