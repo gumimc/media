@@ -1231,6 +1231,63 @@
       }
     }
 
+    async function fetchSingleDeptSubmissionFromB2(user) {
+      if (!user || !isB2Configured()) return null;
+      const uid = ensureAccountUid(user);
+      const candidates = [...new Set([uid, user.id].filter(Boolean))];
+
+      try {
+        const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
+        const res = await fetch(`${base}?action=submissions&_t=${Date.now()}`, { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok || !data.ok) return null;
+
+        const remoteSubs = data.submissions && typeof data.submissions === "object" ? data.submissions : {};
+        let matchedRemote = null;
+
+        for (const key of candidates) {
+          if (remoteSubs[key]) {
+            matchedRemote = remoteSubs[key];
+            break;
+          }
+        }
+
+        if (!matchedRemote) {
+          matchedRemote = Object.values(remoteSubs).find(
+            (s) => s && (s.deptUid === uid || candidates.includes(s.deptId))
+          ) || null;
+        }
+
+        if (!matchedRemote) return null;
+
+        const localSub = state.deptSubmissions[uid] || state.deptSubmissions[user.id] || null;
+        const rSynced = Number(matchedRemote.syncedAt || matchedRemote.submittedAt || 0);
+        const lSynced = Number(localSub?.syncedAt || localSub?.submittedAt || 0);
+
+        const merged = {
+          ...(localSub || {}),
+          ...matchedRemote,
+          deptUid: uid,
+          deptId: user.id,
+          deptName: user.deptName
+        };
+
+        if (hasDirtyDeptChanges && lSynced > rSynced && localSub) {
+          return localSub;
+        }
+
+        state.deptSubmissions[uid] = merged;
+        if (user.id !== uid && state.deptSubmissions[user.id]) {
+          delete state.deptSubmissions[user.id];
+        }
+        saveState();
+        return merged;
+      } catch (err) {
+        console.warn("Single dept B2 fetch failed:", err);
+        return null;
+      }
+    }
+
     async function fetchRemoteSubmissions(showMessage = false) {
       if (!isB2Configured()) return;
       try {
@@ -2055,7 +2112,7 @@
       else if (activeTab === "adminManage") renderAdminManage();
     }
 
-    function renderDeptView(user) {
+    async function renderDeptView(user) {
       const sub = ensureDeptSubmission(user);
       document.getElementById("deptNameBadge").textContent = user.deptName;
       document.getElementById("deptContact").value = sub.contact || "";
@@ -2073,6 +2130,28 @@
       renderMediaReqButtons(sub);
       renderCustomCueFiles(sub);
       renderCueList(sub);
+
+      const remoteSub = await fetchSingleDeptSubmissionFromB2(user);
+      const activeUser = getCurrentUser();
+      if (!remoteSub || !activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
+      if (hasDirtyDeptChanges) return;
+
+      const latest = ensureDeptSubmission(activeUser);
+      document.getElementById("deptContact").value = latest.contact || "";
+      document.getElementById("deptMicCount").value = latest.micCount ?? 0;
+      document.getElementById("deptGeneralNote").value = latest.generalNote || "";
+      const latestSeqLabel = latest.orderSeq > 0 ? ` · 식별순서 #${latest.orderSeq}` : "";
+      setSavedStatusLabel(
+        latest.updatedAt
+          ? `B2 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`
+          : "B2 동기화 완료"
+      );
+
+      renderMicOptionsControl(latest);
+      renderInstrumentButtons(latest);
+      renderMediaReqButtons(latest);
+      renderCustomCueFiles(latest);
+      renderCueList(latest);
     }
 
     function renderMicOptionsControl(sub) {
