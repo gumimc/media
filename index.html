@@ -149,6 +149,30 @@
       margin: 48px auto;
     }
 
+    .site-info-box {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .site-info-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin: 0 0 6px;
+    }
+
+    .site-info-list {
+      margin: 0;
+      padding-left: 16px;
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
     .form-group {
       margin-bottom: 14px;
     }
@@ -594,7 +618,7 @@
         <form id="loginForm">
           <div class="form-group">
             <label for="loginId">아이디</label>
-            <input type="text" id="loginId" placeholder="예: admin 또는 youth" required autocomplete="username" />
+            <input type="text" id="loginId" placeholder="아이디 입력" required autocomplete="username" />
           </div>
           <div class="form-group">
             <label for="loginPw">비밀번호</label>
@@ -603,15 +627,17 @@
           <button type="submit" class="btn btn-primary" style="width:100%;">로그인</button>
         </form>
 
-        <div class="helper-text" style="margin-top:14px; line-height:1.6;">
-          • 기본 관리자: <code>admin</code> / <code>1234</code><br />
-          • 기본 부서 계정: <code>youth</code>, <code>elem</code>, <code>teen</code>, <code>praise</code> (초기 비번 <code>1111</code>)<br />
-          • 모든 데이터는 Backblaze B2 클라우드와 동기화됩니다.
-        </div>
-
-        <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-          <span class="helper-text" style="margin:0;">계정 캐시가 꼬인 경우 초기화 가능</span>
-          <button type="button" class="btn btn-outline btn-xs" id="resetLoginStorageBtn">브라우저 저장 데이터 초기화(로그인 오류 시)</button>
+        <div class="site-info-box">
+          <div class="site-info-title">사이트 인포</div>
+          <ul class="site-info-list">
+            <li><strong>시스템:</strong> 행사 큐시트 · 자막(.txt/텍스트) · 영상/음원 통합 접수 포털</li>
+            <li><strong>저장 및 동기화:</strong> 자동 저장과 클라우드 실시간 동기화 지원</li>
+            <li><strong>내보내기:</strong> 관리자 종합 현황에서 엑셀(.xlsx) 및 부서·순서별 ZIP 다운로드 지원</li>
+          </ul>
+          <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="helper-text" style="margin:0;">로그인 또는 화면 캐시 문제 시 초기화</span>
+            <button type="button" class="btn btn-outline btn-xs" id="resetLoginStorageBtn">브라우저 저장 데이터 초기화</button>
+          </div>
         </div>
       </div>
     </section>
@@ -789,11 +815,11 @@
           <div class="card-header">
             <div>
               <h3 class="card-title">클라우드(Backblaze B2) 업로드 파일 목록</h3>
-              <p class="card-sub">500MB 이하 업로드 파일은 B2 클라우드에 저장되며, 개별 다운로드 또는 삭제가 가능합니다.</p>
+              <p class="card-sub">500MB 이하 업로드 파일은 클라우드에 저장되며, 개별 다운로드 또는 삭제가 가능합니다.</p>
             </div>
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
               <span id="b2StatusText" class="helper-text" style="margin:0;"></span>
-              <button type="button" class="btn btn-outline btn-sm" id="refreshB2FilesBtn">B2 파일 새로고침</button>
+              <button type="button" class="btn btn-outline btn-sm" id="refreshB2FilesBtn">파일 목록 새로고침</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -820,7 +846,7 @@
             <div class="card-header">
               <div>
                 <h3 class="card-title">행사 정보 설정</h3>
-                <p class="card-sub">행사명, 일시/장소, 공지사항을 변경하면 모든 사용자 화면과 B2에 동기화됩니다.</p>
+                <p class="card-sub">행사명, 일시/장소, 공지사항을 변경하면 모든 사용자 화면에 동기화됩니다.</p>
               </div>
             </div>
             <form id="eventSettingsForm">
@@ -892,10 +918,10 @@
         <div class="card" style="border-color:#fecaca;">
           <div class="card-header">
             <div>
-              <h3 class="card-title" style="color:var(--danger);">새 행사 시작 (전체 데이터 및 B2 파일 초기화)</h3>
-              <p class="card-sub">주의: 행사명, 모든 부서 큐시트, 자막, 요청사항, 업로드된 파일(B2 포함)이 영구 삭제됩니다. (계정 정보는 유지)</p>
+              <h3 class="card-title" style="color:var(--danger);">새 행사 시작 (전체 데이터 및 클라우드 파일 초기화)</h3>
+              <p class="card-sub">주의: 행사명, 모든 부서 큐시트, 자막, 요청사항, 업로드된 파일이 영구 삭제됩니다. (계정 정보는 유지)</p>
             </div>
-            <button type="button" class="btn btn-danger" id="resetEventBtn">전체 데이터 및 B2 파일 영구 초기화</button>
+            <button type="button" class="btn btn-danger" id="resetEventBtn">전체 데이터 및 파일 영구 초기화</button>
           </div>
         </div>
       </div>
@@ -1026,8 +1052,14 @@
           };
         });
 
+        let sessionId = parsed.sessionUserId || null;
+        if (sessionId) {
+          const matchedSessionAcc = accounts.find((a) => a.deptUid === sessionId || a.id === sessionId);
+          sessionId = matchedSessionAcc ? matchedSessionAcc.deptUid : sessionId;
+        }
+
         return {
-          sessionUserId: parsed.sessionUserId || null,
+          sessionUserId: sessionId,
           eventInfo: {
             ...fallback.eventInfo,
             ...(parsed.eventInfo && typeof parsed.eventInfo === "object" ? parsed.eventInfo : {})
@@ -1367,12 +1399,12 @@
 
     async function deleteB2FileByKey(objectKey, displayName = "") {
       if (!objectKey || !isB2Configured()) return;
-      const ok = confirm(`Backblaze B2에서 '${displayName || objectKey}' 파일을 영구 삭제하시겠습니까?`);
+      const ok = confirm(`'${displayName || objectKey}' 파일을 영구 삭제하시겠습니까?`);
       if (!ok) return;
 
       const deleted = await deleteB2ObjectImmediate(objectKey);
       if (!deleted) {
-        alert(`B2 파일 삭제 요청 중 오류가 발생했습니다.\n파일: ${displayName || objectKey}`);
+        alert(`파일 삭제 요청 중 오류가 발생했습니다.\n파일: ${displayName || objectKey}`);
         return;
       }
 
@@ -1417,6 +1449,7 @@
     async function syncSubmissionToB2(sub, { silent = false } = {}) {
       const storageKey = getSubmissionStorageKey(sub);
       if (!sub || !storageKey || !isB2Configured()) return false;
+      pruneDeletedFilesFromSubmission(sub);
       assignInitialDeptOrderSeqIfNeeded(sub);
       const now = Date.now();
       if (!sub.syncedAt) sub.syncedAt = now;
@@ -1452,7 +1485,7 @@
         const current = getCurrentUser();
         if (!current || current.role !== "dept") return;
         const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
-        setSavedStatusLabel(`자동저장됨 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq} · B2 동기화 대기...`);
+        setSavedStatusLabel(`자동저장됨 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq} · 동기화 대기...`);
       }, 450);
 
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
@@ -1464,7 +1497,7 @@
         const ok = await syncSubmissionToB2(sub, { silent: true });
         setSavedStatusLabel(
           ok
-            ? `자동저장 및 B2 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
+            ? `자동저장 및 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
             : `로컬 자동저장됨 (${sub.updatedAt}) · 네트워크 확인 필요`
         );
       }, 850);
@@ -1825,11 +1858,11 @@
       if (isB2Configured()) {
         try {
           b2Result = await uploadFileToB2(file, kind, deptName, key);
-          showToast(`'${file.name}' Backblaze B2 업로드 완료`);
+          showToast(`'${file.name}' 업로드 완료`);
         } catch (err) {
           setUploadProgressText("");
           console.warn("B2 upload failed:", err);
-          alert(`Backblaze B2 업로드에 실패했습니다.\n사유: ${err.message}`);
+          alert(`클라우드 업로드에 실패했습니다.\n사유: ${err.message}`);
           return null;
         }
       }
@@ -1872,12 +1905,12 @@
       if (!isB2Configured()) return;
       if (inflightB2FilesPromise) {
         await inflightB2FilesPromise;
-        if (showMessage) showToast(`B2 파일 ${remoteB2Files.length}개를 불러왔습니다.`);
+        if (showMessage) showToast(`클라우드 파일 ${remoteB2Files.length}개를 불러왔습니다.`);
         return;
       }
 
       const statusText = document.getElementById("b2StatusText");
-      if (statusText) statusText.textContent = "B2 파일 목록 불러오는 중...";
+      if (statusText) statusText.textContent = "파일 목록 불러오는 중...";
 
       inflightB2FilesPromise = (async () => {
         try {
@@ -1892,10 +1925,10 @@
           remoteB2Loaded = true;
           renderB2FilesTable();
           bindIndividualDownloadButtons();
-          if (showMessage) showToast(`B2 파일 ${remoteB2Files.length}개를 불러왔습니다.`);
+          if (showMessage) showToast(`클라우드 파일 ${remoteB2Files.length}개를 불러왔습니다.`);
         } catch (err) {
           console.warn("B2 list error:", err);
-          if (statusText) statusText.textContent = `B2 목록 조회 오류: ${err.message}`;
+          if (statusText) statusText.textContent = `목록 조회 오류: ${err.message}`;
         } finally {
           inflightB2FilesPromise = null;
         }
@@ -2297,8 +2330,8 @@
       const items = collectAllB2Files();
       if (statusText) {
         statusText.textContent = isB2Configured()
-          ? `버킷: ${B2_CONFIG.bucketName} · 총 ${items.length}개`
-          : "B2_CONFIG 미설정 (로컬 백업 모드)";
+          ? `클라우드 연결됨 · 총 ${items.length}개`
+          : "로컬 백업 모드";
       }
 
       if (!items.length) {
@@ -2352,21 +2385,24 @@
         return;
       }
 
-      const b2Badge = isB2Configured() ? `✓ B2 (${B2_CONFIG.bucketName})` : "B2 미연결";
+      const cloudBadge = isB2Configured() ? "✓ 클라우드 동기화" : "로컬 모드";
       topbarActions.innerHTML = `
         <span class="user-badge">${escapeHtml(user.deptName)} (${escapeHtml(user.id)})</span>
-        <span class="user-badge">${escapeHtml(b2Badge)}</span>
+        <span class="user-badge">${escapeHtml(cloudBadge)}</span>
         <button type="button" class="btn btn-ghost-light btn-sm" id="logoutBtn">로그아웃</button>
       `;
 
-      document.getElementById("logoutBtn").addEventListener("click", async () => {
-        await flushPendingDeptChanges();
-        state.sessionUserId = null;
-        activeTab = null;
-        hasDirtyDeptChanges = false;
-        saveState();
-        renderAll();
-      });
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+          await flushPendingDeptChanges();
+          state.sessionUserId = null;
+          activeTab = null;
+          hasDirtyDeptChanges = false;
+          saveState();
+          renderAll();
+        });
+      }
     }
 
     function renderAll() {
@@ -2457,7 +2493,7 @@
       applyDeptFormValues(latest);
       const latestSeqLabel = latest.orderSeq > 0 ? ` · 식별순서 #${latest.orderSeq}` : "";
       if (latest.updatedAt) {
-        setSavedStatusLabel(`B2 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
+        setSavedStatusLabel(`동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
       }
     }
 
@@ -2523,7 +2559,7 @@
         <ul class="file-list" style="margin-top:8px;">
           ${sub.customCueFiles.map((f, idx) => `
             <li style="margin-bottom:4px; color:#1e3a8a; font-weight:600;">
-              ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">B2 저장됨</span>' : ''}
+              ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">동기화됨</span>' : ''}
               <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px;" data-del-custom-cue="${idx}">삭제</button>
             </li>
           `).join("")}
@@ -2536,8 +2572,8 @@
           const target = sub.customCueFiles[idx];
           if (!target) return;
           sub.customCueFiles.splice(idx, 1);
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCustomCueFiles(sub);
@@ -2558,7 +2594,7 @@
         const mediaHtml = (cue.mediaFiles || []).length
           ? `<ul class="file-list">${cue.mediaFiles.map((f, fIdx) => `
               <li>
-                ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">B2 저장됨</span>' : ''}
+                ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">동기화됨</span>' : ''}
                 <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px;" data-del-media="${idx}:${fIdx}">삭제</button>
               </li>
             `).join("")}</ul>`
@@ -2762,8 +2798,8 @@
           const target = sub.cues[cIdx]?.mediaFiles?.[fIdx];
           if (!target) return;
           sub.cues[cIdx].mediaFiles.splice(fIdx, 1);
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -2777,8 +2813,8 @@
           const target = sub.cues[cIdx]?.subtitleFiles?.[sIdx];
           if (!target) return;
           sub.cues[cIdx].subtitleFiles.splice(sIdx, 1);
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -2808,6 +2844,7 @@
       sub.useCeilingMic = !!document.getElementById("chkCeilingMic").checked;
       sub.generalNote = document.getElementById("deptGeneralNote").value.trim();
 
+      pruneDeletedFilesFromSubmission(sub);
       assignInitialDeptOrderSeqIfNeeded(sub);
 
       const now = Date.now();
@@ -3135,6 +3172,10 @@
     }
 
     function exportExcel() {
+      if (typeof XLSX === "undefined") {
+        alert("엑셀 내보내기 라이브러리를 불러오지 못했습니다. 네트워크를 확인해 주세요.");
+        return;
+      }
       const rows = getAllRows();
       if (!rows.length) {
         showToast("내보낼 큐시트 데이터가 없습니다.");
@@ -3188,6 +3229,10 @@
     }
 
     async function exportZip() {
+      if (typeof JSZip === "undefined") {
+        alert("ZIP 압축 라이브러리를 불러오지 못했습니다. 네트워크를 확인해 주세요.");
+        return;
+      }
       const rows = getAllRows();
       const subs = getSortedSubmissions();
       const hasCustomFiles = subs.some((s) => (s.customCueFiles || []).length > 0);
@@ -3198,7 +3243,7 @@
         return;
       }
       if (!hasCueFiles && !hasCustomFiles) {
-        showToast("로컬에 보관된 파일(80MB 이하)이 없습니다. 대용량 파일은 B2 목록에서 다운로드하세요.");
+        showToast("로컬에 보관된 파일(80MB 이하)이 없습니다. 클라우드 파일 목록에서 개별 다운로드하세요.");
         return;
       }
 
@@ -3206,10 +3251,11 @@
       const eventFolder = zip.folder(sanitizeName(state.eventInfo.name || "행사_자료"));
 
       for (const s of subs) {
-        if ((s.customCueFiles || []).length > 0) {
+        const customFiles = (s.customCueFiles || []).filter((cf) => !cf?.b2Key || !recentlyDeletedB2Keys.has(cf.b2Key));
+        if (customFiles.length > 0) {
           const deptFolder = eventFolder.folder(sanitizeName(s.deptName));
           const customFolder = deptFolder.folder("00_부서자체큐시트");
-          for (const cf of s.customCueFiles) {
+          for (const cf of customFiles) {
             const rec = await getFileRecord(cf.key);
             if (rec && rec.dataUrl) {
               customFolder.file(cf.name, dataUrlToUint8Array(rec.dataUrl));
@@ -3266,9 +3312,7 @@
         );
 
         if (!found) {
-          state.sessionUserId = null;
-          saveState();
-          alert("아이디 또는 비밀번호가 올바르지 않습니다.\n테스트 계정: admin / 1234 또는 youth / 1111");
+          alert("아이디 또는 비밀번호가 올바르지 않습니다.");
           return;
         }
 
@@ -3392,13 +3436,13 @@
       if (!user || user.role !== "dept") return;
       clearAutoTimers();
       const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
-      setSavedStatusLabel(`저장 및 B2 동기화 중... (${sub.updatedAt})`);
+      setSavedStatusLabel(`저장 및 동기화 중... (${sub.updatedAt})`);
       showToast("부서 내용 저장 및 동기화 중...");
       const ok = await syncSubmissionToB2(sub, { silent: true });
       setSavedStatusLabel(
         ok
-          ? `최근 저장 및 B2 동기화됨: ${sub.updatedAt} · 식별순서 #${sub.orderSeq}`
-          : `로컬 저장됨 (${sub.updatedAt}) · B2 동기화 재시도 필요`
+          ? `최근 저장 및 동기화됨: ${sub.updatedAt} · 식별순서 #${sub.orderSeq}`
+          : `로컬 저장됨 (${sub.updatedAt}) · 동기화 재시도 필요`
       );
       showToast(ok ? "부서 내용이 저장 및 동기화되었습니다." : "로컬에 저장되었습니다. 네트워크를 확인해 주세요.");
     });
@@ -3463,7 +3507,7 @@
     });
 
     document.getElementById("resetEventBtn").addEventListener("click", async () => {
-      const ok = confirm("행사명, 제출된 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청 및 업로드 파일(B2 포함)이 모두 영구 삭제됩니다. 진행하시겠습니까?");
+      const ok = confirm("행사명, 제출된 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청 및 업로드 파일이 모두 영구 삭제됩니다. 진행하시겠습니까?");
       if (!ok) return;
 
       try {
@@ -3496,7 +3540,7 @@
         await syncSystemMetaToB2({ silent: true });
         await clearAllFileRecords();
         renderAll();
-        showToast("행사 데이터와 B2 파일이 모두 완전히 삭제 및 동기화되었습니다.");
+        showToast("행사 데이터와 파일이 모두 완전히 삭제 및 동기화되었습니다.");
       } catch (err) {
         alert(`전체 초기화 중 오류가 발생했습니다.\n사유: ${err.message}`);
       }
