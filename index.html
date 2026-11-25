@@ -574,7 +574,7 @@
 <body>
   <header class="topbar">
     <div class="brand">
-      <span>행사 큐시트 · 자막 · 미디어 접수</span>
+      <span>행사 큐시트 · 자막 · 음원/영상 통합 접수</span>
       <span class="brand-badge">B2 CLOUD</span>
     </div>
     <div class="topbar-right" id="topbarActions"></div>
@@ -1046,13 +1046,13 @@
     let downloadableFileRegistry = {};
     let remoteB2Files = [];
     let remoteB2Loaded = false;
+    const recentlyDeletedB2Keys = new Set();
 
     let autoSaveTimer = null;
     let autoSyncTimer = null;
     let hasDirtyDeptChanges = false;
     let isLoggingIn = false;
 
-    // 중복 네트워크 호출 방지를 위한 인플라이트 프로미스 캐시
     let inflightSubmissionsPromise = null;
     let inflightB2FilesPromise = null;
     let lastSubmissionsFetchAt = 0;
@@ -1340,8 +1340,12 @@
       }
     }
 
-    async function deleteB2ObjectSilent(objectKey) {
-      if (!objectKey || !isB2Configured()) return false;
+    async function deleteB2ObjectImmediate(objectKey) {
+      if (!objectKey) return true;
+      recentlyDeletedB2Keys.add(objectKey);
+      remoteB2Files = remoteB2Files.filter((f) => f && f.objectKey !== objectKey);
+
+      if (!isB2Configured()) return true;
       try {
         const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
         const res = await fetch(`${base}?action=delete`, {
@@ -1351,13 +1355,12 @@
           keepalive: true
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) {
+        if (!res.ok || data.ok === false) {
           throw new Error(data.error || `HTTP ${res.status}`);
         }
-        remoteB2Files = remoteB2Files.filter((f) => f.objectKey !== objectKey);
         return true;
       } catch (err) {
-        console.warn("B2 file silent delete failed:", objectKey, err);
+        console.warn("B2 file delete failed:", objectKey, err);
         return false;
       }
     }
@@ -1367,45 +1370,35 @@
       const ok = confirm(`Backblaze B2에서 '${displayName || objectKey}' 파일을 영구 삭제하시겠습니까?`);
       if (!ok) return;
 
-      try {
-        const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
-        const res = await fetch(`${base}?action=delete`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ objectKey })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) {
-          throw new Error(data.error || `HTTP ${res.status}`);
-        }
-
-        const affectedSubs = [];
-        Object.values(state.deptSubmissions || {}).forEach((sub) => {
-          let modified = false;
-          const beforeCustom = (sub.customCueFiles || []).length;
-          sub.customCueFiles = (sub.customCueFiles || []).filter((f) => f.b2Key !== objectKey);
-          if (sub.customCueFiles.length !== beforeCustom) modified = true;
-
-          (sub.cues || []).forEach((c) => {
-            const beforeMedia = (c.mediaFiles || []).length;
-            const beforeSub = (c.subtitleFiles || []).length;
-            c.mediaFiles = (c.mediaFiles || []).filter((f) => f.b2Key !== objectKey);
-            c.subtitleFiles = (c.subtitleFiles || []).filter((f) => f.b2Key !== objectKey);
-            if (c.mediaFiles.length !== beforeMedia || c.subtitleFiles.length !== beforeSub) modified = true;
-          });
-          if (modified) affectedSubs.push(sub);
-        });
-        saveState();
-        for (const s of affectedSubs) {
-          await syncSubmissionToB2(s, { silent: true });
-        }
-
-        remoteB2Files = remoteB2Files.filter((f) => f.objectKey !== objectKey);
-        renderAdminOverview();
-        showToast(`'${displayName || objectKey}' 삭제 완료`);
-      } catch (err) {
-        alert(`B2 파일 삭제에 실패했습니다.\n사유: ${err.message}`);
+      const deleted = await deleteB2ObjectImmediate(objectKey);
+      if (!deleted) {
+        alert(`B2 파일 삭제 요청 중 오류가 발생했습니다.\n파일: ${displayName || objectKey}`);
+        return;
       }
+
+      const affectedSubs = [];
+      Object.values(state.deptSubmissions || {}).forEach((sub) => {
+        let modified = false;
+        const beforeCustom = (sub.customCueFiles || []).length;
+        sub.customCueFiles = (sub.customCueFiles || []).filter((f) => f.b2Key !== objectKey);
+        if (sub.customCueFiles.length !== beforeCustom) modified = true;
+
+        (sub.cues || []).forEach((c) => {
+          const beforeMedia = (c.mediaFiles || []).length;
+          const beforeSub = (c.subtitleFiles || []).length;
+          c.mediaFiles = (c.mediaFiles || []).filter((f) => f.b2Key !== objectKey);
+          c.subtitleFiles = (c.subtitleFiles || []).filter((f) => f.b2Key !== objectKey);
+          if (c.mediaFiles.length !== beforeMedia || c.subtitleFiles.length !== beforeSub) modified = true;
+        });
+        if (modified) affectedSubs.push(sub);
+      });
+      saveState();
+      for (const s of affectedSubs) {
+        await syncSubmissionToB2(s, { silent: true });
+      }
+
+      renderAdminOverview();
+      showToast(`'${displayName || objectKey}' 삭제 완료`);
     }
 
     async function deleteB2SubmissionObject(storageKey) {
@@ -1490,6 +1483,15 @@
       }
     }
 
+    function pruneDeletedFilesFromSubmission(sub) {
+      if (!sub || !recentlyDeletedB2Keys.size) return;
+      sub.customCueFiles = (sub.customCueFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key));
+      (sub.cues || []).forEach((c) => {
+        c.mediaFiles = (c.mediaFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key));
+        c.subtitleFiles = (c.subtitleFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key));
+      });
+    }
+
     async function fetchSingleDeptSubmissionFromB2(user, { maxAgeMs = 1500 } = {}) {
       if (!user || !isB2Configured()) return null;
       const uid = ensureAccountUid(user);
@@ -1535,6 +1537,7 @@
           deptId: user.id,
           deptName: user.deptName
         };
+        pruneDeletedFilesFromSubmission(merged);
 
         if (hasDirtyDeptChanges && lSynced > rSynced && localSub) {
           return localSub;
@@ -1589,7 +1592,7 @@
               ? rSeq
               : (Number.isInteger(lSeq) && lSeq > 0 ? lSeq : 0);
 
-          nextSubmissions[uid] = {
+          const mergedSub = {
             ...(lSub || {}),
             ...rSub,
             deptUid: uid,
@@ -1597,6 +1600,8 @@
             deptName: currentDeptName,
             orderSeq: fixedSeq
           };
+          pruneDeletedFilesFromSubmission(mergedSub);
+          nextSubmissions[uid] = mergedSub;
         });
 
         Object.entries(state.deptSubmissions || {}).forEach(([lKey, lSub]) => {
@@ -1604,12 +1609,14 @@
           const uid = lSub.deptUid || lKey;
           if (!nextSubmissions[uid]) {
             const acc = state.accounts.find((a) => a.deptUid === uid || a.id === lSub.deptId);
-            nextSubmissions[uid] = {
+            const fallbackSub = {
               ...lSub,
               deptUid: uid,
               deptId: acc ? acc.id : lSub.deptId,
               deptName: acc ? acc.deptName : lSub.deptName
             };
+            pruneDeletedFilesFromSubmission(fallbackSub);
+            nextSubmissions[uid] = fallbackSub;
           }
         });
 
@@ -1798,6 +1805,8 @@
       });
       setUploadProgressText("");
 
+      recentlyDeletedB2Keys.delete(objectKey);
+
       return {
         b2Key: objectKey,
         publicUrl: buildWorkerDownloadUrl(objectKey, file.name)
@@ -1878,7 +1887,8 @@
           if (!res.ok || !data.ok) {
             throw new Error(data.error || `HTTP ${res.status}`);
           }
-          remoteB2Files = Array.isArray(data.files) ? data.files : [];
+          const rawList = Array.isArray(data.files) ? data.files : [];
+          remoteB2Files = rawList.filter((f) => f && !recentlyDeletedB2Keys.has(f.objectKey));
           remoteB2Loaded = true;
           renderB2FilesTable();
           bindIndividualDownloadButtons();
@@ -2201,7 +2211,7 @@
       }
       saveState();
       await deleteFileRecords(fileKeys);
-      await Promise.all([...new Set(b2Keys)].map((bKey) => deleteB2ObjectSilent(bKey)));
+      await Promise.all([...new Set(b2Keys)].map((bKey) => deleteB2ObjectImmediate(bKey)));
 
       await deleteB2SubmissionObject(uid);
       if (sub.deptId && sub.deptId !== uid) {
@@ -2221,20 +2231,23 @@
 
     function collectAllB2Files() {
       if (remoteB2Loaded) {
-        return remoteB2Files.map((rf) => ({
-          deptName: rf.deptName || "기타",
-          category: formatKindLabel(rf.kind),
-          key: "",
-          name: rf.fileName,
-          size: rf.size || 0,
-          b2Key: rf.objectKey,
-          publicUrl: buildWorkerDownloadUrl(rf.objectKey, rf.fileName)
-        }));
+        return remoteB2Files
+          .filter((rf) => rf && !recentlyDeletedB2Keys.has(rf.objectKey))
+          .map((rf) => ({
+            deptName: rf.deptName || "기타",
+            category: formatKindLabel(rf.kind),
+            key: "",
+            name: rf.fileName,
+            size: rf.size || 0,
+            b2Key: rf.objectKey,
+            publicUrl: buildWorkerDownloadUrl(rf.objectKey, rf.fileName)
+          }));
       }
 
       const items = [];
       getSortedSubmissions().forEach((sub) => {
         (sub.customCueFiles || []).forEach((cf) => {
+          if (cf?.b2Key && recentlyDeletedB2Keys.has(cf.b2Key)) return;
           items.push({
             deptName: sub.deptName,
             category: "자체 큐시트",
@@ -2248,6 +2261,7 @@
         (sub.cues || []).forEach((cue, idx) => {
           const orderLabel = cue.title ? `순서 ${idx + 1} (${cue.title})` : `순서 ${idx + 1}`;
           (cue.mediaFiles || []).forEach((mf) => {
+            if (mf?.b2Key && recentlyDeletedB2Keys.has(mf.b2Key)) return;
             items.push({
               deptName: sub.deptName,
               category: `${orderLabel} · 영상/음원`,
@@ -2259,6 +2273,7 @@
             });
           });
           getCueSubtitleFiles(cue).forEach((sf) => {
+            if (sf?.b2Key && recentlyDeletedB2Keys.has(sf.b2Key)) return;
             items.push({
               deptName: sub.deptName,
               category: `${orderLabel} · 자막`,
@@ -2427,6 +2442,7 @@
 
     async function renderDeptView(user, { skipRemoteFetch = false } = {}) {
       const sub = ensureDeptSubmission(user);
+      pruneDeletedFilesFromSubmission(sub);
       document.getElementById("deptNameBadge").textContent = user.deptName;
       applyDeptFormValues(sub);
 
@@ -2521,7 +2537,7 @@
           if (!target) return;
           sub.customCueFiles.splice(idx, 1);
           collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
-          if (target.b2Key) await deleteB2ObjectSilent(target.b2Key);
+          if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCustomCueFiles(sub);
@@ -2747,7 +2763,7 @@
           if (!target) return;
           sub.cues[cIdx].mediaFiles.splice(fIdx, 1);
           collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
-          if (target.b2Key) await deleteB2ObjectSilent(target.b2Key);
+          if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -2762,7 +2778,7 @@
           if (!target) return;
           sub.cues[cIdx].subtitleFiles.splice(sIdx, 1);
           collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
-          if (target.b2Key) await deleteB2ObjectSilent(target.b2Key);
+          if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -2824,12 +2840,19 @@
       subs.forEach((sub) => {
         const storageKey = getSubmissionStorageKey(sub);
         const orderSeq = Number(sub.orderSeq) > 0 ? Number(sub.orderSeq) : seq;
-        const customFiles = Array.isArray(sub.customCueFiles) ? sub.customCueFiles : [];
+        const customFiles = (Array.isArray(sub.customCueFiles) ? sub.customCueFiles : []).filter(
+          (f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)
+        );
         const customNames = customFiles.map((f) => f.name).join(", ");
         (sub.cues || []).forEach((cue, idx) => {
-          const subFiles = getCueSubtitleFiles(cue);
+          const mediaFiles = (cue.mediaFiles || []).filter(
+            (f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)
+          );
+          const subFiles = getCueSubtitleFiles(cue).filter(
+            (f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)
+          );
           const hasSubText = !!(cue.subtitleText && cue.subtitleText.trim().length > 0);
-          const hasAny = cue.title || cue.topic || cue.note || (cue.mediaFiles && cue.mediaFiles.length) || subFiles.length || hasSubText || cue.subtitleHelp;
+          const hasAny = cue.title || cue.topic || cue.note || mediaFiles.length || subFiles.length || hasSubText || cue.subtitleHelp;
           if (!hasAny && (sub.cues || []).length > 1) return;
           rows.push({
             seq: seq++,
@@ -2855,7 +2878,7 @@
             subtitleText: cue.subtitleText || "",
             hasSubText,
             subtitleHelp: !!cue.subtitleHelp,
-            mediaFiles: cue.mediaFiles || [],
+            mediaFiles,
             cue
           });
         });
@@ -2871,8 +2894,8 @@
       const ceilingDeptCount = subs.filter((s) => s.useCeilingMic).length;
       const helpCount = rows.filter((r) => r.subtitleHelp).length;
       const fileCount = remoteB2Loaded
-        ? remoteB2Files.length
-        : rows.reduce((acc, r) => acc + r.mediaFiles.length + r.subtitleFiles.length, 0) + subs.reduce((acc, s) => acc + (s.customCueFiles || []).length, 0);
+        ? collectAllB2Files().length
+        : rows.reduce((acc, r) => acc + r.mediaFiles.length + r.subtitleFiles.length, 0) + subs.reduce((acc, s) => acc + (s.customCueFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)).length, 0);
 
       document.getElementById("adminSummaryBadges").innerHTML = `
         <span class="pill pill-blue">총 큐시트 ${rows.length}건</span>
@@ -2964,7 +2987,9 @@
           const storageKey = getSubmissionStorageKey(s);
           const orderSeq = Number(s.orderSeq) > 0 ? Number(s.orderSeq) : (idx + 1);
           const helps = (s.cues || []).filter((c) => c.subtitleHelp).map((c, i) => c.title || `순서${i + 1}`);
-          const customFiles = Array.isArray(s.customCueFiles) ? s.customCueFiles : [];
+          const customFiles = (Array.isArray(s.customCueFiles) ? s.customCueFiles : []).filter(
+            (f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)
+          );
           const customDocsHtml = customFiles.length
             ? customFiles.map((cf) => {
                 const dlId = registerDownloadableFile(cf);
@@ -3272,6 +3297,7 @@
       clearAutoTimers();
       hasDirtyDeptChanges = false;
       lastSubmissionsFetchAt = 0;
+      recentlyDeletedB2Keys.clear();
       localStorage.removeItem(STORAGE_KEY);
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
@@ -3456,6 +3482,7 @@
         clearAutoTimers();
         hasDirtyDeptChanges = false;
         lastSubmissionsFetchAt = 0;
+        recentlyDeletedB2Keys.clear();
         state.eventInfo = {
           name: "새 행사를 설정해 주세요",
           date: "",
