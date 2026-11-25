@@ -3111,7 +3111,7 @@
       showToast("부서별/순서별 폴더 ZIP 파일이 생성되었습니다.");
     }
 
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    document.getElementById("loginForm").addEventListener("submit", (e) => {
       e.preventDefault();
       if (isLoggingIn) return;
       isLoggingIn = true;
@@ -3120,18 +3120,13 @@
         const idInput = document.getElementById("loginId").value.trim();
         const pwInput = document.getElementById("loginPw").value.trim();
 
-        const localMatch = state.accounts.find(
+        const currentAccounts = mergeWithDefaultAccounts(state.accounts, []);
+        state.accounts = currentAccounts;
+
+        const found = currentAccounts.find(
           (a) => String(a.id).trim() === idInput && String(a.pw).trim() === pwInput
         );
 
-        await fetchRemoteSystemMeta(false);
-        state.accounts = mergeWithDefaultAccounts(state.accounts, []);
-
-        const remoteMatch = state.accounts.find(
-          (a) => String(a.id).trim() === idInput && String(a.pw).trim() === pwInput
-        );
-
-        const found = remoteMatch || localMatch;
         if (!found) {
           state.sessionUserId = null;
           saveState();
@@ -3146,6 +3141,15 @@
         saveState();
         document.getElementById("loginForm").reset();
         renderAll();
+
+        // 로그인 화면 전환 후 원격 메타데이터를 백그라운드에서 갱신
+        fetchRemoteSystemMeta(false).then((changed) => {
+          if (!changed) return;
+          const activeUser = getCurrentUser();
+          if (activeUser && activeTab === "adminManage") {
+            renderAdminManage();
+          }
+        });
       } finally {
         isLoggingIn = false;
       }
