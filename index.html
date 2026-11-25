@@ -1273,7 +1273,6 @@
           };
         });
 
-        // 로컬에만 있던 항목도 보존
         Object.entries(state.deptSubmissions || {}).forEach(([lKey, lSub]) => {
           if (!lSub || typeof lSub !== "object") return;
           const uid = lSub.deptUid || lKey;
@@ -1569,7 +1568,6 @@
       const deptId = acc ? acc.id : String(userOrId || "");
       const resolvedName = acc ? acc.deptName : (deptName || deptId);
 
-      // 구 deptId 키로 저장되어 있던 데이터가 있으면 deptUid 키로 승격
       if (deptId && deptId !== deptUid && state.deptSubmissions[deptId] && !state.deptSubmissions[deptUid]) {
         state.deptSubmissions[deptUid] = {
           ...state.deptSubmissions[deptId],
@@ -2469,8 +2467,6 @@
 
       const rows = getAllRows();
       const subs = getSortedSubmissions();
-      const totalMics = subs.reduce((acc, s) => acc + Number(s.micCount || 0), 0);
-      const totalStands = subs.reduce((acc, s) => acc + (s.requestMicStand ? Number(s.micStandCount || 0) : 0), 0);
       const ceilingDeptCount = subs.filter((s) => s.useCeilingMic).length;
       const helpCount = rows.filter((r) => r.subtitleHelp).length;
       const fileCount = remoteB2Loaded
@@ -2479,8 +2475,6 @@
 
       document.getElementById("adminSummaryBadges").innerHTML = `
         <span class="pill pill-blue">총 큐시트 ${rows.length}건</span>
-        <span class="pill pill-green">총 필요 마이크 ${totalMics}개</span>
-        <span class="pill pill-blue">총 스탠드 ${totalStands}개</span>
         <span class="pill pill-green">천장 E/L 사용 ${ceilingDeptCount}개 부서</span>
         <span class="pill pill-warn">자막 도움요청 ${helpCount}건</span>
         <span class="pill pill-blue">등록 파일 ${fileCount}개</span>
@@ -2491,14 +2485,10 @@
         tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--muted); padding:24px;">아직 제출된 큐시트가 없습니다.</td></tr>`;
       } else {
         tbody.innerHTML = rows.map((r) => {
-          const subNames = r.subtitleFiles.map((f) => f.name).join(", ");
-          const subBadge = r.subtitleFiles.length
-            ? `<span class="pill pill-green">TXT ${r.subtitleFiles.length}개: ${escapeHtml(subNames)}</span>`
-            : r.hasSubText
-              ? `<span class="pill pill-blue">직접입력 (${r.subtitleText.trim().length}자)</span>`
-              : r.subtitleHelp
-                ? `<span class="pill pill-warn">도움요청</span>`
-                : `<span class="pill pill-red">없음</span>`;
+          const isSubmitted = r.subtitleFiles.length > 0 || r.hasSubText;
+          const subBadge = isSubmitted
+            ? `<span class="pill pill-green">접수</span>`
+            : `<span class="pill pill-warn">미접수</span>`;
 
           const attachEntries = [];
           r.mediaFiles.forEach((f) => {
