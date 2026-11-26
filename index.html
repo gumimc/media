@@ -212,6 +212,38 @@
       flex-shrink: 0;
       min-width: fit-content;
     }
+    .id-color-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+    .id-color-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dept-color-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }
+    .id-code-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
     .pill-blue { background: #dbeafe; color: #1e40af; }
     .pill-green { background: #d1fae5; color: #065f46; }
     .pill-warn { background: #fef3c7; color: #92400e; }
@@ -586,9 +618,70 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v8";
-    const IDB_NAME = "gm_media_guide_files_b2_v8";
+    const STORAGE_KEY = "gm_media_guide_b2_v9";
+    const IDB_NAME = "gm_media_guide_files_b2_v9";
     const IDB_STORE = "files";
+
+    const ACCOUNT_COLOR_PALETTE = [
+      { bg: "#dbeafe", text: "#1e40af", border: "#93c5fd", dot: "#2563eb" },
+      { bg: "#d1fae5", text: "#065f46", border: "#6ee7b7", dot: "#059669" },
+      { bg: "#fef3c7", text: "#92400e", border: "#fcd34d", dot: "#d97706" },
+      { bg: "#ede9fe", text: "#5b21b6", border: "#c4b5fd", dot: "#7c3aed" },
+      { bg: "#fce7f3", text: "#9d174d", border: "#f9a8d4", dot: "#db2777" },
+      { bg: "#cffafe", text: "#155e75", border: "#67e8f9", dot: "#0891b2" },
+      { bg: "#ffedd5", text: "#9a3412", border: "#fdba74", dot: "#ea580c" },
+      { bg: "#e0e7ff", text: "#3730a3", border: "#a5b4fc", dot: "#4f46e5" },
+      { bg: "#dcfce7", text: "#166534", border: "#86efac", dot: "#16a34a" },
+      { bg: "#fae8ff", text: "#86198f", border: "#f0abfc", dot: "#c026d3" }
+    ];
+
+    const FIXED_UID_COLOR_INDEX = {
+      uid_youth: 0,
+      uid_elem: 1,
+      uid_teen: 2,
+      uid_praise: 3,
+      uid_infant: 4,
+      uid_children: 5
+    };
+
+    function getAccountColorTheme(keyStr) {
+      const s = String(keyStr || "default");
+      if (Object.prototype.hasOwnProperty.call(FIXED_UID_COLOR_INDEX, s)) {
+        return ACCOUNT_COLOR_PALETTE[FIXED_UID_COLOR_INDEX[s] % ACCOUNT_COLOR_PALETTE.length];
+      }
+      let hash = 0;
+      for (let i = 0; i < s.length; i++) {
+        hash = ((hash << 5) - hash) + s.charCodeAt(i);
+        hash |= 0;
+      }
+      const idx = Math.abs(hash) % ACCOUNT_COLOR_PALETTE.length;
+      return ACCOUNT_COLOR_PALETTE[idx];
+    }
+
+    function renderColoredIdPill(orderSeq, idLabel, colorKey) {
+      const t = getAccountColorTheme(colorKey || idLabel || String(orderSeq));
+      return `
+        <span class="id-color-pill" style="background:${t.bg}; color:${t.text}; border-color:${t.border};">
+          <span class="id-color-dot" style="background:${t.dot};"></span>
+          <span>#${orderSeq} (${escapeHtml(idLabel)})</span>
+        </span>
+      `;
+    }
+
+    function renderColoredDeptName(deptName, colorKey) {
+      const t = getAccountColorTheme(colorKey || deptName);
+      return `
+        <span class="dept-color-label" style="color:${t.text};">
+          <span class="id-color-dot" style="background:${t.dot};"></span>
+          <span>${escapeHtml(deptName)}</span>
+        </span>
+      `;
+    }
+
+    function renderColoredIdCode(idText, colorKey) {
+      const t = getAccountColorTheme(colorKey || idText);
+      return `<code class="id-code-badge" style="background:${t.bg}; color:${t.text}; border-color:${t.border};">${escapeHtml(idText)}</code>`;
+    }
 
     function deepClone(obj) {
       return JSON.parse(JSON.stringify(obj));
@@ -1213,7 +1306,7 @@
         if (!current || current.role !== "dept") return;
         const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
         setSavedStatusLabel(`로컬 자동저장됨 (${sub.updatedAt}) · 클라우드 전송 대기...`);
-      }, 450);
+      }, 600);
 
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
       autoSyncTimer = setTimeout(async () => {
@@ -1227,7 +1320,7 @@
             ? `✓ 클라우드 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
             : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · 네트워크/Worker 확인 필요`
         );
-      }, 850);
+      }, 1400);
     }
 
     async function flushPendingDeptChanges({ keepaliveOnly = false } = {}) {
@@ -1546,7 +1639,7 @@
       return `${(n / (1024 * 1024)).toFixed(1)} MB`;
     }
 
-    function sendFileViaWorker(workerUploadUrl, file, onProgress) {
+    function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", workerUploadUrl, true);
@@ -1563,16 +1656,43 @@
           try {
             data = JSON.parse(xhr.responseText || "{}");
           } catch {}
+          const retryable = xhr.status === 429 || xhr.status >= 500;
           if (xhr.status >= 200 && xhr.status < 300 && data.ok !== false) {
             resolve(data);
           } else {
-            reject(new Error(data.error || `업로드 실패 (HTTP ${xhr.status})`));
+            const err = new Error(data.error || `업로드 실패 (HTTP ${xhr.status})`);
+            err.retryable = retryable;
+            err.status = xhr.status;
+            reject(err);
           }
         };
 
-        xhr.onerror = () => reject(new Error("Worker 업로드 중 네트워크 오류가 발생했습니다."));
+        xhr.onerror = () => {
+          const err = new Error("Worker 업로드 중 네트워크 오류가 발생했습니다.");
+          err.retryable = true;
+          reject(err);
+        };
         xhr.send(file);
       });
+    }
+
+    async function sendFileViaWorker(workerUploadUrl, file, onProgress, maxRetries = 3) {
+      let attempt = 0;
+      while (true) {
+        try {
+          return await sendFileOnceViaWorker(workerUploadUrl, file, onProgress);
+        } catch (err) {
+          if (!err.retryable || attempt >= maxRetries) {
+            throw err;
+          }
+          attempt += 1;
+          const delayMs = 1000 * Math.pow(2, attempt - 1);
+          setUploadProgressText(
+            `'${file.name}' 서버 일시 응답 지연(${err.status || "네트워크"}) · ${delayMs / 1000}초 후 재시도 (${attempt}/${maxRetries})...`
+          );
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+      }
     }
 
     async function uploadFileToB2(file, kind, deptName, key) {
@@ -2121,7 +2241,7 @@
           : "";
         return `
           <tr>
-            <td class="nowrap-col"><strong>${escapeHtml(it.deptName)}</strong></td>
+            <td class="nowrap-col">${renderColoredDeptName(it.deptName, it.deptName)}</td>
             <td>${escapeHtml(it.category)}</td>
             <td><strong>${escapeHtml(it.name)}</strong></td>
             <td class="nowrap-col">${escapeHtml(formatFileSize(it.size))}</td>
@@ -2291,7 +2411,7 @@
       instContainer.innerHTML = INSTRUMENTS.map((inst) => {
         const selected = (sub.instruments || []).includes(inst);
         const extraClass = inst === "악기 사용안함" ? "none-chip" : "";
-        return `<button type="button" class="inst-chip ${extraClass} ${selected ? "active" : ""}" data-inst="${inst}">${inst}</button>`;
+        return `<button type="button" class="inst-chip ${extraClass} ${selected ? "active" : ""}" data-inst="${escapeHtml(inst)}">${escapeHtml(inst)}</button>`;
       }).join("");
 
       instContainer.querySelectorAll(".inst-chip").forEach((chip) => {
@@ -2804,6 +2924,8 @@
         tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--muted); padding:24px;">아직 제출된 큐시트가 없습니다.</td></tr>`;
       } else {
         tbody.innerHTML = rows.map((r, rIdx) => {
+          const colorKey = r.deptUid || r.deptId || r.deptName;
+          const idLabel = r.deptId || r.deptName;
           const isSubmitted = r.subtitleFiles.length > 0 || r.hasSubText;
           const subBadge = isSubmitted
             ? `<span class="pill pill-green">✓ 접수</span>`
@@ -2870,8 +2992,8 @@
                 <button type="button" class="btn btn-outline btn-xs" data-master-up="${rIdx}" ${rIdx === 0 ? "disabled" : ""} title="순번 올리기">▲</button>
                 <button type="button" class="btn btn-outline btn-xs" data-master-down="${rIdx}" ${rIdx === rows.length - 1 ? "disabled" : ""} title="순번 내리기">▼</button>
               </td>
-              <td class="nowrap-col"><span class="pill pill-blue">#${r.orderSeq} (${escapeHtml(r.deptId || r.deptName)})</span></td>
-              <td class="nowrap-col"><strong>${escapeHtml(r.deptName)}</strong></td>
+              <td class="nowrap-col">${renderColoredIdPill(r.orderSeq, idLabel, colorKey)}</td>
+              <td class="nowrap-col">${renderColoredDeptName(r.deptName, colorKey)}</td>
               <td>
                 <div><strong>${escapeHtml(r.title)}</strong></div>
                 <div class="helper-text">${escapeHtml(r.topic)}</div>
@@ -2912,6 +3034,8 @@
       } else {
         deptTbody.innerHTML = subs.map((s, idx) => {
           const storageKey = getSubmissionStorageKey(s);
+          const colorKey = s.deptUid || storageKey || s.deptId || s.deptName;
+          const idLabel = s.deptId || s.deptName;
           const orderSeq = Number(s.orderSeq) > 0 ? Number(s.orderSeq) : (idx + 1);
           const cueList = Array.isArray(s.cues) ? s.cues : [];
           const cueTitles = cueList.map((c, cIdx) => `${cIdx + 1}.${c.title || "순서"}`).join(" / ");
@@ -2941,8 +3065,8 @@
             : "없음";
           return `
             <tr>
-              <td class="nowrap-col"><span class="pill pill-blue">#${orderSeq} (${escapeHtml(s.deptId || s.deptName)})</span></td>
-              <td class="nowrap-col"><strong>${escapeHtml(s.deptName)}</strong></td>
+              <td class="nowrap-col">${renderColoredIdPill(orderSeq, idLabel, colorKey)}</td>
+              <td class="nowrap-col">${renderColoredDeptName(s.deptName, colorKey)}</td>
               <td>${escapeHtml(s.contact || "-")}</td>
               <td>${cueSummaryHtml}</td>
               <td class="nowrap-col"><strong>${Number(s.micCount || 0)}개</strong></td>
@@ -2983,13 +3107,21 @@
         const seqBadge = acc.role === "admin"
           ? `<span class="helper-text">-</span>`
           : (displaySeq > 0
-            ? `<span class="pill pill-blue">#${displaySeq} (${escapeHtml(acc.id)})</span>`
+            ? renderColoredIdPill(displaySeq, acc.id, uid)
             : `<span class="helper-text">미저장</span>`);
+
+        const deptCell = acc.role === "admin"
+          ? `<strong>${escapeHtml(acc.deptName)}</strong>`
+          : renderColoredDeptName(acc.deptName, uid);
+
+        const idCell = acc.role === "admin"
+          ? `<code>${escapeHtml(acc.id)}</code>`
+          : renderColoredIdCode(acc.id, uid);
 
         return `
           <tr>
-            <td class="nowrap-col"><strong>${escapeHtml(acc.deptName)}</strong></td>
-            <td><code>${escapeHtml(acc.id)}</code></td>
+            <td class="nowrap-col">${deptCell}</td>
+            <td>${idCell}</td>
             <td><code>${escapeHtml(acc.pw)}</code></td>
             <td class="nowrap-col">${seqBadge}</td>
             <td class="nowrap-col">${acc.role === "admin" ? '<span class="pill pill-blue">관리자</span>' : '<span class="pill pill-green">부서</span>'}</td>
@@ -3268,6 +3400,8 @@
       activeUploadCount = 0;
       setUploadProgressText("");
       recentlyDeletedB2Keys.clear();
+      remoteB2Files = [];
+      remoteB2Loaded = false;
       localStorage.removeItem(STORAGE_KEY);
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
@@ -3486,11 +3620,14 @@
         };
         state.deptSubmissions = {};
         remoteB2Files = [];
-        remoteB2Loaded = false;
+        remoteB2Loaded = true;
         saveState();
         await syncSystemMetaToB2({ silent: true });
         await clearAllFileRecords();
         renderAll();
+        if (activeTab === "adminOverview") {
+          await fetchRemoteB2Files(false);
+        }
         showToast("행사 데이터와 파일이 모두 완전히 삭제 및 동기화되었습니다.");
       } catch (err) {
         alert(`전체 초기화 중 오류가 발생했습니다.\n사유: ${err.message}`);
