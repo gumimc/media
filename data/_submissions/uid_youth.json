@@ -13,15 +13,15 @@
   "requestVideo": false,
   "customCueFiles": [],
   "generalNote": "",
-  "updatedAt": "2026. 11. 26. 오후 8:29:14",
-  "syncedAt": 1795692554243,
+  "updatedAt": "2026. 11. 26. 오후 8:30:22",
+  "syncedAt": 1795692622414,
   "submittedAt": 1795692451731,
   "cues": [
     {
       "id": "cue_qeq7uu9",
       "title": "ccd",
       "topic": "",
-      "duration": "",
+      "duration": "4분",
       "note": "",
       "youtubeUrl": "https://youtu.be/z-BOCIX42Ic?si=nKFaOGZBh5NfscKR",
       "customRank": 0,
