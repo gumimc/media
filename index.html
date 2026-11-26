@@ -394,6 +394,7 @@
       font-size: 12px;
       font-weight: 700;
       line-height: 1.35;
+      white-space: nowrap;
     }
     .pill-green { background: #dcfce7; color: #166534; }
     .pill-warn { background: #fef3c7; color: #92400e; }
@@ -432,13 +433,14 @@
       font-weight: 700;
       border: 1px solid transparent;
       font-size: 12px;
+      white-space: nowrap;
     }
 
     .yt-link-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 9px;
+      padding: 5px 10px;
       border-radius: 7px;
       background: var(--danger-soft);
       border: 1px solid #fecaca;
@@ -446,6 +448,9 @@
       font-size: 12px;
       font-weight: 700;
       text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+      line-height: 1.2;
     }
     .yt-link-badge:hover { background: #fee2e2; }
     .yt-play-icon {
@@ -459,6 +464,7 @@
       color: #fff;
       font-size: 10px;
       line-height: 1;
+      flex-shrink: 0;
     }
 
     .file-chip-row {
@@ -867,8 +873,8 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v14";
-    const IDB_NAME = "gm_media_guide_files_b2_v14";
+    const STORAGE_KEY = "gm_media_guide_b2_v15";
+    const IDB_NAME = "gm_media_guide_files_b2_v15";
     const IDB_STORE = "files";
 
     const ACCOUNT_COLOR_PALETTE = [
@@ -926,13 +932,14 @@
       return getAccountColorTheme(candidates[0] || "default");
     }
 
-    // 내부 orderSeq는 유지하되, 관리자 화면에서는 숫자(#번호)를 숨기고 식별 ID만 표시
+    // 내부 orderSeq는 유지하되, 관리자 화면에서는 숫자(#번호)를 숨기고 식별 ID/부서명만 표시
     function renderColoredIdPill(orderSeq, idLabel, colorKey, deptName = "") {
       const t = resolveThemeForEntity(colorKey, idLabel, deptName);
+      const labelText = String(idLabel || deptName || "").trim();
       return `
         <span class="id-color-pill" data-order-seq="${Number(orderSeq || 0)}" style="background-color:${t.bg} !important; color:${t.text} !important; border-color:${t.border} !important;">
           <span class="id-color-dot" style="background-color:${t.dot} !important;"></span>
-          <span>${escapeHtml(idLabel)}</span>
+          <span>${escapeHtml(labelText)}</span>
         </span>
       `;
     }
@@ -1109,7 +1116,7 @@
     function loadState() {
       const fallback = deepClone(DEFAULT_STATE);
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("gm_media_guide_b2_v14");
         if (!raw) return fallback;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return fallback;
@@ -2301,7 +2308,6 @@
               : [];
           }
           if (!Array.isArray(c.docSubtitleFiles)) c.docSubtitleFiles = [];
-          // 기존 데이터에 워드/문서 파일이 subtitleFiles에 섞여 있었다면 docSubtitleFiles로 분리
           const separatedTxt = [];
           c.subtitleFiles.forEach((sf) => {
             if (isPlainTextSubtitleFile(sf)) {
@@ -3182,7 +3188,6 @@
                 if (txt.trim()) appendedTexts.push(`[${f.name}]\n${txt.trim()}`);
               } catch {}
             } else {
-              // .txt가 아닌 워드/문서 파일은 subtitleText에 합치지 않고 docSubtitleFiles로 별도 분리
               const meta = await processAndStoreUploadedFile(f, "subtitle_doc", sub.deptName);
               if (meta) {
                 cue.docSubtitleFiles.push(meta);
@@ -3543,7 +3548,7 @@
               </td>
               <td>${instAndReq}</td>
               <td class="nowrap-col">${subBadge}</td>
-              <td>${filesHtml}</td>
+              <td class="nowrap-col">${filesHtml}</td>
               <td>${escapeHtml(r.note)}</td>
               <td class="nowrap-col">
                 <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" data-del-dept-cue="${escapeHtml(r.storageKey)}">부서 삭제</button>
@@ -3951,6 +3956,7 @@
       remoteB2Files = [];
       remoteB2Loaded = false;
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("gm_media_guide_b2_v14");
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
       activeTab = null;
