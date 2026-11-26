@@ -1,0 +1,34 @@
+{
+  "deptUid": "uid_youth",
+  "deptId": "청년부",
+  "deptName": "청년부",
+  "orderSeq": 1,
+  "contact": "이다은 청년",
+  "micCount": 3,
+  "requestMicStand": false,
+  "micStandCount": 0,
+  "useCeilingMic": true,
+  "instruments": [],
+  "requestBgm": false,
+  "requestVideo": false,
+  "customCueFiles": [],
+  "generalNote": "",
+  "updatedAt": "2026. 11. 26. 오후 8:28:17",
+  "syncedAt": 1795692497778,
+  "submittedAt": 1795692451731,
+  "cues": [
+    {
+      "id": "cue_qeq7uu9",
+      "title": "",
+      "topic": "",
+      "duration": "",
+      "note": "",
+      "youtubeUrl": "",
+      "customRank": 0,
+      "subtitleHelp": false,
+      "subtitleText": "",
+      "subtitleFiles": [],
+      "mediaFiles": []
+    }
+  ]
+}
