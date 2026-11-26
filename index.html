@@ -46,6 +46,7 @@
       padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
+      white-space: nowrap;
     }
     .container { max-width: 1280px; margin: 20px auto; padding: 0 16px 48px; }
     .card {
@@ -114,6 +115,7 @@
       align-items: center;
       gap: 6px;
       text-decoration: none;
+      white-space: nowrap;
     }
     .btn-sm { padding: 6px 10px; font-size: 12px; }
     .btn-xs { padding: 3px 8px; font-size: 11px; }
@@ -139,6 +141,7 @@
       font-size: 13px;
       cursor: pointer;
       font-weight: 500;
+      white-space: nowrap;
     }
     .inst-chip.active, .media-req-btn.active {
       background: #eff6ff;
@@ -193,13 +196,26 @@
     }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border-bottom: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: top; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: middle; }
     th { background: #f8fafc; font-weight: 700; white-space: nowrap; }
     .nowrap-col { white-space: nowrap; }
-    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.25;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-width: fit-content;
+    }
     .pill-blue { background: #dbeafe; color: #1e40af; }
     .pill-green { background: #d1fae5; color: #065f46; }
     .pill-warn { background: #fef3c7; color: #92400e; }
+    .pill-muted { background: #f3f4f6; color: #4b5563; }
     .yt-link-badge {
       display: inline-flex;
       align-items: center;
@@ -212,6 +228,7 @@
       font-size: 12px;
       font-weight: 700;
       text-decoration: none;
+      white-space: nowrap;
     }
     .yt-link-badge:hover { background: #fee2e2; }
     .yt-play-icon {
@@ -225,6 +242,7 @@
       color: #fff;
       font-size: 9px;
       line-height: 1;
+      flex-shrink: 0;
     }
     .file-chip-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
     .login-card { max-width: 420px; margin: 48px auto; }
@@ -411,8 +429,8 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h3 class="card-title">부서별 장비 · 재생요청 · 자체큐시트 요약</h3>
-              <p class="card-sub">부서별 마이크/스탠드/천장 E/L, 사용악기, BGM/영상 재생요청, 자체 큐시트 및 자막 도움요청 내역입니다.</p>
+              <h3 class="card-title">부서별 순서 · 장비 · 재생요청 · 자체큐시트 요약</h3>
+              <p class="card-sub">부서별 등록 순서, 마이크/스탠드/천장 E/L, 사용악기, BGM/영상 재생요청, 자체 큐시트 및 자막 도움요청 내역입니다.</p>
             </div>
           </div>
           <div class="table-wrap">
@@ -422,6 +440,7 @@
                   <th>식별순서/ID</th>
                   <th>부서</th>
                   <th>담당자</th>
+                  <th>등록 순서</th>
                   <th>마이크</th>
                   <th>스탠드</th>
                   <th>천장 E/L</th>
@@ -2787,8 +2806,10 @@
         tbody.innerHTML = rows.map((r, rIdx) => {
           const isSubmitted = r.subtitleFiles.length > 0 || r.hasSubText;
           const subBadge = isSubmitted
-            ? `<span class="pill pill-green">접수</span>`
-            : `<span class="pill pill-warn">미접수</span>`;
+            ? `<span class="pill pill-green">✓ 접수</span>`
+            : (r.subtitleHelp
+              ? `<span class="pill pill-warn">도움요청</span>`
+              : `<span class="pill pill-muted">미접수</span>`);
 
           const attachEntries = [];
           r.mediaFiles.forEach((f) => {
@@ -2860,7 +2881,7 @@
                 <div class="helper-text">천장 E/L: ${escapeHtml(r.ceilingText)}</div>
               </td>
               <td>${instAndReq}</td>
-              <td>${subBadge}</td>
+              <td class="nowrap-col">${subBadge}</td>
               <td>${filesHtml}</td>
               <td>${escapeHtml(r.note)}</td>
               <td class="nowrap-col">
@@ -2885,12 +2906,18 @@
 
       const deptTbody = document.getElementById("deptSummaryTableBody");
       if (!subs.length) {
-        deptTbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--muted); padding:20px;">부서 제출 내역이 없습니다.</td></tr>`;
+        deptTbody.innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--muted); padding:20px;">부서 제출 내역이 없습니다.</td></tr>`;
       } else {
         deptTbody.innerHTML = subs.map((s, idx) => {
           const storageKey = getSubmissionStorageKey(s);
           const orderSeq = Number(s.orderSeq) > 0 ? Number(s.orderSeq) : (idx + 1);
-          const helps = (s.cues || []).filter((c) => c.subtitleHelp).map((c, i) => c.title || `순서${i + 1}`);
+          const cueList = Array.isArray(s.cues) ? s.cues : [];
+          const cueTitles = cueList.map((c, cIdx) => `${cIdx + 1}.${c.title || "순서"}`).join(" / ");
+          const cueSummaryHtml = cueList.length
+            ? `<div><strong>${cueList.length}개 순서</strong></div><div class="helper-text">${escapeHtml(cueTitles)}</div>`
+            : "-";
+
+          const helps = cueList.filter((c) => c.subtitleHelp).map((c, i) => c.title || `순서${i + 1}`);
           const customFiles = (Array.isArray(s.customCueFiles) ? s.customCueFiles : []).filter(
             (f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)
           );
@@ -2915,6 +2942,7 @@
               <td class="nowrap-col"><span class="pill pill-blue">#${orderSeq} (${escapeHtml(s.deptId || s.deptName)})</span></td>
               <td class="nowrap-col"><strong>${escapeHtml(s.deptName)}</strong></td>
               <td>${escapeHtml(s.contact || "-")}</td>
+              <td>${cueSummaryHtml}</td>
               <td class="nowrap-col"><strong>${Number(s.micCount || 0)}개</strong></td>
               <td class="nowrap-col">${escapeHtml(formatStandText(s))}</td>
               <td class="nowrap-col">${escapeHtml(formatCeilingMicText(s))}</td>
