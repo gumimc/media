@@ -2717,7 +2717,7 @@
             micCount: sub.micCount || 0,
             standText: formatStandText(sub),
             ceilingText: formatCeilingMicText(sub),
-            instruments: (sub.instruments || []).join(", ") || "-",
+            instruments: (sub.instruments || []).join(", "),
             mediaReq: formatMediaReqText(sub),
             customCueFiles: customFiles,
             customCueNames: customNames || "-",
@@ -2856,9 +2856,11 @@
           });
           const filesHtml = filesParts.length ? filesParts.join("") : "-";
 
+          const hasInstruments = Boolean(r.instruments && r.instruments.trim());
+          const hasMediaReq = r.mediaReq !== "-";
           const instAndReq = `
-            <div>${escapeHtml(r.instruments)}</div>
-            ${r.mediaReq !== "-" ? `<div style="margin-top:4px;"><span class="pill pill-green">${escapeHtml(r.mediaReq)}</span></div>` : ""}
+            ${hasInstruments ? `<div>${escapeHtml(r.instruments)}</div>` : ""}
+            ${hasMediaReq ? `<div${hasInstruments ? ' style="margin-top:4px;"' : ""}><span class="pill pill-green">${escapeHtml(r.mediaReq)}</span></div>` : ""}
           `;
 
           return `
@@ -3093,7 +3095,7 @@
         "필요마이크": `${r.micCount}개`,
         "마이크스탠드": r.standText,
         "천장E/L마이크": r.ceilingText,
-        "사용악기": r.instruments,
+        "사용악기": r.instruments || "-",
         "재생요청": r.mediaReq,
         "자막접수": r.subtitleFiles.length > 0 || r.hasSubText ? "접수" : "미접수",
         "자막파일": r.subtitleFiles.map((sf) => sf.name).join(", ") || (r.hasSubText ? "직접입력" : "-"),
