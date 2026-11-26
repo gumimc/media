@@ -867,8 +867,8 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_gh_b2_v13";
-    const IDB_NAME = "gm_media_guide_files_gh_b2_v13";
+    const STORAGE_KEY = "gm_media_guide_gh_b2_v14";
+    const IDB_NAME = "gm_media_guide_files_gh_b2_v14";
     const IDB_STORE = "files";
 
     const ACCOUNT_COLOR_PALETTE = [
@@ -1316,6 +1316,8 @@
           }
           const remoteSubs = normalizeSubmissionsPayload(data.submissions || data.data || {});
           return { remoteSubs };
+        } catch {
+          return null;
         } finally {
           inflightSubmissionsPromise = null;
         }
@@ -1986,70 +1988,45 @@
       return `${(n / (1024 * 1024)).toFixed(1)} MB`;
     }
 
-async function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
-  const arrayBuffer = await file.arrayBuffer();
-  const payload = new Uint8Array(arrayBuffer);
+    async function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
+      const arrayBuffer = await file.arrayBuffer();
+      const payload = new Uint8Array(arrayBuffer);
 
-  if (!payload.byteLength) {
-    throw new Error("선택한 파일의 크기가 0바이트입니다.");
-  }
+      if (!payload.byteLength) {
+        throw new Error("선택한 파일의 크기가 0바이트입니다.");
+      }
 
-  if (onProgress) onProgress(10);
+      if (onProgress) onProgress(10);
 
-  const res = await fetch(workerUploadUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-File-Name": encodeURIComponent(file.name || "file"),
-      "X-File-Size": String(payload.byteLength)
-    },
-    body: payload
-  });
-
-  if (onProgress) onProgress(90);
-
-  const rawText = await res.text();
-  let data = {};
-  try {
-    data = JSON.parse(rawText || "{}");
-  } catch {}
-
-  const retryable = res.status === 429 || res.status >= 500;
-  if (res.ok && data.ok !== false) {
-    if (onProgress) onProgress(100);
-    return data;
-  }
-
-  const detail = data.error || rawText || res.statusText || `HTTP ${res.status}`;
-  const err = new Error(`업로드 실패 (HTTP ${res.status}): ${detail}`);
-  err.retryable = retryable;
-  err.status = res.status;
-  throw err;
-}
-
-        xhr.onload = () => {
-          let data = {};
-          try {
-            data = JSON.parse(xhr.responseText || "{}");
-          } catch {}
-          const retryable = xhr.status === 429 || xhr.status >= 500;
-          if (xhr.status >= 200 && xhr.status < 300 && data.ok !== false) {
-            resolve(data);
-          } else {
-            const err = new Error(data.error || xhr.statusText || `업로드 실패 (HTTP ${xhr.status})`);
-            err.retryable = retryable;
-            err.status = xhr.status;
-            reject(err);
-          }
-        };
-
-        xhr.onerror = () => {
-          const err = new Error("Worker 업로드 중 네트워크/CORS 오류가 발생했습니다.");
-          err.retryable = true;
-          reject(err);
-        };
-        xhr.send(payload);
+      const res = await fetch(workerUploadUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          "X-File-Name": encodeURIComponent(file.name || "file"),
+          "X-File-Size": String(payload.byteLength)
+        },
+        body: payload
       });
+
+      if (onProgress) onProgress(90);
+
+      const rawText = await res.text();
+      let data = {};
+      try {
+        data = JSON.parse(rawText || "{}");
+      } catch {}
+
+      const retryable = res.status === 429 || res.status >= 500;
+      if (res.ok && data.ok !== false) {
+        if (onProgress) onProgress(100);
+        return data;
+      }
+
+      const detail = data.error || rawText || res.statusText || `HTTP ${res.status}`;
+      const err = new Error(`업로드 실패 (HTTP ${res.status}): ${detail}`);
+      err.retryable = retryable;
+      err.status = res.status;
+      throw err;
     }
 
     async function sendFileViaWorker(workerUploadUrl, file, onProgress, maxRetries = 2) {
@@ -2815,7 +2792,7 @@ async function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
       renderCueList(sub);
     }
 
-    async function renderDeptView(user, { skipRemoteFetch = false } = {}) {
+    function renderDeptView(user, { skipRemoteFetch = false } = {}) {
       const sub = ensureDeptSubmission(user);
       pruneDeletedFilesFromSubmission(sub);
       document.getElementById("deptNameBadge").textContent = user.deptName;
@@ -2823,24 +2800,30 @@ async function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
 
       if (skipRemoteFetch) return;
 
-      await fetchRemoteB2Files(false);
-      const remoteSub = await fetchSingleDeptSubmissionFromB2(user);
-      const activeUser = getCurrentUser();
-      if (!activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
-      if (hasDirtyDeptChanges || activeUploadCount > 0) return;
+      (async () => {
+        try {
+          await fetchRemoteB2Files(false);
+          const remoteSub = await fetchSingleDeptSubmissionFromB2(user);
+          const activeUser = getCurrentUser();
+          if (!activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
+          if (hasDirtyDeptChanges || activeUploadCount > 0) return;
 
-      const latest = ensureDeptSubmission(activeUser);
-      await reconcileDeptFilesWithRemoteList(latest, activeUser);
-      if (remoteSub) {
-        applyDeptFormValues(latest);
-        const latestSeqLabel = latest.orderSeq > 0 ? ` · 식별순서 #${latest.orderSeq}` : "";
-        if (latest.updatedAt) {
-          setSavedStatusLabel(`✓ 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
+          const latest = ensureDeptSubmission(activeUser);
+          await reconcileDeptFilesWithRemoteList(latest, activeUser);
+          if (remoteSub) {
+            applyDeptFormValues(latest);
+            const latestSeqLabel = latest.orderSeq > 0 ? ` · 식별순서 #${latest.orderSeq}` : "";
+            if (latest.updatedAt) {
+              setSavedStatusLabel(`✓ 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
+            }
+          } else {
+            renderCustomCueFiles(latest);
+            renderCueList(latest);
+          }
+        } catch (err) {
+          console.warn("Background dept sync failed:", err);
         }
-      } else {
-        renderCustomCueFiles(latest);
-        renderCueList(latest);
-      }
+      })();
     }
 
     function renderMicOptionsControl(sub) {
