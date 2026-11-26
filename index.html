@@ -1986,22 +1986,46 @@
       return `${(n / (1024 * 1024)).toFixed(1)} MB`;
     }
 
-    async function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
-      const arrayBuffer = await file.arrayBuffer();
-      const payload = new Uint8Array(arrayBuffer);
+async function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
+  const arrayBuffer = await file.arrayBuffer();
+  const payload = new Uint8Array(arrayBuffer);
 
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", workerUploadUrl, true);
-        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-        xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name || "file"));
-        xhr.setRequestHeader("X-File-Size", String(payload.byteLength));
+  if (!payload.byteLength) {
+    throw new Error("선택한 파일의 크기가 0바이트입니다.");
+  }
 
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable && onProgress) {
-            onProgress(Math.round((e.loaded / e.total) * 100));
-          }
-        };
+  if (onProgress) onProgress(10);
+
+  const res = await fetch(workerUploadUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": file.type || "application/octet-stream",
+      "X-File-Name": encodeURIComponent(file.name || "file"),
+      "X-File-Size": String(payload.byteLength)
+    },
+    body: payload
+  });
+
+  if (onProgress) onProgress(90);
+
+  const rawText = await res.text();
+  let data = {};
+  try {
+    data = JSON.parse(rawText || "{}");
+  } catch {}
+
+  const retryable = res.status === 429 || res.status >= 500;
+  if (res.ok && data.ok !== false) {
+    if (onProgress) onProgress(100);
+    return data;
+  }
+
+  const detail = data.error || rawText || res.statusText || `HTTP ${res.status}`;
+  const err = new Error(`업로드 실패 (HTTP ${res.status}): ${detail}`);
+  err.retryable = retryable;
+  err.status = res.status;
+  throw err;
+}
 
         xhr.onload = () => {
           let data = {};
