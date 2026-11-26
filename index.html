@@ -658,7 +658,7 @@
         <div class="card-header">
           <div>
             <h3 class="card-title">세부 순서(큐시트) · 음원/영상 · 자막 등록</h3>
-            <p class="card-sub">순서별로 영상/음원 파일 또는 유튜브 링크, 자막(.txt 또는 직접 붙여넣기)을 등록하세요.</p>
+            <p class="card-sub">순서별로 영상/음원 파일 또는 유튜브 링크, 자막(.txt / 워드·문서 파일 분리 보관 / 직접 붙여넣기)을 등록하세요.</p>
           </div>
           <button type="button" class="btn btn-primary btn-sm" id="addCueBtn">+ 순서 추가</button>
         </div>
@@ -690,14 +690,14 @@
               <tr>
                 <th>순번</th>
                 <th>순번조정</th>
-                <th>식별순서/ID</th>
+                <th>식별ID</th>
                 <th>부서</th>
                 <th>순서명 / 주제</th>
                 <th>시간</th>
                 <th>마이크/스탠드/천장</th>
                 <th>악기 / 재생요청</th>
                 <th>자막</th>
-                <th>음원·첨부파일</th>
+                <th>음원·자막문서·첨부</th>
                 <th>메모</th>
                 <th>관리</th>
               </tr>
@@ -718,7 +718,7 @@
           <table>
             <thead>
               <tr>
-                <th>식별순서/ID</th>
+                <th>식별ID</th>
                 <th>부서</th>
                 <th>담당자</th>
                 <th>등록 순서</th>
@@ -831,7 +831,7 @@
                 <th>부서명</th>
                 <th>아이디</th>
                 <th>비밀번호</th>
-                <th>식별순서/ID</th>
+                <th>식별ID</th>
                 <th>권한</th>
                 <th>관리</th>
               </tr>
@@ -867,8 +867,8 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v13";
-    const IDB_NAME = "gm_media_guide_files_b2_v13";
+    const STORAGE_KEY = "gm_media_guide_b2_v14";
+    const IDB_NAME = "gm_media_guide_files_b2_v14";
     const IDB_STORE = "files";
 
     const ACCOUNT_COLOR_PALETTE = [
@@ -926,12 +926,13 @@
       return getAccountColorTheme(candidates[0] || "default");
     }
 
+    // 내부 orderSeq는 유지하되, 관리자 화면에서는 숫자(#번호)를 숨기고 식별 ID만 표시
     function renderColoredIdPill(orderSeq, idLabel, colorKey, deptName = "") {
       const t = resolveThemeForEntity(colorKey, idLabel, deptName);
       return `
-        <span class="id-color-pill" style="background-color:${t.bg} !important; color:${t.text} !important; border-color:${t.border} !important;">
+        <span class="id-color-pill" data-order-seq="${Number(orderSeq || 0)}" style="background-color:${t.bg} !important; color:${t.text} !important; border-color:${t.border} !important;">
           <span class="id-color-dot" style="background-color:${t.dot} !important;"></span>
-          <span>#${orderSeq} (${escapeHtml(idLabel)})</span>
+          <span>${escapeHtml(idLabel)}</span>
         </span>
       `;
     }
@@ -949,6 +950,24 @@
     function renderColoredIdCode(idText, colorKey, deptName = "") {
       const t = resolveThemeForEntity(colorKey, idText, deptName);
       return `<code class="id-code-badge" style="background-color:${t.bg} !important; color:${t.text} !important; border-color:${t.border} !important;">${escapeHtml(idText)}</code>`;
+    }
+
+    function isPlainTextSubtitleFile(file) {
+      const name = String(file?.name || "").toLowerCase();
+      const mime = String(file?.type || "").toLowerCase();
+      return name.endsWith(".txt") || mime === "text/plain";
+    }
+
+    function getCueSubtitleFiles(cue) {
+      if (Array.isArray(cue?.subtitleFiles)) return cue.subtitleFiles;
+      if (cue?.subtitleFileKey && cue?.subtitleFileName) {
+        return [{ key: cue.subtitleFileKey, name: cue.subtitleFileName }];
+      }
+      return [];
+    }
+
+    function getCueDocSubtitleFiles(cue) {
+      return Array.isArray(cue?.docSubtitleFiles) ? cue.docSubtitleFiles : [];
     }
 
     function deepClone(obj) {
@@ -1527,6 +1546,14 @@
             }
             return true;
           });
+          c.docSubtitleFiles = (c.docSubtitleFiles || []).filter((f) => {
+            if (f.b2Key === objectKey) {
+              if (f.key) localKeysToRemove.push(f.key);
+              modified = true;
+              return false;
+            }
+            return true;
+          });
         });
         if (modified) affectedSubs.push(sub);
       });
@@ -1603,7 +1630,7 @@
         const ok = await syncSubmissionToB2(sub, { silent: true });
         setSavedStatusLabel(
           ok
-            ? `✓ B2 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
+            ? `✓ B2 동기화 완료 (${sub.updatedAt})`
             : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · B2/Worker 확인 필요`
         );
       }, 1200);
@@ -1628,6 +1655,7 @@
       (sub.cues || []).forEach((c) => {
         c.mediaFiles = (c.mediaFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key));
         c.subtitleFiles = (c.subtitleFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key));
+        c.docSubtitleFiles = (c.docSubtitleFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key));
       });
     }
 
@@ -1646,6 +1674,7 @@
       (sub.cues || []).forEach((c) => {
         (c.mediaFiles || []).forEach((f) => { if (f?.b2Key) knownB2Keys.add(f.b2Key); });
         (c.subtitleFiles || []).forEach((f) => { if (f?.b2Key) knownB2Keys.add(f.b2Key); });
+        (c.docSubtitleFiles || []).forEach((f) => { if (f?.b2Key) knownB2Keys.add(f.b2Key); });
       });
 
       if (!Array.isArray(sub.cues) || !sub.cues.length) {
@@ -1654,23 +1683,31 @@
       const firstCue = sub.cues[0];
       if (!Array.isArray(firstCue.mediaFiles)) firstCue.mediaFiles = [];
       if (!Array.isArray(firstCue.subtitleFiles)) firstCue.subtitleFiles = [];
+      if (!Array.isArray(firstCue.docSubtitleFiles)) firstCue.docSubtitleFiles = [];
       if (!Array.isArray(sub.customCueFiles)) sub.customCueFiles = [];
 
       deptB2Items.forEach((rf) => {
         if (knownB2Keys.has(rf.objectKey)) return;
+        const fileName = rf.fileName || rf.objectKey.split("/").pop() || "파일";
         const entry = {
           key: "",
-          name: rf.fileName || rf.objectKey.split("/").pop() || "파일",
+          name: fileName,
           type: rf.contentType || "application/octet-stream",
           size: Number(rf.size || 0),
           savedLocal: false,
           b2Key: rf.objectKey,
-          publicUrl: buildWorkerDownloadUrl(rf.objectKey, rf.fileName)
+          publicUrl: buildWorkerDownloadUrl(rf.objectKey, fileName)
         };
         if (rf.kind === "custom_cue" || rf.objectKey.includes("/custom_cue/")) {
           sub.customCueFiles.push(entry);
+        } else if (rf.kind === "subtitle_doc" || rf.objectKey.includes("/subtitle_doc/")) {
+          firstCue.docSubtitleFiles.push(entry);
         } else if (rf.kind === "subtitle" || rf.objectKey.includes("/subtitle/")) {
-          firstCue.subtitleFiles.push(entry);
+          if (isPlainTextSubtitleFile(entry)) {
+            firstCue.subtitleFiles.push(entry);
+          } else {
+            firstCue.docSubtitleFiles.push(entry);
+          }
         } else {
           firstCue.mediaFiles.push(entry);
         }
@@ -2263,6 +2300,17 @@
               ? [{ key: c.subtitleFileKey, name: c.subtitleFileName }]
               : [];
           }
+          if (!Array.isArray(c.docSubtitleFiles)) c.docSubtitleFiles = [];
+          // 기존 데이터에 워드/문서 파일이 subtitleFiles에 섞여 있었다면 docSubtitleFiles로 분리
+          const separatedTxt = [];
+          c.subtitleFiles.forEach((sf) => {
+            if (isPlainTextSubtitleFile(sf)) {
+              separatedTxt.push(sf);
+            } else {
+              c.docSubtitleFiles.push(sf);
+            }
+          });
+          c.subtitleFiles = separatedTxt;
           if (!Array.isArray(c.mediaFiles)) c.mediaFiles = [];
         });
       }
@@ -2281,6 +2329,7 @@
         subtitleHelp: false,
         subtitleText: "",
         subtitleFiles: [],
+        docSubtitleFiles: [],
         mediaFiles: []
       };
     }
@@ -2360,6 +2409,7 @@
               subtitleHelp: false,
               subtitleText: "[청년부_오프닝_자막.txt]\n[1절]\n어두운 밤하늘에 밝은 빛 비추네\n기쁨의 소식 온 땅에 울려 퍼지네",
               subtitleFiles: [sub1],
+              docSubtitleFiles: [],
               mediaFiles: []
             }
           ]
@@ -2399,6 +2449,7 @@
             subtitleHelp: false,
             subtitleText: `[${sanitizeName(deptName)}_예시_자막.txt]\n${deptName} 예시 자막입니다.`,
             subtitleFiles: [defaultSub],
+            docSubtitleFiles: [],
             mediaFiles: []
           }
         ]
@@ -2501,6 +2552,10 @@
           if (sf?.key) fileKeys.push(sf.key);
           if (sf?.b2Key) b2Keys.push(sf.b2Key);
         });
+        (cue.docSubtitleFiles || []).forEach((df) => {
+          if (df?.key) fileKeys.push(df.key);
+          if (df?.b2Key) b2Keys.push(df.b2Key);
+        });
         (cue.mediaFiles || []).forEach((mf) => {
           if (mf?.key) fileKeys.push(mf.key);
           if (mf?.b2Key) b2Keys.push(mf.b2Key);
@@ -2527,6 +2582,7 @@
     function formatKindLabel(kind) {
       if (kind === "custom_cue") return "자체 큐시트";
       if (kind === "subtitle") return "자막(.txt)";
+      if (kind === "subtitle_doc") return "자막문서(워드/기타)";
       if (kind === "media") return "영상/음원";
       return kind || "첨부파일";
     }
@@ -2578,12 +2634,24 @@
             if (sf?.b2Key && recentlyDeletedB2Keys.has(sf.b2Key)) return;
             items.push({
               deptName: sub.deptName,
-              category: `${orderLabel} · 자막`,
+              category: `${orderLabel} · 자막(.txt)`,
               key: sf.key || "",
               name: sf.name,
               size: sf.size || 0,
               b2Key: sf.b2Key || "",
               publicUrl: sf.publicUrl || buildWorkerDownloadUrl(sf.b2Key, sf.name)
+            });
+          });
+          getCueDocSubtitleFiles(cue).forEach((df) => {
+            if (df?.b2Key && recentlyDeletedB2Keys.has(df.b2Key)) return;
+            items.push({
+              deptName: sub.deptName,
+              category: `${orderLabel} · 자막문서(워드/기타)`,
+              key: df.key || "",
+              name: df.name,
+              size: df.size || 0,
+              b2Key: df.b2Key || "",
+              publicUrl: df.publicUrl || buildWorkerDownloadUrl(df.b2Key, df.name)
             });
           });
         });
@@ -2601,7 +2669,7 @@
       const ytCount = safeRows.filter((r) => Boolean(r.youtubeUrl)).length;
       const fileCount = remoteB2Loaded
         ? collectAllB2Files().length
-        : safeRows.reduce((acc, r) => acc + r.mediaFiles.length + r.subtitleFiles.length, 0) + safeSubs.reduce((acc, s) => acc + (s.customCueFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)).length, 0);
+        : safeRows.reduce((acc, r) => acc + r.mediaFiles.length + r.subtitleFiles.length + r.docSubtitleFiles.length, 0) + safeSubs.reduce((acc, s) => acc + (s.customCueFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)).length, 0);
 
       badgeBox.innerHTML = `
         <span class="pill pill-blue">총 큐시트 ${safeRows.length}건</span>
@@ -2753,10 +2821,9 @@
       document.getElementById("deptContact").value = sub.contact || "";
       document.getElementById("deptMicCount").value = sub.micCount ?? 0;
       document.getElementById("deptGeneralNote").value = sub.generalNote || "";
-      const seqLabel = sub.orderSeq > 0 ? ` · 식별순서 #${sub.orderSeq}` : "";
       setSavedStatusLabel(
         sub.updatedAt
-          ? `최근 저장: ${sub.updatedAt}${seqLabel} (자동저장/B2동기화 활성)`
+          ? `최근 저장: ${sub.updatedAt} (자동저장/B2동기화 활성)`
           : "자동저장 및 B2 자동 동기화 활성화됨"
       );
       renderMicOptionsControl(sub);
@@ -2786,9 +2853,8 @@
           await reconcileDeptFilesWithB2List(latest, activeUser);
           if (remoteSub) {
             applyDeptFormValues(latest);
-            const latestSeqLabel = latest.orderSeq > 0 ? ` · 식별순서 #${latest.orderSeq}` : "";
             if (latest.updatedAt) {
-              setSavedStatusLabel(`✓ B2 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
+              setSavedStatusLabel(`✓ B2 동기화 완료 · 최근 저장: ${latest.updatedAt}`);
             }
           } else {
             renderCustomCueFiles(latest);
@@ -2898,7 +2964,8 @@
       }
 
       container.innerHTML = sub.cues.map((cue, idx) => {
-        const subFiles = Array.isArray(cue.subtitleFiles) ? cue.subtitleFiles : [];
+        const subFiles = getCueSubtitleFiles(cue);
+        const docSubFiles = getCueDocSubtitleFiles(cue);
 
         const mediaHtml = (cue.mediaFiles || []).length
           ? `<ul class="file-list">${cue.mediaFiles.map((f, fIdx) => `
@@ -2928,10 +2995,24 @@
              </ul>`
           : `<div class="helper-text">TXT 파일 미등록 (B2 저장 · 여러 개 선택 가능)</div>`;
 
+        const docSubStatusHtml = docSubFiles.length
+          ? `<div style="margin-top:8px;">
+              <div class="helper-text" style="color:var(--primary); font-weight:700;">분리 보관된 자막문서(워드/기타):</div>
+              <ul class="file-list" style="color:var(--text-secondary); font-weight:600;">
+                ${docSubFiles.map((df, dIdx) => `
+                  <li style="margin-bottom:3px;">
+                    ${escapeHtml(df.name)} (${escapeHtml(formatFileSize(df.size))}) ${df.b2Key ? '<span class="pill pill-green">B2 동기화됨</span>' : ''}
+                    <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px; font-weight:600;" data-del-doc-sub="${idx}:${dIdx}">삭제</button>
+                  </li>
+                `).join("")}
+              </ul>
+             </div>`
+          : "";
+
         const pastedLen = (cue.subtitleText || "").trim().length;
         const pasteInfoHtml = pastedLen > 0
           ? `<div class="helper-text cue-sub-info" style="color:var(--primary); font-weight:600;">자막 텍스트 ${pastedLen}자 저장됨</div>`
-          : `<div class="helper-text cue-sub-info">메모장·카톡·문서에서 복사한 자막을 여기에 <strong>Ctrl + V</strong>로 붙여넣을 수 있습니다.</div>`;
+          : `<div class="helper-text cue-sub-info">메모장·카톡·문서에서 복사한 자막을 여기에 <strong>Ctrl + V</strong>로 붙여넣을 수 있습니다. (.txt 외 워드/문서 파일은 별도 문서 자막으로 분리 저장됩니다.)</div>`;
 
         return `
           <div class="cue-item" data-cue-idx="${idx}">
@@ -2973,9 +3054,10 @@
               </div>
 
               <div class="form-group" style="margin-bottom:8px;">
-                <label>자막 (.txt B2 저장 또는 직접 Ctrl+V 붙여넣기)</label>
+                <label>자막 (.txt B2 저장 · 워드/문서 별도 분리 · 직접 Ctrl+V 붙여넣기)</label>
                 <input type="file" class="cue-txt-input" multiple />
                 ${txtStatusHtml}
+                ${docSubStatusHtml}
 
                 <textarea class="subtitle-paste-area cue-sub-text" placeholder="여기에 자막 가사/대사를 직접 입력하거나 Ctrl+V로 붙여넣으세요...">${escapeHtml(cue.subtitleText || "")}</textarea>
                 ${pasteInfoHtml}
@@ -3044,7 +3126,7 @@
             subInfoEl.style.fontWeight = len > 0 ? "600" : "";
             subInfoEl.innerHTML = len > 0
               ? `자막 텍스트 ${len}자 저장됨`
-              : `메모장·카톡·문서에서 복사한 자막을 여기에 <strong>Ctrl + V</strong>로 붙여넣을 수 있습니다.`;
+              : `메모장·카톡·문서에서 복사한 자막을 여기에 <strong>Ctrl + V</strong>로 붙여넣을 수 있습니다. (.txt 외 워드/문서 파일은 별도 문서 자막으로 분리 저장됩니다.)`;
           }
           if (shouldShowPasteToast) showToast("자막이 붙여넣기되었습니다.");
           onCueFieldChange();
@@ -3082,21 +3164,34 @@
           const files = Array.from(e.target.files || []);
           if (!files.length) return;
           if (!Array.isArray(cue.subtitleFiles)) cue.subtitleFiles = [];
+          if (!Array.isArray(cue.docSubtitleFiles)) cue.docSubtitleFiles = [];
 
           const appendedTexts = [];
-          let added = 0;
+          let txtAdded = 0;
+          let docAdded = 0;
+
           for (const f of files) {
-            const meta = await processAndStoreUploadedFile(f, "subtitle", sub.deptName);
-            if (meta) {
-              cue.subtitleFiles.push(meta);
-              added += 1;
+            if (isPlainTextSubtitleFile(f)) {
+              const meta = await processAndStoreUploadedFile(f, "subtitle", sub.deptName);
+              if (meta) {
+                cue.subtitleFiles.push(meta);
+                txtAdded += 1;
+              }
+              try {
+                const txt = await f.text();
+                if (txt.trim()) appendedTexts.push(`[${f.name}]\n${txt.trim()}`);
+              } catch {}
+            } else {
+              // .txt가 아닌 워드/문서 파일은 subtitleText에 합치지 않고 docSubtitleFiles로 별도 분리
+              const meta = await processAndStoreUploadedFile(f, "subtitle_doc", sub.deptName);
+              if (meta) {
+                cue.docSubtitleFiles.push(meta);
+                docAdded += 1;
+              }
             }
-            try {
-              const txt = await f.text();
-              if (txt.trim()) appendedTexts.push(`[${f.name}]\n${txt.trim()}`);
-            } catch {}
           }
-          if (added > 0) {
+
+          if (txtAdded > 0 || docAdded > 0) {
             cue.subtitleHelp = false;
             if (appendedTexts.length) {
               const currentTrim = (cue.subtitleText || "").trim();
@@ -3107,7 +3202,13 @@
             collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
             await syncSubmissionToB2(sub, { silent: true });
             renderCueList(sub);
-            showToast(`자막 파일 ${added}개가 B2에 등록되었습니다.`);
+            if (txtAdded > 0 && docAdded > 0) {
+              showToast(`TXT 자막 ${txtAdded}개 등록, 문서 파일 ${docAdded}개 별도 분리 저장되었습니다.`);
+            } else if (docAdded > 0) {
+              showToast(`워드/문서 파일 ${docAdded}개가 별도 자막문서로 분리 저장되었습니다.`);
+            } else {
+              showToast(`자막 파일 ${txtAdded}개가 B2에 등록되었습니다.`);
+            }
           }
           e.target.value = "";
         });
@@ -3177,6 +3278,21 @@
         });
       });
 
+      container.querySelectorAll("[data-del-doc-sub]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const [cIdx, dIdx] = btn.dataset.delDocSub.split(":").map(Number);
+          const target = sub.cues[cIdx]?.docSubtitleFiles?.[dIdx];
+          if (!target) return;
+          sub.cues[cIdx].docSubtitleFiles.splice(dIdx, 1);
+          if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          await syncSubmissionToB2(sub, { silent: true });
+          if (target.key) await deleteFileRecords([target.key]);
+          renderCueList(sub);
+          showToast(`'${target.name || "자막문서"}' 삭제 완료`);
+        });
+      });
+
       container.querySelectorAll("[data-toggle-help]").forEach((btn) => {
         btn.addEventListener("click", () => {
           const i = Number(btn.dataset.toggleHelp);
@@ -3217,14 +3333,6 @@
       return sub;
     }
 
-    function getCueSubtitleFiles(cue) {
-      if (Array.isArray(cue.subtitleFiles) && cue.subtitleFiles.length) return cue.subtitleFiles;
-      if (cue.subtitleFileKey && cue.subtitleFileName) {
-        return [{ key: cue.subtitleFileKey, name: cue.subtitleFileName }];
-      }
-      return [];
-    }
-
     function getAllRows() {
       const subs = getSortedSubmissions();
       const rawRows = [];
@@ -3244,9 +3352,12 @@
           const subFiles = getCueSubtitleFiles(cue).filter(
             (f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)
           );
+          const docSubFiles = getCueDocSubtitleFiles(cue).filter(
+            (f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)
+          );
           const youtubeUrl = normalizeYoutubeUrl(cue.youtubeUrl || "");
           const hasSubText = !!(cue.subtitleText && cue.subtitleText.trim().length > 0);
-          const hasAny = cue.title || cue.topic || cue.note || youtubeUrl || mediaFiles.length || subFiles.length || hasSubText || cue.subtitleHelp;
+          const hasAny = cue.title || cue.topic || cue.note || youtubeUrl || mediaFiles.length || subFiles.length || docSubFiles.length || hasSubText || cue.subtitleHelp;
           if (!hasAny && (sub.cues || []).length > 1) return;
 
           const rankVal = Number(cue.customRank);
@@ -3275,6 +3386,7 @@
             note: cue.note || "-",
             youtubeUrl,
             subtitleFiles: subFiles,
+            docSubtitleFiles: docSubFiles,
             subtitleText: cue.subtitleText || "",
             hasSubText,
             subtitleHelp: !!cue.subtitleHelp,
@@ -3341,12 +3453,15 @@
         tbody.innerHTML = rows.map((r, rIdx) => {
           const colorKey = r.deptUid || r.deptId || r.deptName;
           const idLabel = r.deptId || r.deptName;
-          const isSubmitted = r.subtitleFiles.length > 0 || r.hasSubText;
-          const subBadge = isSubmitted
-            ? `<span class="pill pill-green">✓ 접수</span>`
-            : (r.subtitleHelp
-              ? `<span class="pill pill-warn">도움요청</span>`
-              : `<span class="pill pill-muted">미접수</span>`);
+          const hasTxtOrPaste = r.subtitleFiles.length > 0 || r.hasSubText;
+          const hasDocSub = r.docSubtitleFiles.length > 0;
+          const subBadge = hasTxtOrPaste
+            ? `<span class="pill pill-green">✓ 접수</span>${hasDocSub ? `<div style="margin-top:4px;"><span class="pill pill-blue">문서별도 ${r.docSubtitleFiles.length}</span></div>` : ""}`
+            : (hasDocSub
+              ? `<span class="pill pill-blue">문서자막 ${r.docSubtitleFiles.length}</span>`
+              : (r.subtitleHelp
+                ? `<span class="pill pill-warn">도움요청</span>`
+                : `<span class="pill pill-muted">미접수</span>`));
 
           const attachEntries = [];
           r.mediaFiles.forEach((f) => {
@@ -3359,7 +3474,14 @@
           r.subtitleFiles.forEach((f) => {
             const dlId = registerDownloadableFile(f);
             attachEntries.push({
-              label: `자막 · ${f.name}`,
+              label: `자막TXT · ${f.name}`,
+              dlId
+            });
+          });
+          r.docSubtitleFiles.forEach((df) => {
+            const dlId = registerDownloadableFile(df);
+            attachEntries.push({
+              label: `자막문서 · ${df.name} (${formatFileSize(df.size)})`,
               dlId
             });
           });
@@ -3367,7 +3489,7 @@
             const autoTxtName = `${sanitizeName(r.title)}_자막.txt`;
             const dlId = registerDownloadableFile({ name: autoTxtName }, r.subtitleText);
             attachEntries.push({
-              label: `자막 · ${autoTxtName}`,
+              label: `자막TXT · ${autoTxtName}`,
               dlId
             });
           }
@@ -3521,9 +3643,7 @@
         const displaySeq = (sub && Number(sub.orderSeq) > 0) ? Number(sub.orderSeq) : presetSeq;
         const seqBadge = acc.role === "admin"
           ? `<span class="helper-text">-</span>`
-          : (displaySeq > 0
-            ? renderColoredIdPill(displaySeq, acc.id, uid, acc.deptName)
-            : `<span class="helper-text">미저장</span>`);
+          : renderColoredIdPill(displaySeq, acc.id, uid, acc.deptName);
 
         const deptCell = acc.role === "admin"
           ? `<strong>${escapeHtml(acc.deptName)}</strong>`
@@ -3631,7 +3751,6 @@
       const eventPrefix = sanitizeName(state.eventInfo.name || "행사");
       const dataRows = rows.map((r) => ({
         "순번": r.seq,
-        "식별순서": `#${r.orderSeq}`,
         "아이디": r.deptId || r.deptName,
         "행사명": state.eventInfo.name || "",
         "부서명": r.deptName,
@@ -3645,7 +3764,8 @@
         "사용악기": r.instruments || "-",
         "재생요청": r.mediaReq,
         "자막접수": r.subtitleFiles.length > 0 || r.hasSubText ? "접수" : "미접수",
-        "자막파일": r.subtitleFiles.map((sf) => sf.name).join(", ") || (r.hasSubText ? "직접입력" : "-"),
+        "자막파일(.txt)": r.subtitleFiles.map((sf) => sf.name).join(", ") || (r.hasSubText ? "직접입력" : "-"),
+        "자막문서(워드/기타)": r.docSubtitleFiles.map((df) => df.name).join(", ") || "-",
         "첨부파일": r.mediaFiles.map((mf) => mf.name).join(", ") || "-",
         "유튜브음원링크": r.youtubeUrl || "-",
         "자체부서큐시트": r.customCueNames,
@@ -3655,7 +3775,6 @@
       const worksheet = XLSX.utils.json_to_sheet(dataRows);
       worksheet["!cols"] = [
         { wch: 8 },
-        { wch: 11 },
         { wch: 14 },
         { wch: 24 },
         { wch: 14 },
@@ -3670,6 +3789,7 @@
         { wch: 18 },
         { wch: 10 },
         { wch: 24 },
+        { wch: 26 },
         { wch: 24 },
         { wch: 30 },
         { wch: 24 },
@@ -3690,7 +3810,7 @@
       const rows = getAllRows();
       const subs = getSortedSubmissions();
       const hasCustomFiles = subs.some((s) => (s.customCueFiles || []).length > 0);
-      const hasCueFiles = rows.some((r) => r.mediaFiles.length > 0 || r.subtitleFiles.length > 0 || r.hasSubText || r.youtubeUrl);
+      const hasCueFiles = rows.some((r) => r.mediaFiles.length > 0 || r.subtitleFiles.length > 0 || r.docSubtitleFiles.length > 0 || r.hasSubText || r.youtubeUrl);
 
       if (!rows.length && !hasCustomFiles) {
         showToast("내보낼 데이터가 없습니다.");
@@ -3724,7 +3844,7 @@
       }
 
       for (const r of rows) {
-        if (!r.mediaFiles.length && !r.subtitleFiles.length && !r.hasSubText && !r.youtubeUrl) continue;
+        if (!r.mediaFiles.length && !r.subtitleFiles.length && !r.docSubtitleFiles.length && !r.hasSubText && !r.youtubeUrl) continue;
         const deptFolder = eventFolder.folder(sanitizeName(r.deptName));
         const cueFolderName = `${String(r.seq).padStart(2, "0")}_${sanitizeName(r.title)}`;
         const cueFolder = deptFolder.folder(cueFolderName);
@@ -3758,6 +3878,19 @@
           const txtFileName = `${sanitizeName(r.title)}_자막.txt`;
           cueFolder.file(txtFileName, "\uFEFF" + r.subtitleText);
           addedCount += 1;
+        }
+
+        if (r.docSubtitleFiles.length) {
+          const docSubFolder = cueFolder.folder("자막문서_워드등");
+          for (const df of r.docSubtitleFiles) {
+            const dRec = await getFileRecord(df.key);
+            if (dRec && dRec.dataUrl) {
+              docSubFolder.file(df.name, dataUrlToUint8Array(dRec.dataUrl));
+              addedCount += 1;
+            } else {
+              missingLocalCount += 1;
+            }
+          }
         }
       }
 
@@ -3923,7 +4056,7 @@
       const ok = await syncSubmissionToB2(sub, { silent: true });
       setSavedStatusLabel(
         ok
-          ? `✓ B2 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
+          ? `✓ B2 동기화 완료 (${sub.updatedAt})`
           : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · B2 동기화 재시도 필요`
       );
       showToast(ok ? "✓ 저장 및 B2 동기화되었습니다." : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
