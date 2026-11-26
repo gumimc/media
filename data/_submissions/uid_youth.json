@@ -13,8 +13,8 @@
   "requestVideo": false,
   "customCueFiles": [],
   "generalNote": "",
-  "updatedAt": "2026. 11. 26. 오후 8:30:42",
-  "syncedAt": 1795692642733,
+  "updatedAt": "2026. 11. 26. 오후 8:30:46",
+  "syncedAt": 1795692646168,
   "submittedAt": 1795692451731,
   "cues": [
     {
@@ -34,7 +34,7 @@
       "id": "cue_920ozu0",
       "title": "단막극",
       "topic": "",
-      "duration": "",
+      "duration": "10분",
       "note": "",
       "youtubeUrl": "",
       "customRank": 0,
