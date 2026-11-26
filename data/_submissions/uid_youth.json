@@ -13,8 +13,8 @@
   "requestVideo": false,
   "customCueFiles": [],
   "generalNote": "",
-  "updatedAt": "2026. 11. 26. 오후 8:30:22",
-  "syncedAt": 1795692622414,
+  "updatedAt": "2026. 11. 26. 오후 8:30:37",
+  "syncedAt": 1795692637325,
   "submittedAt": 1795692451731,
   "cues": [
     {
@@ -24,6 +24,19 @@
       "duration": "4분",
       "note": "",
       "youtubeUrl": "https://youtu.be/z-BOCIX42Ic?si=nKFaOGZBh5NfscKR",
+      "customRank": 0,
+      "subtitleHelp": false,
+      "subtitleText": "",
+      "subtitleFiles": [],
+      "mediaFiles": []
+    },
+    {
+      "id": "cue_920ozu0",
+      "title": "",
+      "topic": "",
+      "duration": "",
+      "note": "",
+      "youtubeUrl": "",
       "customRank": 0,
       "subtitleHelp": false,
       "subtitleText": "",
