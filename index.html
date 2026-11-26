@@ -867,8 +867,8 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_gh_b2_v12";
-    const IDB_NAME = "gm_media_guide_files_gh_b2_v12";
+    const STORAGE_KEY = "gm_media_guide_gh_b2_v13";
+    const IDB_NAME = "gm_media_guide_files_gh_b2_v13";
     const IDB_STORE = "files";
 
     const ACCOUNT_COLOR_PALETTE = [
@@ -1986,12 +1986,16 @@
       return `${(n / (1024 * 1024)).toFixed(1)} MB`;
     }
 
-    function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
+    async function sendFileOnceViaWorker(workerUploadUrl, file, onProgress) {
+      const arrayBuffer = await file.arrayBuffer();
+      const payload = new Uint8Array(arrayBuffer);
+
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", workerUploadUrl, true);
-        xhr.setRequestHeader("Content-Type", "application/octet-stream");
+        xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name || "file"));
+        xhr.setRequestHeader("X-File-Size", String(payload.byteLength));
 
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable && onProgress) {
@@ -2020,11 +2024,11 @@
           err.retryable = true;
           reject(err);
         };
-        xhr.send(file);
+        xhr.send(payload);
       });
     }
 
-    async function sendFileViaWorker(workerUploadUrl, file, onProgress, maxRetries = 3) {
+    async function sendFileViaWorker(workerUploadUrl, file, onProgress, maxRetries = 2) {
       let attempt = 0;
       while (true) {
         try {
