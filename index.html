@@ -55,7 +55,6 @@
 
     .hidden { display: none !important; }
 
-    /* 상단 헤더 */
     .topbar {
       background: rgba(15, 23, 42, 0.96);
       backdrop-filter: blur(10px);
@@ -99,7 +98,6 @@
       padding: 0 16px 64px;
     }
 
-    /* 행사 배너 */
     .event-banner {
       background: linear-gradient(125deg, #0f172a 0%, #1e3a8a 62%, #1d4ed8 100%);
       color: #fff;
@@ -125,7 +123,6 @@
       line-height: 1.5;
     }
 
-    /* 탭 네비게이션 */
     .tabs {
       display: flex;
       gap: 8px;
@@ -155,7 +152,6 @@
       box-shadow: 0 4px 12px rgba(29, 78, 216, 0.22);
     }
 
-    /* 카드 */
     .card {
       background: var(--card);
       border: 1px solid var(--line);
@@ -198,7 +194,6 @@
       .event-banner h1 { font-size: 19px; }
     }
 
-    /* 폼 요소 */
     .form-group { margin-bottom: 14px; }
     label {
       display: block;
@@ -238,7 +233,6 @@
       line-height: 1.6;
     }
 
-    /* 버튼 */
     .btn {
       border: 1px solid transparent;
       border-radius: var(--radius-sm);
@@ -283,7 +277,6 @@
     .btn-ghost-light:hover { background: rgba(255, 255, 255, 0.18); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    /* 악기 & 재생요청 칩 */
     .inst-group { display: flex; flex-wrap: wrap; gap: 8px; }
     .inst-chip {
       border: 1px solid var(--line-strong);
@@ -360,7 +353,6 @@
       accent-color: var(--primary);
     }
 
-    /* 큐시트 항목 */
     .cue-item {
       border: 1px solid var(--line);
       border-radius: 12px;
@@ -395,7 +387,6 @@
       border-color: #f59e0b;
     }
 
-    /* 배지 및 컬러 태그 */
     .pill {
       display: inline-block;
       padding: 3px 9px;
@@ -479,7 +470,6 @@
     }
     .file-chip-row:last-child { margin-bottom: 0; }
 
-    /* 테이블 */
     .table-wrap {
       width: 100%;
       overflow-x: auto;
@@ -559,7 +549,6 @@
     <div class="topbar-right" id="topbarActions"></div>
   </header>
 
-  <!-- 로그인 화면 -->
   <section id="loginView" class="container">
     <div class="card login-box">
       <div class="card-header">
@@ -585,7 +574,6 @@
     </div>
   </section>
 
-  <!-- 로그인 후 메인 화면 -->
   <main id="appView" class="container hidden">
     <section class="event-banner">
       <h1 id="bannerEventName">행사명</h1>
@@ -594,7 +582,6 @@
 
     <nav class="tabs" id="navTabs"></nav>
 
-    <!-- 부서 제출 탭 -->
     <section id="deptTab" class="hidden">
       <div class="card">
         <div class="card-header">
@@ -679,7 +666,6 @@
       </div>
     </section>
 
-    <!-- 관리자 탭 1: 종합 큐시트 현황 · 내보내기 -->
     <section id="adminOverviewTab" class="hidden">
       <div class="card">
         <div class="card-header">
@@ -780,7 +766,6 @@
       </div>
     </section>
 
-    <!-- 관리자 탭 2: 행사명/계정/초기화 -->
     <section id="adminManageTab" class="hidden">
       <div class="grid-2">
         <div class="card">
@@ -882,8 +867,8 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_gh_b2_v11";
-    const IDB_NAME = "gm_media_guide_files_gh_b2_v11";
+    const STORAGE_KEY = "gm_media_guide_gh_b2_v12";
+    const IDB_NAME = "gm_media_guide_files_gh_b2_v12";
     const IDB_STORE = "files";
 
     const ACCOUNT_COLOR_PALETTE = [
@@ -1283,8 +1268,7 @@
         const res = await fetch(`${base}?action=save_submission`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deptId: SYSTEM_META_KEY, submission: payload }),
-          keepalive: true
+          body: JSON.stringify({ deptId: SYSTEM_META_KEY, submission: payload })
         });
         if (!res.ok) {
           if (!silent) console.warn("System meta sync failed:", res.status);
@@ -1485,8 +1469,7 @@
         const res = await fetch(`${base}?action=delete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ objectKey }),
-          keepalive: true
+          body: JSON.stringify({ objectKey })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.ok === false) {
@@ -1575,13 +1558,13 @@
       const now = Date.now();
       sub.syncedAt = now;
       if (!sub.submittedAt) sub.submittedAt = now;
+      saveState();
       try {
         const base = B2_CONFIG.signerBaseUrl.replace(/\/+$/, "");
         const res = await fetch(`${base}?action=save_submission`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deptId: storageKey, submission: sub }),
-          keepalive: true
+          body: JSON.stringify({ deptId: storageKey, submission: sub })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.ok === false) {
@@ -1614,14 +1597,14 @@
         const current = getCurrentUser();
         if (!current || current.role !== "dept") return;
         const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
-        setSavedStatusLabel("GitHub 동기화 중...");
+        setSavedStatusLabel("동기화 중...");
         const ok = await syncSubmissionToB2(sub, { silent: true });
         setSavedStatusLabel(
           ok
-            ? `✓ GitHub 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
+            ? `✓ 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
             : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · 네트워크/Worker 확인 필요`
         );
-      }, 1400);
+      }, 1200);
     }
 
     async function flushPendingDeptChanges({ keepaliveOnly = false } = {}) {
@@ -1644,6 +1627,59 @@
         c.mediaFiles = (c.mediaFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key));
         c.subtitleFiles = (c.subtitleFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key));
       });
+    }
+
+    async function reconcileDeptFilesWithRemoteList(sub, user) {
+      if (!sub || !user || !remoteB2Loaded || !Array.isArray(remoteB2Files)) return false;
+      const safeDept = sanitizeName(user.deptName);
+      const deptPrefix = `event_files/${safeDept}/`;
+      const deptB2Items = remoteB2Files.filter(
+        (rf) => rf && rf.objectKey && !recentlyDeletedB2Keys.has(rf.objectKey) && String(rf.objectKey).startsWith(deptPrefix)
+      );
+      if (!deptB2Items.length) return false;
+
+      let changed = false;
+      const knownB2Keys = new Set();
+      (sub.customCueFiles || []).forEach((f) => { if (f?.b2Key) knownB2Keys.add(f.b2Key); });
+      (sub.cues || []).forEach((c) => {
+        (c.mediaFiles || []).forEach((f) => { if (f?.b2Key) knownB2Keys.add(f.b2Key); });
+        (c.subtitleFiles || []).forEach((f) => { if (f?.b2Key) knownB2Keys.add(f.b2Key); });
+      });
+
+      if (!Array.isArray(sub.cues) || !sub.cues.length) {
+        sub.cues = [createEmptyCue()];
+      }
+      const firstCue = sub.cues[0];
+      if (!Array.isArray(firstCue.mediaFiles)) firstCue.mediaFiles = [];
+      if (!Array.isArray(firstCue.subtitleFiles)) firstCue.subtitleFiles = [];
+      if (!Array.isArray(sub.customCueFiles)) sub.customCueFiles = [];
+
+      deptB2Items.forEach((rf) => {
+        if (knownB2Keys.has(rf.objectKey)) return;
+        const entry = {
+          key: "",
+          name: rf.fileName || rf.objectKey.split("/").pop() || "파일",
+          type: rf.contentType || "application/octet-stream",
+          size: Number(rf.size || 0),
+          savedLocal: false,
+          b2Key: rf.objectKey,
+          publicUrl: buildWorkerDownloadUrl(rf.objectKey, rf.fileName)
+        };
+        if (rf.kind === "custom_cue" || rf.objectKey.includes("/custom_cue/")) {
+          sub.customCueFiles.push(entry);
+        } else if (rf.kind === "subtitle" || rf.objectKey.includes("/subtitle/")) {
+          firstCue.subtitleFiles.push(entry);
+        } else {
+          firstCue.mediaFiles.push(entry);
+        }
+        knownB2Keys.add(rf.objectKey);
+        changed = true;
+      });
+
+      if (changed) {
+        saveState();
+      }
+      return changed;
     }
 
     async function fetchSingleDeptSubmissionFromB2(user) {
@@ -1683,9 +1719,17 @@
           ) || null;
         }
 
-        if (!matchedRemote) return null;
-
         const localSub = state.deptSubmissions[uid] || state.deptSubmissions[user.id] || null;
+
+        if (!matchedRemote) {
+          if (localSub) {
+            await reconcileDeptFilesWithRemoteList(localSub, user);
+            saveState();
+            return localSub;
+          }
+          return null;
+        }
+
         const rSynced = Number(matchedRemote.syncedAt || matchedRemote.submittedAt || 0);
         const lSynced = Number(localSub?.syncedAt || localSub?.submittedAt || 0);
 
@@ -1697,8 +1741,10 @@
           deptName: user.deptName
         };
         pruneDeletedFilesFromSubmission(merged);
+        await reconcileDeptFilesWithRemoteList(merged, user);
 
         if ((hasDirtyDeptChanges || activeUploadCount > 0) && lSynced > rSynced && localSub) {
+          await reconcileDeptFilesWithRemoteList(localSub, user);
           return localSub;
         }
 
@@ -1944,7 +1990,8 @@
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", workerUploadUrl, true);
-        xhr.setRequestHeader("Content-Type", file.type || "b2/x-auto");
+        xhr.setRequestHeader("Content-Type", "application/octet-stream");
+        xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name || "file"));
 
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable && onProgress) {
@@ -1961,7 +2008,7 @@
           if (xhr.status >= 200 && xhr.status < 300 && data.ok !== false) {
             resolve(data);
           } else {
-            const err = new Error(data.error || `업로드 실패 (HTTP ${xhr.status})`);
+            const err = new Error(data.error || xhr.statusText || `업로드 실패 (HTTP ${xhr.status})`);
             err.retryable = retryable;
             err.status = xhr.status;
             reject(err);
@@ -1969,7 +2016,7 @@
         };
 
         xhr.onerror = () => {
-          const err = new Error("Worker 업로드 중 네트워크 오류가 발생했습니다.");
+          const err = new Error("Worker 업로드 중 네트워크/CORS 오류가 발생했습니다.");
           err.retryable = true;
           reject(err);
         };
@@ -1994,6 +2041,13 @@
           await new Promise((r) => setTimeout(r, delayMs));
         }
       }
+    }
+
+    function extractUploadedObjectKey(data, fallbackKey) {
+      if (!data || typeof data !== "object") return fallbackKey;
+      const rawKey = data.objectKey || data.key || data.fileKey || data.path || "";
+      if (!rawKey) return fallbackKey;
+      return String(rawKey).replace(/^\/+/, "");
     }
 
     async function uploadFileToB2(file, kind, deptName, key) {
@@ -2021,25 +2075,26 @@
           if (!res.ok || data.ok === false) {
             throw new Error(data.error || `GitHub 자막 저장 실패 (HTTP ${res.status})`);
           }
-          const savedKey = data.objectKey || `gh:data/${objectKey}`;
+          const savedKey = extractUploadedObjectKey(data, `gh:data/${objectKey}`);
           recentlyDeletedB2Keys.delete(savedKey);
           showToast(`'${file.name}' GitHub 저장 완료`);
           return {
             b2Key: savedKey,
-            publicUrl: buildWorkerDownloadUrl(savedKey, file.name)
+            publicUrl: data.url || data.publicUrl || buildWorkerDownloadUrl(savedKey, file.name)
           };
         }
 
         const uploadUrl = `${base}?action=upload_file&objectKey=${encodeURIComponent(objectKey)}`;
         setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... 0%`);
-        await sendFileViaWorker(uploadUrl, file, (pct) => {
+        const uploadData = await sendFileViaWorker(uploadUrl, file, (pct) => {
           setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... ${pct}%`);
         });
-        recentlyDeletedB2Keys.delete(objectKey);
+        const savedKey = extractUploadedObjectKey(uploadData, objectKey);
+        recentlyDeletedB2Keys.delete(savedKey);
         showToast(`'${file.name}' B2 업로드 완료`);
         return {
-          b2Key: objectKey,
-          publicUrl: buildWorkerDownloadUrl(objectKey, file.name)
+          b2Key: savedKey,
+          publicUrl: uploadData.url || uploadData.publicUrl || buildWorkerDownloadUrl(savedKey, file.name)
         };
       } finally {
         activeUploadCount = Math.max(0, activeUploadCount - 1);
@@ -2121,8 +2176,23 @@
           if (!res.ok || data.ok === false) {
             throw new Error(data.error || `HTTP ${res.status}`);
           }
-          const rawList = Array.isArray(data.files) ? data.files : [];
-          remoteB2Files = rawList.filter((f) => f && !recentlyDeletedB2Keys.has(f.objectKey));
+          const rawList = Array.isArray(data.files) ? data.files : (Array.isArray(data.items) ? data.items : []);
+          remoteB2Files = rawList
+            .map((f) => {
+              if (!f || typeof f !== "object") return null;
+              const objectKey = String(f.objectKey || f.key || f.fileName || "").replace(/^\/+/, "");
+              if (!objectKey) return null;
+              const parts = objectKey.split("/");
+              return {
+                ...f,
+                objectKey,
+                deptName: f.deptName || (parts[0] === "event_files" ? parts[1] : "") || "기타",
+                kind: f.kind || (parts[0] === "event_files" ? parts[2] : "") || "media",
+                fileName: f.fileName || f.name || parts[parts.length - 1] || objectKey,
+                size: Number(f.size || f.contentLength || 0)
+              };
+            })
+            .filter((f) => f && !recentlyDeletedB2Keys.has(f.objectKey));
           remoteB2Loaded = true;
           renderB2FilesTable();
           renderAdminSummaryBadges();
@@ -2379,7 +2449,7 @@
       saveState();
       const synced = await syncSubmissionToB2(sampleSub, { silent: true });
       renderDeptView(user, { skipRemoteFetch: true });
-      showToast(synced ? `${user.deptName} 예시 데이터가 GitHub에 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
+      showToast(synced ? `${user.deptName} 예시 데이터가 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
     }
 
     async function fillAdminSampleData() {
@@ -2725,16 +2795,23 @@
 
       if (skipRemoteFetch) return;
 
+      await fetchRemoteB2Files(false);
       const remoteSub = await fetchSingleDeptSubmissionFromB2(user);
       const activeUser = getCurrentUser();
       if (!activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
-      if (!remoteSub || hasDirtyDeptChanges || activeUploadCount > 0) return;
+      if (hasDirtyDeptChanges || activeUploadCount > 0) return;
 
       const latest = ensureDeptSubmission(activeUser);
-      applyDeptFormValues(latest);
-      const latestSeqLabel = latest.orderSeq > 0 ? ` · 식별순서 #${latest.orderSeq}` : "";
-      if (latest.updatedAt) {
-        setSavedStatusLabel(`✓ 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
+      await reconcileDeptFilesWithRemoteList(latest, activeUser);
+      if (remoteSub) {
+        applyDeptFormValues(latest);
+        const latestSeqLabel = latest.orderSeq > 0 ? ` · 식별순서 #${latest.orderSeq}` : "";
+        if (latest.updatedAt) {
+          setSavedStatusLabel(`✓ 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
+        }
+      } else {
+        renderCustomCueFiles(latest);
+        renderCueList(latest);
       }
     }
 
@@ -2995,14 +3072,25 @@
 
         el.querySelector(".cue-media-input").addEventListener("change", async (e) => {
           const files = Array.from(e.target.files || []);
+          let added = 0;
           for (const f of files) {
             const meta = await processAndStoreUploadedFile(f, "media", sub.deptName);
-            if (meta) cue.mediaFiles.push(meta);
+            if (meta) {
+              cue.mediaFiles.push(meta);
+              added += 1;
+            }
           }
           e.target.value = "";
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
-          await syncSubmissionToB2(sub, { silent: true });
-          renderCueList(sub);
+          if (added > 0) {
+            collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+            const synced = await syncSubmissionToB2(sub, { silent: true });
+            setSavedStatusLabel(
+              synced
+                ? `✓ B2 파일 및 큐시트 동기화 완료 (${sub.updatedAt})`
+                : `⚠ 파일 업로드 완료 · 제출 동기화 재시도 필요 (${sub.updatedAt})`
+            );
+            renderCueList(sub);
+          }
         });
 
         el.querySelector(".cue-txt-input").addEventListener("change", async (e) => {
@@ -3011,26 +3099,32 @@
           if (!Array.isArray(cue.subtitleFiles)) cue.subtitleFiles = [];
 
           const appendedTexts = [];
+          let added = 0;
           for (const f of files) {
             const meta = await processAndStoreUploadedFile(f, "subtitle", sub.deptName);
-            if (meta) cue.subtitleFiles.push(meta);
+            if (meta) {
+              cue.subtitleFiles.push(meta);
+              added += 1;
+            }
             try {
               const txt = await f.text();
               if (txt.trim()) appendedTexts.push(`[${f.name}]\n${txt.trim()}`);
             } catch {}
           }
-          cue.subtitleHelp = false;
-          if (appendedTexts.length) {
-            const currentTrim = (cue.subtitleText || "").trim();
-            cue.subtitleText = currentTrim
-              ? `${currentTrim}\n\n${appendedTexts.join("\n\n")}`
-              : appendedTexts.join("\n\n");
+          if (added > 0) {
+            cue.subtitleHelp = false;
+            if (appendedTexts.length) {
+              const currentTrim = (cue.subtitleText || "").trim();
+              cue.subtitleText = currentTrim
+                ? `${currentTrim}\n\n${appendedTexts.join("\n\n")}`
+                : appendedTexts.join("\n\n");
+            }
+            collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+            await syncSubmissionToB2(sub, { silent: true });
+            renderCueList(sub);
+            showToast(`자막 파일 ${added}개가 등록되었습니다.`);
           }
           e.target.value = "";
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
-          await syncSubmissionToB2(sub, { silent: true });
-          renderCueList(sub);
-          showToast(`자막 파일 ${files.length}개가 GitHub에 등록되었습니다.`);
         });
       });
 
@@ -3796,14 +3890,20 @@
       if (!user || user.role !== "dept") return;
       const sub = ensureDeptSubmission(user);
       const files = Array.from(e.target.files || []);
+      let added = 0;
       for (const f of files) {
         const meta = await processAndStoreUploadedFile(f, "custom_cue", sub.deptName);
-        if (meta) sub.customCueFiles.push(meta);
+        if (meta) {
+          sub.customCueFiles.push(meta);
+          added += 1;
+        }
       }
       e.target.value = "";
-      collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
-      await syncSubmissionToB2(sub, { silent: true });
-      renderCustomCueFiles(sub);
+      if (added > 0) {
+        collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
+        await syncSubmissionToB2(sub, { silent: true });
+        renderCustomCueFiles(sub);
+      }
     });
 
     document.getElementById("fillDeptSampleBtn").addEventListener("click", async () => {
@@ -3833,15 +3933,15 @@
       if (!user || user.role !== "dept") return;
       clearAutoTimers();
       const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
-      setSavedStatusLabel(`GitHub 동기화 중... (${sub.updatedAt})`);
+      setSavedStatusLabel(`동기화 중... (${sub.updatedAt})`);
       showToast("부서 내용 저장 및 동기화 중...");
       const ok = await syncSubmissionToB2(sub, { silent: true });
       setSavedStatusLabel(
         ok
-          ? `✓ GitHub 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
+          ? `✓ 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
           : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · 동기화 재시도 필요`
       );
-      showToast(ok ? "✓ GitHub까지 저장 및 동기화되었습니다." : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
+      showToast(ok ? "✓ 저장 및 동기화되었습니다." : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
     });
 
     document.getElementById("saveMasterOrderBtn").addEventListener("click", async () => {
