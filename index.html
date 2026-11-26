@@ -3,230 +3,271 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>행사 미디어 · 큐시트 관리 시스템</title>
+  <title>행사 큐시트 및 미디어 자료 제출 시스템</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     :root {
       --bg: #f4f6f9;
       --card: #ffffff;
-      --text: #111827;
-      --muted: #6b7280;
-      --line: #e5e7eb;
+      --text: #1e293b;
+      --muted: #64748b;
+      --line: #e2e8f0;
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
-      --success: #059669;
+      --success: #16a34a;
       --warn: #d97706;
       --danger: #dc2626;
       --radius: 12px;
+      --shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
     }
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
     }
+
     .hidden { display: none !important; }
+
     .topbar {
-      background: #111827;
+      background: #0f172a;
       color: #fff;
-      padding: 12px 20px;
+      padding: 14px 24px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 20;
     }
-    .brand { font-weight: 700; font-size: 16px; }
-    .topbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .brand { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .user-badge {
       background: rgba(255,255,255,0.12);
-      padding: 4px 10px;
+      padding: 6px 12px;
       border-radius: 999px;
-      font-size: 12px;
-      white-space: nowrap;
+      font-size: 13px;
     }
-    .container { max-width: 1280px; margin: 20px auto; padding: 0 16px 48px; }
+
+    .container { max-width: 1260px; margin: 24px auto; padding: 0 16px 60px; }
+
+    .event-banner {
+      background: linear-gradient(135deg, #1d4ed8, #0f172a);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow);
+    }
+    .event-banner h1 { margin: 0 0 6px; font-size: 22px; }
+    .event-meta { font-size: 14px; opacity: 0.92; display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
     .card {
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
     }
     .card-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
     }
-    .card-title { margin: 0; font-size: 18px; }
-    .card-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
-    .event-banner {
-      background: linear-gradient(135deg, #eff6ff, #f8fafc);
-      border: 1px solid #bfdbfe;
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      margin-bottom: 16px;
-    }
-    .event-banner-title { margin: 0 0 6px; font-size: 20px; color: #1e3a8a; }
-    .event-banner-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: #334155; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tab-btn {
-      padding: 9px 14px;
-      border: 1px solid var(--line);
-      background: #fff;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-    }
-    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .card-title { margin: 0; font-size: 17px; font-weight: 700; }
+    .card-sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+
     .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
     @media (max-width: 820px) {
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
     }
+
     .form-group { margin-bottom: 12px; }
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
-    input[type="text"], input[type="password"], input[type="number"], input[type="url"], textarea {
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="url"],
+    textarea,
+    select {
       width: 100%;
       padding: 9px 11px;
-      border: 1px solid #d1d5db;
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
       font-size: 14px;
-      font-family: inherit;
+      background: #fff;
+      color: var(--text);
     }
     textarea { min-height: 76px; resize: vertical; }
-    .subtitle-paste-area { min-height: 92px; margin-top: 8px; }
+    .subtitle-paste-area {
+      min-height: 110px;
+      margin-top: 8px;
+      background: #fcfcfd;
+      line-height: 1.55;
+    }
+
     .btn {
-      padding: 8px 14px;
+      border: none;
       border-radius: 8px;
-      border: 1px solid transparent;
-      font-size: 13px;
+      padding: 9px 14px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 6px;
       text-decoration: none;
-      white-space: nowrap;
     }
     .btn-sm { padding: 6px 10px; font-size: 12px; }
-    .btn-xs { padding: 3px 8px; font-size: 11px; }
+    .btn-xs { padding: 3px 7px; font-size: 11px; border-radius: 6px; }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-success { background: var(--success); color: #fff; }
     .btn-warn { background: var(--warn); color: #fff; }
     .btn-danger { background: var(--danger); color: #fff; }
-    .btn-outline { background: #fff; color: var(--text); border-color: #d1d5db; }
-    .btn-ghost-light { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
+    .btn-outline { background: #fff; color: var(--text); border: 1px solid #cbd5e1; }
+    .btn-ghost-light { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .equip-box { background: #f9fafb; border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
-    .inline-check-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
-    .check-label { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 500; cursor: pointer; }
-    .stand-count-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
-    .stand-count-inline input { width: 70px; padding: 5px 8px; }
-    .chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
-    .inst-chip, .media-req-btn {
+
+    .inst-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .inst-chip {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: var(--text);
       padding: 7px 12px;
       border-radius: 999px;
-      border: 1px solid #d1d5db;
-      background: #fff;
       font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
-      font-weight: 500;
-      white-space: nowrap;
     }
-    .inst-chip.active, .media-req-btn.active {
-      background: #eff6ff;
-      border-color: var(--primary);
-      color: var(--primary);
+    .inst-chip.active { background: #eff6ff; border-color: var(--primary); color: var(--primary); }
+    .inst-chip.none-chip.active { background: #f1f5f9; border-color: #475569; color: #0f172a; }
+
+    .media-req-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .media-req-btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: var(--text);
+      padding: 8px 13px;
+      border-radius: 9px;
+      font-size: 13px;
       font-weight: 700;
+      cursor: pointer;
     }
+    .media-req-btn.active {
+      background: #ecfdf5;
+      border-color: var(--success);
+      color: #15803d;
+    }
+
+    .custom-cue-box {
+      border: 1px dashed #93c5fd;
+      background: #f8fbff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+
+    .mic-extra-box {
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+    }
+    .check-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 0;
+    }
+    .check-inline input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      cursor: pointer;
+    }
+
     .cue-item {
       border: 1px solid var(--line);
       border-radius: 10px;
       padding: 14px;
       margin-bottom: 12px;
-      background: #fcfcfd;
+      background: #fafcff;
     }
     .cue-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       margin-bottom: 10px;
-      padding-bottom: 8px;
-      border-bottom: 1px dashed var(--line);
     }
-    .cue-num { font-weight: 700; color: var(--primary); }
-    .helper-text { font-size: 12px; color: var(--muted); margin-top: 4px; }
-    .file-list { margin: 6px 0 0; padding-left: 18px; font-size: 12px; }
+    .cue-num { font-weight: 700; color: var(--primary); font-size: 14px; }
+
     .help-box {
-      margin-top: 10px;
-      padding: 10px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
       border-radius: 8px;
-      background: #f9fafb;
-      border: 1px solid var(--line);
-    }
-    .help-box.requested { background: #fffbeb; border-color: #fcd34d; }
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid var(--line);
-    }
-    .progress-box {
-      margin-top: 10px;
       padding: 10px 12px;
-      border-radius: 8px;
-      background: #eff6ff;
-      color: #1e3a8a;
-      font-size: 13px;
-      font-weight: 600;
+      margin-top: 8px;
     }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border-bottom: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: middle; }
-    th { background: #f8fafc; font-weight: 700; white-space: nowrap; }
-    .nowrap-col { white-space: nowrap; }
+    .help-box.requested { background: #fef3c7; border-color: #f59e0b; }
+
     .pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3px 10px;
+      display: inline-block;
+      padding: 3px 9px;
       border-radius: 999px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
-      line-height: 1.25;
-      white-space: nowrap;
-      flex-shrink: 0;
-      min-width: fit-content;
     }
+    .pill-green { background: #dcfce7; color: #166534; }
+    .pill-warn { background: #fef3c7; color: #92400e; }
+    .pill-muted { background: #f1f5f9; color: #475569; }
+    .pill-blue { background: #dbeafe; color: #1e40af; }
+
     .id-color-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       padding: 4px 10px;
       border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid transparent;
       line-height: 1.2;
       white-space: nowrap;
-      border: 1px solid transparent;
     }
     .id-color-dot {
-      width: 7px;
-      height: 7px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -234,373 +275,412 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-weight: 700;
+      font-weight: 800;
+      white-space: nowrap;
     }
     .id-code-badge {
       display: inline-block;
       padding: 2px 8px;
       border-radius: 6px;
-      font-size: 12px;
       font-weight: 700;
       border: 1px solid transparent;
+      font-size: 12px;
     }
-    .pill-blue { background: #dbeafe; color: #1e40af; }
-    .pill-green { background: #d1fae5; color: #065f46; }
-    .pill-warn { background: #fef3c7; color: #92400e; }
-    .pill-muted { background: #f3f4f6; color: #4b5563; }
+
     .yt-link-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
+      padding: 4px 9px;
+      border-radius: 7px;
       background: #fef2f2;
       border: 1px solid #fecaca;
       color: #b91c1c;
       font-size: 12px;
       font-weight: 700;
       text-decoration: none;
-      white-space: nowrap;
     }
-    .yt-link-badge:hover { background: #fee2e2; }
+    .yt-link-badge:hover {
+      background: #fee2e2;
+    }
     .yt-play-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       width: 16px;
       height: 16px;
-      border-radius: 50%;
+      border-radius: 4px;
       background: #dc2626;
       color: #fff;
-      font-size: 9px;
+      font-size: 10px;
       line-height: 1;
-      flex-shrink: 0;
     }
-    .file-chip-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
-    .login-card { max-width: 420px; margin: 48px auto; }
+
+    .file-chip-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .file-chip-row:last-child { margin-bottom: 0; }
+
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f8fafc; font-weight: 700; white-space: nowrap; }
+    .nowrap-col { white-space: nowrap; }
+
+    .login-box { max-width: 440px; margin: 48px auto; }
+    .helper-text { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .file-list { margin: 6px 0 0; padding-left: 18px; font-size: 12px; color: #334155; }
+
+    .upload-progress-banner {
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
     .toast {
       position: fixed;
-      bottom: 20px;
       right: 20px;
-      background: #111827;
+      bottom: 20px;
+      background: #0f172a;
       color: #fff;
-      padding: 10px 16px;
+      padding: 12px 16px;
       border-radius: 10px;
       font-size: 13px;
-      z-index: 9999;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+      font-weight: 600;
+      z-index: 99;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">행사 미디어 · 큐시트 관리 시스템</div>
-    <div class="topbar-actions" id="topbarActions"></div>
+    <div class="brand">행사 큐시트 · 미디어 자료 제출 시스템</div>
+    <div class="topbar-right" id="topbarActions"></div>
   </header>
 
-  <main class="container">
-    <!-- 로그인 화면 -->
-    <section id="loginView" class="card login-card">
-      <h2 class="card-title">로그인</h2>
-      <p class="card-sub">부서 또는 관리자 계정으로 로그인하세요.</p>
-      <form id="loginForm" style="margin-top:14px;">
+  <!-- 로그인 화면 -->
+  <section id="loginView" class="container">
+    <div class="card login-box">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">로그인</h2>
+          <p class="card-sub">부서 계정 또는 관리자 계정으로 로그인하세요.</p>
+        </div>
+      </div>
+      <form id="loginForm">
         <div class="form-group">
           <label for="loginId">아이디</label>
-          <input type="text" id="loginId" autocomplete="username" required />
+          <input type="text" id="loginId" placeholder="예: 청년부 또는 admin" required />
         </div>
         <div class="form-group">
           <label for="loginPw">비밀번호</label>
-          <input type="password" id="loginPw" autocomplete="current-password" required />
+          <input type="password" id="loginPw" placeholder="비밀번호 입력" required />
         </div>
-        <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; margin-top:16px;">
-          <button type="button" class="btn btn-outline btn-sm" id="resetLoginStorageBtn">로컬 초기화</button>
-          <button type="submit" class="btn btn-primary">로그인</button>
-        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">로그인</button>
       </form>
+      <div class="helper-text" style="margin-top:14px; line-height:1.6;">
+        <strong>기본 계정 안내</strong><br />
+        · 관리자: <code>admin</code> / <code>1234</code><br />
+        · 부서 예시: <code>청년부</code>, <code>초등부</code>, <code>청소년부</code>, <code>찬양팀</code>, <code>영아부</code>, <code>아동부</code> / 비밀번호 <code>1111</code>
+      </div>
+      <div style="margin-top:12px; text-align:right;">
+        <button type="button" class="btn btn-outline btn-sm" id="resetLoginStorageBtn">브라우저 저장 데이터 초기화</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 로그인 후 메인 화면 -->
+  <main id="appView" class="container hidden">
+    <section class="event-banner">
+      <h1 id="bannerEventName">행사명</h1>
+      <div class="event-meta" id="bannerEventMeta"></div>
     </section>
 
-    <!-- 앱 본체 -->
-    <section id="appView" class="hidden">
-      <div class="event-banner">
-        <h1 class="event-banner-title" id="bannerEventName"></h1>
-        <div class="event-banner-meta" id="bannerEventMeta"></div>
-      </div>
+    <nav class="tabs" id="navTabs"></nav>
 
-      <nav class="tabs" id="navTabs"></nav>
-
-      <!-- 부서 사용자 탭 -->
-      <div id="deptTab" class="hidden">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title"><span id="deptNameBadge"></span> 큐시트 및 자료 제출</h2>
-              <p class="card-sub">순서별 큐시트, 영상/음원 파일 또는 유튜브 음원 링크, 자막(.txt 여러 개 또는 직접 붙여넣기), 마이크·악기·재생 요청을 입력하세요.</p>
-            </div>
+    <!-- 부서 제출 탭 -->
+    <section id="deptTab" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title"><span id="deptNameBadge"></span> 큐시트 및 필요 항목 제출</h2>
+            <p class="card-sub">입력 내용은 자동으로 저장 및 동기화되며, 필요시 [저장 및 동기화] 버튼으로 즉시 반영할 수 있습니다.</p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span id="lastSavedText" class="helper-text" style="margin:0;"></span>
             <button type="button" class="btn btn-outline btn-sm" id="fillDeptSampleBtn">예시 데이터 채우기</button>
-          </div>
-
-          <div class="grid-2">
-            <div class="form-group">
-              <label for="deptContact">부서 담당자 (이름 / 연락처)</label>
-              <input type="text" id="deptContact" placeholder="예: 홍길동 집사 / 010-1234-5678" />
-            </div>
-
-            <div class="form-group">
-              <label for="deptCustomCueFile">자체 부서 큐시트 파일 첨부 (선택 · 엑셀/한글/PDF/이미지 등)</label>
-              <input type="file" id="deptCustomCueFile" multiple />
-              <div id="customCueFileList"></div>
-            </div>
-          </div>
-
-          <div class="equip-box" style="margin-bottom:16px;">
-            <div class="grid-2" style="margin-bottom:12px;">
-              <div class="form-group" style="margin-bottom:0;">
-                <label for="deptMicCount">필요 마이크 수량 (개)</label>
-                <input type="number" id="deptMicCount" min="0" max="50" value="0" />
-                <div class="inline-check-row">
-                  <label class="check-label">
-                    <input type="checkbox" id="chkReqMicStand" />
-                    마이크 스탠드 요청
-                  </label>
-                  <span id="micStandCountWrap" class="stand-count-inline hidden">
-                    <span>수량:</span>
-                    <input type="number" id="deptMicStandCount" min="0" max="50" value="1" />
-                    <span>개</span>
-                  </span>
-                  <label class="check-label">
-                    <input type="checkbox" id="chkCeilingMic" />
-                    천장 E/L 마이크 사용
-                  </label>
-                </div>
-              </div>
-
-              <div class="form-group" style="margin-bottom:0;">
-                <label>음원 / 영상 재생 요청</label>
-                <div class="chip-group">
-                  <button type="button" class="btn btn-outline media-req-btn" id="btnReqBgm">BGM 재생 요청</button>
-                  <button type="button" class="btn btn-outline media-req-btn" id="btnReqVideo">영상 재생 요청</button>
-                </div>
-                <div class="helper-text">행사 진행 중 BGM 또는 영상 송출이 필요한 경우 선택하세요.</div>
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-bottom:0;">
-              <label>사용 악기 선택 (복수 선택 가능)</label>
-              <div class="chip-group" id="instrumentSelector"></div>
-            </div>
-          </div>
-
-          <div class="card-header" style="margin-top:8px;">
-            <div>
-              <h3 class="card-title" style="font-size:15px;">진행 순서(큐시트) 목록</h3>
-              <p class="card-sub">순서 추가/이동/삭제가 가능하며, 순서마다 영상/음원 파일, 유튜브 음원 링크, 자막을 등록할 수 있습니다.</p>
-            </div>
-            <button type="button" class="btn btn-outline btn-sm" id="addCueBtn">+ 순서 추가</button>
-          </div>
-
-          <div id="cueListContainer"></div>
-
-          <div id="deptUploadProgress" class="progress-box hidden"></div>
-
-          <div class="form-group" style="margin-top:14px;">
-            <label for="deptGeneralNote">부서 전체 전달사항 / 음향·조명·영상 요청 메모</label>
-            <textarea id="deptGeneralNote" placeholder="예: 리허설 시간 희망, 암전 타이밍, 특수효과 요청 등"></textarea>
-          </div>
-
-          <div class="status-bar">
-            <span id="lastSavedText" class="helper-text" style="margin:0;">자동저장 및 자동 동기화 활성화됨</span>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="btn btn-primary" id="saveDeptBtn">부서 내용 저장 및 동기화</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 관리자 탭 1: 종합 큐시트 현황 및 내보내기 -->
-      <div id="adminOverviewTab" class="hidden">
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">종합 큐시트 현황</h2>
-              <p class="card-sub">순번(▲/▼)을 조정해 저장할 수 있으며, 유튜브 링크 등록 시 <strong>유튜브 음원</strong> 아이콘으로 바로 열립니다.</p>
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-              <button type="button" class="btn btn-warn btn-sm" id="saveMasterOrderBtn">순번 변경 저장 및 동기화</button>
-              <button type="button" class="btn btn-outline btn-sm" id="refreshAllSyncBtn">전체 동기화</button>
-              <button type="button" class="btn btn-outline btn-sm" id="fillAdminSampleBtn">예시 데이터 채우기</button>
-              <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">엑셀(.xlsx) 다운로드</button>
-              <button type="button" class="btn btn-primary btn-sm" id="exportZipBtn">부서별·순서별 ZIP 다운로드</button>
-            </div>
-          </div>
-
-          <div id="adminSummaryBadges" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;"></div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>순번</th>
-                  <th>순번조정</th>
-                  <th>식별순서/ID</th>
-                  <th>부서</th>
-                  <th>순서명 / 주제</th>
-                  <th>시간</th>
-                  <th>마이크/스탠드/천장</th>
-                  <th>악기 / 재생요청</th>
-                  <th>자막</th>
-                  <th>음원·첨부파일</th>
-                  <th>메모</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="masterCueTableBody"></tbody>
-            </table>
+            <button type="button" class="btn btn-success" id="saveDeptBtn">저장 및 동기화</button>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title">부서별 순서 · 장비 · 재생요청 · 자체큐시트 요약</h3>
-              <p class="card-sub">부서별 등록 순서, 마이크/스탠드/천장 E/L, 사용악기, BGM/영상 재생요청, 자체 큐시트 및 자막 도움요청 내역입니다.</p>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>식별순서/ID</th>
-                  <th>부서</th>
-                  <th>담당자</th>
-                  <th>등록 순서</th>
-                  <th>마이크</th>
-                  <th>스탠드</th>
-                  <th>천장 E/L</th>
-                  <th>사용악기</th>
-                  <th>재생요청</th>
-                  <th>자체 큐시트</th>
-                  <th>자막 도움요청</th>
-                  <th>전달사항</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="deptSummaryTableBody"></tbody>
-            </table>
-          </div>
-        </div>
+        <div id="deptUploadProgress" class="upload-progress-banner hidden"></div>
 
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title">클라우드(Backblaze B2) 업로드 파일 목록</h3>
-              <p class="card-sub">500MB 이하 업로드 파일은 클라우드에 저장되며, 개별 다운로드 또는 삭제가 가능합니다.</p>
-            </div>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <span id="b2StatusText" class="helper-text" style="margin:0;"></span>
-              <button type="button" class="btn btn-outline btn-sm" id="refreshB2FilesBtn">파일 목록 새로고침</button>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>부서</th>
-                  <th>구분</th>
-                  <th>파일명</th>
-                  <th>용량</th>
-                  <th>다운로드 / 삭제</th>
-                </tr>
-              </thead>
-              <tbody id="b2FilesTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- 관리자 탭 2: 행사명/계정/초기화 -->
-      <div id="adminManageTab" class="hidden">
         <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h3 class="card-title">행사 정보 설정</h3>
-                <p class="card-sub">행사명, 일시/장소, 공지사항을 변경하면 모든 사용자 화면에 동기화됩니다.</p>
+          <div class="form-group">
+            <label for="deptContact">부서 담당자 및 연락처</label>
+            <input type="text" id="deptContact" placeholder="예: 김청년 리더 (010-1234-5678)" />
+          </div>
+          <div class="form-group">
+            <label for="deptMicCount">필요 마이크 개수</label>
+            <input type="number" id="deptMicCount" min="0" max="50" value="0" />
+            <div class="mic-extra-box">
+              <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+                <label class="check-inline">
+                  <input type="checkbox" id="chkReqMicStand" />
+                  <span>마이크 스탠드 요청</span>
+                </label>
+                <label class="check-inline">
+                  <input type="checkbox" id="chkCeilingMic" />
+                  <span>천장 E/L 마이크 사용</span>
+                </label>
+              </div>
+              <div id="micStandCountWrap" class="hidden" style="margin-top:8px; max-width:220px;">
+                <label for="deptMicStandCount" style="margin-bottom:4px;">필요 마이크 스탠드 개수</label>
+                <input type="number" id="deptMicStandCount" min="0" max="50" value="1" />
               </div>
             </div>
-            <form id="eventSettingsForm">
-              <div class="form-group">
-                <label for="cfgEventName">행사명</label>
-                <input type="text" id="cfgEventName" required />
-              </div>
-              <div class="form-group">
-                <label for="cfgEventDate">일시 / 장소</label>
-                <input type="text" id="cfgEventDate" />
-              </div>
-              <div class="form-group">
-                <label for="cfgEventNotice">공지사항</label>
-                <textarea id="cfgEventNotice"></textarea>
-              </div>
-              <button type="submit" class="btn btn-primary">행사 정보 저장 및 동기화</button>
-            </form>
           </div>
+        </div>
 
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h3 class="card-title">부서 계정 추가</h3>
-                <p class="card-sub">새 부서 로그인 계정을 추가하고 동기화합니다.</p>
-              </div>
-            </div>
-            <form id="addAccountForm">
-              <div class="form-group">
-                <label for="newAccDept">부서명</label>
-                <input type="text" id="newAccDept" placeholder="예: 새가족부" required />
-              </div>
-              <div class="form-group">
-                <label for="newAccId">로그인 아이디</label>
-                <input type="text" id="newAccId" placeholder="예: 새가족부" required />
-              </div>
-              <div class="form-group">
-                <label for="newAccPw">비밀번호</label>
-                <input type="text" id="newAccPw" placeholder="예: 1111" required />
-              </div>
-              <button type="submit" class="btn btn-success">계정 추가 및 동기화</button>
-            </form>
+        <div class="form-group">
+          <label>사용 악기 선택 (복수 선택 가능)</label>
+          <div class="inst-group" id="instrumentSelector"></div>
+        </div>
+
+        <div class="form-group">
+          <label>음향/영상 재생 요청</label>
+          <div class="media-req-group">
+            <button type="button" class="media-req-btn" id="btnReqBgm">BGM 재생 요청</button>
+            <button type="button" class="media-req-btn" id="btnReqVideo">영상 재생 요청</button>
           </div>
+          <div class="helper-text">해당하는 항목을 누르면 관리자 화면의 재생요청 컬럼에 표시됩니다.</div>
+        </div>
+
+        <div class="custom-cue-box">
+          <label for="deptCustomCueFile" style="margin-bottom:4px;">자체 부서 큐시트 파일 첨부 (선택 · 최대 500MB)</label>
+          <div class="helper-text" style="margin-bottom:8px;">
+            부서에서 별도로 작성한 큐시트 문서(한글, 워드, 엑셀, PDF, 이미지 등)가 있다면 첨부해 주세요.
+          </div>
+          <input type="file" id="deptCustomCueFile" multiple />
+          <div id="customCueFileList"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="deptGeneralNote">미디어팀 전달사항 (음향·조명·영상·진행 공통 메모)</label>
+          <textarea id="deptGeneralNote" placeholder="예: 리허설 시간 희망, 암전 타이밍, 특수효과 요청 등"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">세부 순서(큐시트) · 음원/영상 · 자막 등록</h3>
+            <p class="card-sub">순서별로 영상/음원 파일 또는 유튜브 링크, 자막(.txt 또는 직접 붙여넣기)을 등록하세요.</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="addCueBtn">+ 순서 추가</button>
+        </div>
+        <div id="cueListContainer"></div>
+      </div>
+    </section>
+
+    <!-- 관리자 탭 1: 종합 큐시트 현황 · 내보내기 -->
+    <section id="adminOverviewTab" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">전체 통합 큐시트 현황</h2>
+            <p class="card-sub">각 부서가 제출한 순서와 장비·자막·파일 현황을 한눈에 확인하고 순번을 조정하거나 내보낼 수 있습니다.</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" id="fillAdminSampleBtn">예시 데이터 채우기</button>
+            <button type="button" class="btn btn-outline btn-sm" id="refreshAllSyncBtn">전체 동기화</button>
+            <button type="button" class="btn btn-primary btn-sm" id="saveMasterOrderBtn">순번 변경 저장</button>
+            <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">엑셀(.xlsx) 다운로드</button>
+            <button type="button" class="btn btn-outline btn-sm" id="exportZipBtn">부서별·순서별 ZIP 다운로드</button>
+          </div>
+        </div>
+
+        <div id="adminSummaryBadges" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>순번</th>
+                <th>순번조정</th>
+                <th>식별순서/ID</th>
+                <th>부서</th>
+                <th>순서명 / 주제</th>
+                <th>시간</th>
+                <th>마이크/스탠드/천장</th>
+                <th>악기 / 재생요청</th>
+                <th>자막</th>
+                <th>음원·첨부파일</th>
+                <th>메모</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="masterCueTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">부서별 순서 · 장비 · 재생요청 · 자체큐시트 요약</h3>
+            <p class="card-sub">부서별 등록 순서, 마이크/스탠드/천장 E/L, 사용악기, BGM/영상 재생요청, 자체 큐시트 및 자막 도움요청 내역입니다.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>식별순서/ID</th>
+                <th>부서</th>
+                <th>담당자</th>
+                <th>등록 순서</th>
+                <th>마이크</th>
+                <th>스탠드</th>
+                <th>천장 E/L</th>
+                <th>사용악기</th>
+                <th>재생요청</th>
+                <th>자체 큐시트</th>
+                <th>자막 도움요청</th>
+                <th>전달사항</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="deptSummaryTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">클라우드 업로드 파일 목록 (GitHub 자막 · Backblaze B2 파일)</h3>
+            <p class="card-sub">자막(.txt)은 GitHub에, 음원·영상·문서(최대 500MB)는 Backblaze B2(gumimc-media-files)에 저장되며 개별 다운로드 또는 삭제가 가능합니다.</p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span id="b2StatusText" class="helper-text" style="margin:0;"></span>
+            <button type="button" class="btn btn-outline btn-sm" id="refreshB2FilesBtn">파일 목록 새로고침</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>부서</th>
+                <th>구분</th>
+                <th>파일명</th>
+                <th>용량</th>
+                <th>다운로드 / 삭제</th>
+              </tr>
+            </thead>
+            <tbody id="b2FilesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 관리자 탭 2: 행사명/계정/초기화 -->
+    <section id="adminManageTab" class="hidden">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">행사 정보 설정</h3>
+              <p class="card-sub">행사명, 일시/장소, 공지사항을 변경하면 모든 사용자 화면에 동기화됩니다.</p>
+            </div>
+          </div>
+          <form id="eventSettingsForm">
+            <div class="form-group">
+              <label for="cfgEventName">행사명</label>
+              <input type="text" id="cfgEventName" required />
+            </div>
+            <div class="form-group">
+              <label for="cfgEventDate">일시 / 장소</label>
+              <input type="text" id="cfgEventDate" />
+            </div>
+            <div class="form-group">
+              <label for="cfgEventNotice">공지사항</label>
+              <textarea id="cfgEventNotice"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">행사 정보 저장 및 동기화</button>
+          </form>
         </div>
 
         <div class="card">
           <div class="card-header">
             <div>
-              <h3 class="card-title">계정 목록 및 수정/삭제</h3>
-              <p class="card-sub">부서명, 아이디, 비밀번호를 수정해도 기존 큐시트와 식별순서는 유지됩니다.</p>
+              <h3 class="card-title">부서 계정 추가</h3>
+              <p class="card-sub">새 부서 로그인 계정을 추가하고 동기화합니다.</p>
             </div>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>부서명</th>
-                  <th>아이디</th>
-                  <th>비밀번호</th>
-                  <th>식별순서/ID</th>
-                  <th>권한</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="accountTableBody"></tbody>
-            </table>
+          <form id="addAccountForm">
+            <div class="form-group">
+              <label for="newAccDept">부서명</label>
+              <input type="text" id="newAccDept" placeholder="예: 새가족부" required />
+            </div>
+            <div class="form-group">
+              <label for="newAccId">로그인 아이디</label>
+              <input type="text" id="newAccId" placeholder="예: 새가족부" required />
+            </div>
+            <div class="form-group">
+              <label for="newAccPw">비밀번호</label>
+              <input type="text" id="newAccPw" placeholder="예: 1111" required />
+            </div>
+            <button type="submit" class="btn btn-success">계정 추가 및 동기화</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">계정 목록 및 수정/삭제</h3>
+            <p class="card-sub">부서명, 아이디, 비밀번호를 수정해도 기존 큐시트와 식별순서는 유지됩니다.</p>
           </div>
         </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>부서명</th>
+                <th>아이디</th>
+                <th>비밀번호</th>
+                <th>식별순서/ID</th>
+                <th>권한</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="accountTableBody"></tbody>
+          </table>
+        </div>
+      </div>
 
-        <div class="card" style="border-color:#fecaca;">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title" style="color:var(--danger);">새 행사 시작 (전체 데이터 및 클라우드 파일 초기화)</h3>
-              <p class="card-sub">주의: 행사명, 모든 부서 큐시트, 자막, 요청사항, 업로드된 파일이 영구 삭제됩니다. (계정 정보는 유지)</p>
-            </div>
-            <button type="button" class="btn btn-danger" id="resetEventBtn">전체 데이터 및 파일 영구 초기화</button>
+      <div class="card" style="border-color:#fecaca;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title" style="color:var(--danger);">새 행사 시작 (전체 데이터 및 클라우드 파일 초기화)</h3>
+            <p class="card-sub">주의: 행사명, 모든 부서 큐시트, 자막, 요청사항, 업로드된 파일이 영구 삭제됩니다. (계정 정보는 유지)</p>
           </div>
+          <button type="button" class="btn btn-danger" id="resetEventBtn">전체 데이터 및 파일 영구 초기화</button>
         </div>
       </div>
     </section>
@@ -610,6 +690,8 @@
     const B2_CONFIG = {
       signerBaseUrl: "https://lingering-bread-b3e6.winnee.workers.dev",
       bucketName: "gumimc-media-files",
+      bucketId: "4b1ad5f3416e0ddead22021c",
+      endpoint: "https://s3.us-east-005.backblazeb2.com",
       region: "us-east-005"
     };
 
@@ -618,37 +700,45 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v9";
-    const IDB_NAME = "gm_media_guide_files_b2_v9";
+    const STORAGE_KEY = "gm_media_guide_gh_b2_v11";
+    const IDB_NAME = "gm_media_guide_files_gh_b2_v11";
     const IDB_STORE = "files";
 
     const ACCOUNT_COLOR_PALETTE = [
-      { bg: "#dbeafe", text: "#1e40af", border: "#93c5fd", dot: "#2563eb" },
-      { bg: "#d1fae5", text: "#065f46", border: "#6ee7b7", dot: "#059669" },
-      { bg: "#fef3c7", text: "#92400e", border: "#fcd34d", dot: "#d97706" },
-      { bg: "#ede9fe", text: "#5b21b6", border: "#c4b5fd", dot: "#7c3aed" },
-      { bg: "#fce7f3", text: "#9d174d", border: "#f9a8d4", dot: "#db2777" },
-      { bg: "#cffafe", text: "#155e75", border: "#67e8f9", dot: "#0891b2" },
-      { bg: "#ffedd5", text: "#9a3412", border: "#fdba74", dot: "#ea580c" },
-      { bg: "#e0e7ff", text: "#3730a3", border: "#a5b4fc", dot: "#4f46e5" },
-      { bg: "#dcfce7", text: "#166534", border: "#86efac", dot: "#16a34a" },
-      { bg: "#fae8ff", text: "#86198f", border: "#f0abfc", dot: "#c026d3" }
+      { bg: "#dbeafe", text: "#1d4ed8", border: "#60a5fa", dot: "#2563eb" },
+      { bg: "#dcfce7", text: "#15803d", border: "#4ade80", dot: "#16a34a" },
+      { bg: "#fef3c7", text: "#b45309", border: "#fbbf24", dot: "#d97706" },
+      { bg: "#f3e8ff", text: "#7e22ce", border: "#c084fc", dot: "#9333ea" },
+      { bg: "#ffe4e6", text: "#be123c", border: "#fb7185", dot: "#e11d48" },
+      { bg: "#cffafe", text: "#0e7490", border: "#22d3ee", dot: "#0891b2" },
+      { bg: "#ffedd5", text: "#c2410c", border: "#fb923c", dot: "#ea580c" },
+      { bg: "#fce7f3", text: "#be185d", border: "#f472b6", dot: "#db2777" },
+      { bg: "#e0e7ff", text: "#4338ca", border: "#818cf8", dot: "#4f46e5" },
+      { bg: "#f1f5f9", text: "#334155", border: "#94a3b8", dot: "#475569" }
     ];
 
-    const FIXED_UID_COLOR_INDEX = {
-      uid_youth: 0,
-      uid_elem: 1,
-      uid_teen: 2,
-      uid_praise: 3,
-      uid_infant: 4,
-      uid_children: 5
+    const FIXED_KEY_COLOR_INDEX = {
+      uid_youth: 0, "청년부": 0, youth: 0,
+      uid_elem: 1, "초등부": 1, elem: 1,
+      uid_teen: 2, "청소년부": 2, teen: 2,
+      uid_praise: 3, "찬양팀": 3, praise: 3,
+      uid_infant: 4, "영아부": 4, infant: 4,
+      uid_children: 5, "아동부": 5, children: 5,
+      "test": 6, "테스트계정": 6
     };
 
     function getAccountColorTheme(keyStr) {
-      const s = String(keyStr || "default");
-      if (Object.prototype.hasOwnProperty.call(FIXED_UID_COLOR_INDEX, s)) {
-        return ACCOUNT_COLOR_PALETTE[FIXED_UID_COLOR_INDEX[s] % ACCOUNT_COLOR_PALETTE.length];
+      const s = String(keyStr || "").trim();
+      if (Object.prototype.hasOwnProperty.call(FIXED_KEY_COLOR_INDEX, s)) {
+        return ACCOUNT_COLOR_PALETTE[FIXED_KEY_COLOR_INDEX[s] % ACCOUNT_COLOR_PALETTE.length];
       }
+      if (s.includes("youth") || s.includes("청년")) return ACCOUNT_COLOR_PALETTE[0];
+      if (s.includes("elem") || s.includes("초등")) return ACCOUNT_COLOR_PALETTE[1];
+      if (s.includes("teen") || s.includes("청소년")) return ACCOUNT_COLOR_PALETTE[2];
+      if (s.includes("praise") || s.includes("찬양")) return ACCOUNT_COLOR_PALETTE[3];
+      if (s.includes("infant") || s.includes("영아")) return ACCOUNT_COLOR_PALETTE[4];
+      if (s.includes("children") || s.includes("아동")) return ACCOUNT_COLOR_PALETTE[5];
+
       let hash = 0;
       for (let i = 0; i < s.length; i++) {
         hash = ((hash << 5) - hash) + s.charCodeAt(i);
@@ -658,29 +748,40 @@
       return ACCOUNT_COLOR_PALETTE[idx];
     }
 
-    function renderColoredIdPill(orderSeq, idLabel, colorKey) {
-      const t = getAccountColorTheme(colorKey || idLabel || String(orderSeq));
+    function resolveThemeForEntity(colorKey, idLabel, deptName) {
+      const candidates = [colorKey, idLabel, deptName].filter((v) => String(v || "").trim() !== "");
+      for (const c of candidates) {
+        const key = String(c).trim();
+        if (Object.prototype.hasOwnProperty.call(FIXED_KEY_COLOR_INDEX, key)) {
+          return getAccountColorTheme(key);
+        }
+      }
+      return getAccountColorTheme(candidates[0] || "default");
+    }
+
+    function renderColoredIdPill(orderSeq, idLabel, colorKey, deptName = "") {
+      const t = resolveThemeForEntity(colorKey, idLabel, deptName);
       return `
-        <span class="id-color-pill" style="background:${t.bg}; color:${t.text}; border-color:${t.border};">
-          <span class="id-color-dot" style="background:${t.dot};"></span>
+        <span class="id-color-pill" style="background-color:${t.bg} !important; color:${t.text} !important; border-color:${t.border} !important;">
+          <span class="id-color-dot" style="background-color:${t.dot} !important;"></span>
           <span>#${orderSeq} (${escapeHtml(idLabel)})</span>
         </span>
       `;
     }
 
-    function renderColoredDeptName(deptName, colorKey) {
-      const t = getAccountColorTheme(colorKey || deptName);
+    function renderColoredDeptName(deptName, colorKey, idLabel = "") {
+      const t = resolveThemeForEntity(colorKey, idLabel, deptName);
       return `
-        <span class="dept-color-label" style="color:${t.text};">
-          <span class="id-color-dot" style="background:${t.dot};"></span>
+        <span class="dept-color-label" style="color:${t.text} !important;">
+          <span class="id-color-dot" style="background-color:${t.dot} !important;"></span>
           <span>${escapeHtml(deptName)}</span>
         </span>
       `;
     }
 
-    function renderColoredIdCode(idText, colorKey) {
-      const t = getAccountColorTheme(colorKey || idText);
-      return `<code class="id-code-badge" style="background:${t.bg}; color:${t.text}; border-color:${t.border};">${escapeHtml(idText)}</code>`;
+    function renderColoredIdCode(idText, colorKey, deptName = "") {
+      const t = resolveThemeForEntity(colorKey, idText, deptName);
+      return `<code class="id-code-badge" style="background-color:${t.bg} !important; color:${t.text} !important; border-color:${t.border} !important;">${escapeHtml(idText)}</code>`;
     }
 
     function deepClone(obj) {
@@ -1213,7 +1314,7 @@
         remoteB2Files = remoteB2Files.filter((f) => f && f.objectKey !== objectKey);
         return true;
       } catch (err) {
-        console.warn("B2 file delete failed:", objectKey, err);
+        console.warn("Remote file delete failed:", objectKey, err);
         return false;
       }
     }
@@ -1230,22 +1331,40 @@
       }
 
       const affectedSubs = [];
+      const localKeysToRemove = [];
       Object.values(state.deptSubmissions || {}).forEach((sub) => {
         let modified = false;
-        const beforeCustom = (sub.customCueFiles || []).length;
-        sub.customCueFiles = (sub.customCueFiles || []).filter((f) => f.b2Key !== objectKey);
-        if (sub.customCueFiles.length !== beforeCustom) modified = true;
+        sub.customCueFiles = (sub.customCueFiles || []).filter((f) => {
+          if (f.b2Key === objectKey) {
+            if (f.key) localKeysToRemove.push(f.key);
+            modified = true;
+            return false;
+          }
+          return true;
+        });
 
         (sub.cues || []).forEach((c) => {
-          const beforeMedia = (c.mediaFiles || []).length;
-          const beforeSub = (c.subtitleFiles || []).length;
-          c.mediaFiles = (c.mediaFiles || []).filter((f) => f.b2Key !== objectKey);
-          c.subtitleFiles = (c.subtitleFiles || []).filter((f) => f.b2Key !== objectKey);
-          if (c.mediaFiles.length !== beforeMedia || c.subtitleFiles.length !== beforeSub) modified = true;
+          c.mediaFiles = (c.mediaFiles || []).filter((f) => {
+            if (f.b2Key === objectKey) {
+              if (f.key) localKeysToRemove.push(f.key);
+              modified = true;
+              return false;
+            }
+            return true;
+          });
+          c.subtitleFiles = (c.subtitleFiles || []).filter((f) => {
+            if (f.b2Key === objectKey) {
+              if (f.key) localKeysToRemove.push(f.key);
+              modified = true;
+              return false;
+            }
+            return true;
+          });
         });
         if (modified) affectedSubs.push(sub);
       });
       saveState();
+      if (localKeysToRemove.length) await deleteFileRecords(localKeysToRemove);
       for (const s of affectedSubs) {
         await syncSubmissionToB2(s, { silent: true });
       }
@@ -1284,13 +1403,13 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.ok === false) {
-          if (!silent) console.warn("B2 submission sync failed:", res.status, data);
+          if (!silent) console.warn("Submission sync failed:", res.status, data);
           return false;
         }
         hasDirtyDeptChanges = false;
         return true;
       } catch (e) {
-        if (!silent) console.warn("B2 submission sync error:", e);
+        if (!silent) console.warn("Submission sync error:", e);
         return false;
       }
     }
@@ -1305,7 +1424,7 @@
         const current = getCurrentUser();
         if (!current || current.role !== "dept") return;
         const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
-        setSavedStatusLabel(`로컬 자동저장됨 (${sub.updatedAt}) · 클라우드 전송 대기...`);
+        setSavedStatusLabel(`로컬 자동저장됨 (${sub.updatedAt}) · 동기화 대기...`);
       }, 600);
 
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
@@ -1313,11 +1432,11 @@
         const current = getCurrentUser();
         if (!current || current.role !== "dept") return;
         const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
-        setSavedStatusLabel("클라우드 동기화 중...");
+        setSavedStatusLabel("GitHub 동기화 중...");
         const ok = await syncSubmissionToB2(sub, { silent: true });
         setSavedStatusLabel(
           ok
-            ? `✓ 클라우드 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
+            ? `✓ GitHub 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
             : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · 네트워크/Worker 확인 필요`
         );
       }, 1400);
@@ -1408,7 +1527,7 @@
         saveState();
         return merged;
       } catch (err) {
-        console.warn("Single dept B2 fetch failed:", err);
+        console.warn("Single dept remote fetch failed:", err);
         return null;
       }
     }
@@ -1507,7 +1626,7 @@
         if (activeTab === "adminManage") renderAdminManage();
         if (showMessage) {
           const count = Object.keys(nextSubmissions).length;
-          showToast(`클라우드 동기화 완료 (제출 부서 ${count}개)`);
+          showToast(`동기화 완료 (제출 부서 ${count}개)`);
         }
       } catch (err) {
         console.warn("Remote submissions fetch failed:", err);
@@ -1700,15 +1819,42 @@
       const safeDept = sanitizeName(deptName);
       const safeFile = sanitizeName(file.name);
       const objectKey = `event_files/${safeDept}/${kind}/${key}_${safeFile}`;
-      const uploadUrl = `${base}?action=upload_file&objectKey=${encodeURIComponent(objectKey)}`;
+
+      const isTextSubtitle =
+        kind === "subtitle" ||
+        /\.txt$/i.test(file.name) ||
+        (file.type && file.type.startsWith("text/plain"));
 
       activeUploadCount += 1;
       try {
-        setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) 업로드 중... 0%`);
+        if (isTextSubtitle) {
+          setUploadProgressText(`'${file.name}' 자막을 GitHub에 저장 중...`);
+          const textContent = await file.text();
+          const res = await fetch(`${base}?action=upload_text&objectKey=${encodeURIComponent(objectKey)}`, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain; charset=utf-8" },
+            body: textContent
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || data.ok === false) {
+            throw new Error(data.error || `GitHub 자막 저장 실패 (HTTP ${res.status})`);
+          }
+          const savedKey = data.objectKey || `gh:data/${objectKey}`;
+          recentlyDeletedB2Keys.delete(savedKey);
+          showToast(`'${file.name}' GitHub 저장 완료`);
+          return {
+            b2Key: savedKey,
+            publicUrl: buildWorkerDownloadUrl(savedKey, file.name)
+          };
+        }
+
+        const uploadUrl = `${base}?action=upload_file&objectKey=${encodeURIComponent(objectKey)}`;
+        setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... 0%`);
         await sendFileViaWorker(uploadUrl, file, (pct) => {
-          setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) 업로드 중... ${pct}%`);
+          setUploadProgressText(`'${file.name}' (${formatFileSize(file.size)}) B2 업로드 중... ${pct}%`);
         });
         recentlyDeletedB2Keys.delete(objectKey);
+        showToast(`'${file.name}' B2 업로드 완료`);
         return {
           b2Key: objectKey,
           publicUrl: buildWorkerDownloadUrl(objectKey, file.name)
@@ -1733,10 +1879,9 @@
       if (isB2Configured()) {
         try {
           b2Result = await uploadFileToB2(file, kind, deptName, key);
-          showToast(`'${file.name}' 업로드 완료`);
         } catch (err) {
-          console.warn("B2 upload failed:", err);
-          alert(`클라우드 업로드에 실패했습니다.\n사유: ${err.message}`);
+          console.warn("Upload failed:", err);
+          alert(`파일 업로드에 실패했습니다.\n사유: ${err.message}`);
           return null;
         }
       }
@@ -1798,10 +1943,11 @@
           remoteB2Files = rawList.filter((f) => f && !recentlyDeletedB2Keys.has(f.objectKey));
           remoteB2Loaded = true;
           renderB2FilesTable();
+          renderAdminSummaryBadges();
           bindIndividualDownloadButtons();
           if (showMessage) showToast(`클라우드 파일 ${remoteB2Files.length}개를 불러왔습니다.`);
         } catch (err) {
-          console.warn("B2 list error:", err);
+          console.warn("Remote file list error:", err);
           if (statusText) statusText.textContent = `목록 조회 오류: ${err.message}`;
         } finally {
           inflightB2FilesPromise = null;
@@ -2051,7 +2197,7 @@
       saveState();
       const synced = await syncSubmissionToB2(sampleSub, { silent: true });
       renderDeptView(user, { skipRemoteFetch: true });
-      showToast(synced ? `${user.deptName} 예시 데이터가 클라우드에 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
+      showToast(synced ? `${user.deptName} 예시 데이터가 GitHub에 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
     }
 
     async function fillAdminSampleData() {
@@ -2148,9 +2294,9 @@
     }
 
     function formatKindLabel(kind) {
-      if (kind === "custom_cue") return "자체 큐시트";
-      if (kind === "subtitle") return "자막(.txt)";
-      if (kind === "media") return "영상/음원";
+      if (kind === "custom_cue") return "자체 큐시트 (B2)";
+      if (kind === "subtitle") return "자막(.txt · GitHub)";
+      if (kind === "media") return "영상/음원 (B2)";
       return kind || "첨부파일";
     }
 
@@ -2175,7 +2321,7 @@
           if (cf?.b2Key && recentlyDeletedB2Keys.has(cf.b2Key)) return;
           items.push({
             deptName: sub.deptName,
-            category: "자체 큐시트",
+            category: "자체 큐시트 (B2)",
             key: cf.key || "",
             name: cf.name,
             size: cf.size || 0,
@@ -2189,7 +2335,7 @@
             if (mf?.b2Key && recentlyDeletedB2Keys.has(mf.b2Key)) return;
             items.push({
               deptName: sub.deptName,
-              category: `${orderLabel} · 영상/음원`,
+              category: `${orderLabel} · 영상/음원 (B2)`,
               key: mf.key || "",
               name: mf.name,
               size: mf.size || 0,
@@ -2201,7 +2347,7 @@
             if (sf?.b2Key && recentlyDeletedB2Keys.has(sf.b2Key)) return;
             items.push({
               deptName: sub.deptName,
-              category: `${orderLabel} · 자막`,
+              category: `${orderLabel} · 자막 (GitHub)`,
               key: sf.key || "",
               name: sf.name,
               size: sf.size || 0,
@@ -2214,6 +2360,27 @@
       return items;
     }
 
+    function renderAdminSummaryBadges(rows = null, subs = null) {
+      const badgeBox = document.getElementById("adminSummaryBadges");
+      if (!badgeBox) return;
+      const safeRows = rows || getAllRows();
+      const safeSubs = subs || getSortedSubmissions();
+      const ceilingDeptCount = safeSubs.filter((s) => s.useCeilingMic).length;
+      const helpCount = safeRows.filter((r) => r.subtitleHelp).length;
+      const ytCount = safeRows.filter((r) => Boolean(r.youtubeUrl)).length;
+      const fileCount = remoteB2Loaded
+        ? collectAllB2Files().length
+        : safeRows.reduce((acc, r) => acc + r.mediaFiles.length + r.subtitleFiles.length, 0) + safeSubs.reduce((acc, s) => acc + (s.customCueFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)).length, 0);
+
+      badgeBox.innerHTML = `
+        <span class="pill pill-blue">총 큐시트 ${safeRows.length}건</span>
+        <span class="pill pill-warn">유튜브 음원 ${ytCount}건</span>
+        <span class="pill pill-green">천장 E/L 사용 ${ceilingDeptCount}개 부서</span>
+        <span class="pill pill-warn">자막 도움요청 ${helpCount}건</span>
+        <span class="pill pill-blue">등록 파일 ${fileCount}개</span>
+      `;
+    }
+
     function renderB2FilesTable() {
       const tbody = document.getElementById("b2FilesTableBody");
       const statusText = document.getElementById("b2StatusText");
@@ -2222,7 +2389,7 @@
       const items = collectAllB2Files();
       if (statusText) {
         statusText.textContent = isB2Configured()
-          ? `클라우드 연결됨 · 총 ${items.length}개`
+          ? `GitHub + B2(${B2_CONFIG.bucketName}) 연동 · 총 ${items.length}개`
           : "로컬 백업 모드";
       }
 
@@ -2241,7 +2408,7 @@
           : "";
         return `
           <tr>
-            <td class="nowrap-col">${renderColoredDeptName(it.deptName, it.deptName)}</td>
+            <td class="nowrap-col">${renderColoredDeptName(it.deptName, it.deptName, it.deptName)}</td>
             <td>${escapeHtml(it.category)}</td>
             <td><strong>${escapeHtml(it.name)}</strong></td>
             <td class="nowrap-col">${escapeHtml(formatFileSize(it.size))}</td>
@@ -2277,7 +2444,7 @@
         return;
       }
 
-      const cloudBadge = isB2Configured() ? "✓ 클라우드 동기화" : "로컬 모드";
+      const cloudBadge = isB2Configured() ? "✓ GitHub + B2 동기화" : "로컬 모드";
       topbarActions.innerHTML = `
         <span class="user-badge">${escapeHtml(user.deptName)} (${escapeHtml(user.id)})</span>
         <span class="user-badge">${escapeHtml(cloudBadge)}</span>
@@ -2385,7 +2552,7 @@
       applyDeptFormValues(latest);
       const latestSeqLabel = latest.orderSeq > 0 ? ` · 식별순서 #${latest.orderSeq}` : "";
       if (latest.updatedAt) {
-        setSavedStatusLabel(`✓ 클라우드 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
+        setSavedStatusLabel(`✓ 동기화 완료 · 최근 저장: ${latest.updatedAt}${latestSeqLabel}`);
       }
     }
 
@@ -2451,7 +2618,7 @@
         <ul class="file-list" style="margin-top:8px;">
           ${sub.customCueFiles.map((f, idx) => `
             <li style="margin-bottom:4px; color:#1e3a8a; font-weight:600;">
-              ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">동기화됨</span>' : ''}
+              ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">B2 동기화됨</span>' : ''}
               <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px;" data-del-custom-cue="${idx}">삭제</button>
             </li>
           `).join("")}
@@ -2492,11 +2659,11 @@
         const mediaHtml = (cue.mediaFiles || []).length
           ? `<ul class="file-list">${cue.mediaFiles.map((f, fIdx) => `
               <li>
-                ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">동기화됨</span>' : ''}
+                ${escapeHtml(f.name)} (${escapeHtml(formatFileSize(f.size))}) ${f.b2Key ? '<span class="pill pill-green">B2 동기화됨</span>' : ''}
                 <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px;" data-del-media="${idx}:${fIdx}">삭제</button>
               </li>
             `).join("")}</ul>`
-          : `<div class="helper-text">등록된 영상/음원 파일이 없습니다. (최대 500MB)</div>`;
+          : `<div class="helper-text">등록된 영상/음원 파일이 없습니다. (B2 · 최대 500MB)</div>`;
 
         const ytVal = cue.youtubeUrl || "";
         const ytValid = isValidYoutubeUrl(ytVal);
@@ -2510,12 +2677,12 @@
           ? `<ul class="file-list" style="color:var(--success); font-weight:700;">
               ${subFiles.map((sf, sIdx) => `
                 <li style="margin-bottom:3px;">
-                  ${escapeHtml(sf.name)}
+                  ${escapeHtml(sf.name)} ${sf.b2Key ? '<span class="pill pill-blue">GitHub 저장됨</span>' : ''}
                   <button type="button" class="btn btn-outline btn-sm" style="padding:2px 6px; margin-left:6px; font-weight:600;" data-del-txt="${idx}:${sIdx}">삭제</button>
                 </li>
               `).join("")}
              </ul>`
-          : `<div class="helper-text">TXT 파일 미등록 (여러 개 선택 가능 · 아래 칸에 직접 붙여넣기 가능)</div>`;
+          : `<div class="helper-text">TXT 파일 미등록 (GitHub 저장 · 여러 개 선택 가능)</div>`;
 
         const pastedLen = (cue.subtitleText || "").trim().length;
         const pasteInfoHtml = pastedLen > 0
@@ -2550,7 +2717,7 @@
 
             <div class="grid-2">
               <div class="form-group" style="margin-bottom:8px;">
-                <label>영상 / 음원 파일 업로드 (최대 500MB)</label>
+                <label>영상 / 음원 파일 업로드 (B2 · 최대 500MB)</label>
                 <input type="file" class="cue-media-input" multiple />
                 ${mediaHtml}
 
@@ -2562,7 +2729,7 @@
               </div>
 
               <div class="form-group" style="margin-bottom:8px;">
-                <label>자막 (.txt 여러 개 업로드 또는 직접 Ctrl+V 붙여넣기)</label>
+                <label>자막 (.txt GitHub 저장 또는 직접 Ctrl+V 붙여넣기)</label>
                 <input type="file" class="cue-txt-input" multiple />
                 ${txtStatusHtml}
 
@@ -2681,7 +2848,7 @@
           collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           renderCueList(sub);
-          showToast(`자막 파일 ${files.length}개가 등록되었습니다.`);
+          showToast(`자막 파일 ${files.length}개가 GitHub에 등록되었습니다.`);
         });
       });
 
@@ -2904,20 +3071,7 @@
 
       const rows = getAllRows();
       const subs = getSortedSubmissions();
-      const ceilingDeptCount = subs.filter((s) => s.useCeilingMic).length;
-      const helpCount = rows.filter((r) => r.subtitleHelp).length;
-      const ytCount = rows.filter((r) => Boolean(r.youtubeUrl)).length;
-      const fileCount = remoteB2Loaded
-        ? collectAllB2Files().length
-        : rows.reduce((acc, r) => acc + r.mediaFiles.length + r.subtitleFiles.length, 0) + subs.reduce((acc, s) => acc + (s.customCueFiles || []).filter((f) => !f?.b2Key || !recentlyDeletedB2Keys.has(f.b2Key)).length, 0);
-
-      document.getElementById("adminSummaryBadges").innerHTML = `
-        <span class="pill pill-blue">총 큐시트 ${rows.length}건</span>
-        <span class="pill pill-warn">유튜브 음원 ${ytCount}건</span>
-        <span class="pill pill-green">천장 E/L 사용 ${ceilingDeptCount}개 부서</span>
-        <span class="pill pill-warn">자막 도움요청 ${helpCount}건</span>
-        <span class="pill pill-blue">등록 파일 ${fileCount}개</span>
-      `;
+      renderAdminSummaryBadges(rows, subs);
 
       const tbody = document.getElementById("masterCueTableBody");
       if (!rows.length) {
@@ -2992,8 +3146,8 @@
                 <button type="button" class="btn btn-outline btn-xs" data-master-up="${rIdx}" ${rIdx === 0 ? "disabled" : ""} title="순번 올리기">▲</button>
                 <button type="button" class="btn btn-outline btn-xs" data-master-down="${rIdx}" ${rIdx === rows.length - 1 ? "disabled" : ""} title="순번 내리기">▼</button>
               </td>
-              <td class="nowrap-col">${renderColoredIdPill(r.orderSeq, idLabel, colorKey)}</td>
-              <td class="nowrap-col">${renderColoredDeptName(r.deptName, colorKey)}</td>
+              <td class="nowrap-col">${renderColoredIdPill(r.orderSeq, idLabel, colorKey, r.deptName)}</td>
+              <td class="nowrap-col">${renderColoredDeptName(r.deptName, colorKey, idLabel)}</td>
               <td>
                 <div><strong>${escapeHtml(r.title)}</strong></div>
                 <div class="helper-text">${escapeHtml(r.topic)}</div>
@@ -3065,8 +3219,8 @@
             : "없음";
           return `
             <tr>
-              <td class="nowrap-col">${renderColoredIdPill(orderSeq, idLabel, colorKey)}</td>
-              <td class="nowrap-col">${renderColoredDeptName(s.deptName, colorKey)}</td>
+              <td class="nowrap-col">${renderColoredIdPill(orderSeq, idLabel, colorKey, s.deptName)}</td>
+              <td class="nowrap-col">${renderColoredDeptName(s.deptName, colorKey, idLabel)}</td>
               <td>${escapeHtml(s.contact || "-")}</td>
               <td>${cueSummaryHtml}</td>
               <td class="nowrap-col"><strong>${Number(s.micCount || 0)}개</strong></td>
@@ -3107,16 +3261,16 @@
         const seqBadge = acc.role === "admin"
           ? `<span class="helper-text">-</span>`
           : (displaySeq > 0
-            ? renderColoredIdPill(displaySeq, acc.id, uid)
+            ? renderColoredIdPill(displaySeq, acc.id, uid, acc.deptName)
             : `<span class="helper-text">미저장</span>`);
 
         const deptCell = acc.role === "admin"
           ? `<strong>${escapeHtml(acc.deptName)}</strong>`
-          : renderColoredDeptName(acc.deptName, uid);
+          : renderColoredDeptName(acc.deptName, uid, acc.id);
 
         const idCell = acc.role === "admin"
           ? `<code>${escapeHtml(acc.id)}</code>`
-          : renderColoredIdCode(acc.id, uid);
+          : renderColoredIdCode(acc.id, uid, acc.deptName);
 
         return `
           <tr>
@@ -3497,15 +3651,15 @@
       if (!user || user.role !== "dept") return;
       clearAutoTimers();
       const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
-      setSavedStatusLabel(`클라우드 동기화 중... (${sub.updatedAt})`);
+      setSavedStatusLabel(`GitHub 동기화 중... (${sub.updatedAt})`);
       showToast("부서 내용 저장 및 동기화 중...");
       const ok = await syncSubmissionToB2(sub, { silent: true });
       setSavedStatusLabel(
         ok
-          ? `✓ 클라우드 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
+          ? `✓ GitHub 동기화 완료 (${sub.updatedAt}) · 식별순서 #${sub.orderSeq}`
           : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · 동기화 재시도 필요`
       );
-      showToast(ok ? "✓ 클라우드까지 저장 및 동기화되었습니다." : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
+      showToast(ok ? "✓ GitHub까지 저장 및 동기화되었습니다." : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
     });
 
     document.getElementById("saveMasterOrderBtn").addEventListener("click", async () => {
