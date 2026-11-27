@@ -183,138 +183,22 @@ input[type=file]::file-selector-button{padding:8px 16px;border-radius:9px;border
 input[type=file]::file-selector-button:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 .empty{padding:28px;text-align:center;color:var(--muted);font-size:14px;background:linear-gradient(180deg,#f8fafc,#f1f5f9);border:1.5px dashed var(--border-strong);border-radius:14px}
 
-/* === 순서 카드 파일 업로드 영역 재설계 === */
-.cue{padding:20px 22px}
-.cue-head{padding-bottom:12px}
-.cue-head b::before{content:attr(data-num)}
-.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
-@media(max-width:820px){.upload-grid{grid-template-columns:1fr}}
-.upload-box{
-  border:1.5px dashed #cbd5e1;background:#f8fafc;border-radius:12px;
-  padding:12px 14px;display:flex;flex-direction:column;gap:8px;
+#masterBody .media-stack, #b2Body .media-stack, .table-wrap .media-stack{
+  display:flex !important;
+  flex-direction:row !important;
+  flex-wrap:wrap !important;
+  gap:6px !important;
+  align-items:center !important;
+  max-width:520px !important;
 }
-.upload-box:hover{border-color:#93c5fd;background:#f0f7ff}
-.upload-box .upload-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.upload-box .upload-title{font-weight:800;font-size:13px;color:#334155;display:flex;align-items:center;gap:6px}
-.upload-box .upload-title small{font-weight:600;color:#94a3b8;font-size:11px}
-.upload-btn{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:6px 12px;border-radius:8px;background:#fff;border:1.5px solid #cbd5e1;
-  font-size:12.5px;font-weight:750;cursor:pointer;transition:.15s;flex-shrink:0;
+#masterBody .media-item{
+  display:inline-flex !important;
+  flex-direction:row !important;
+  width:auto !important;
+  max-width:200px !important;
+  vertical-align:middle !important;
+  margin:0 !important;
 }
-.upload-btn:hover{background:#0f172a;color:#fff;border-color:#0f172a}
-.upload-btn input{display:none}
-.upload-hint{font-size:11.5px;color:#94a3b8;line-height:1.4}
-.file-list{margin:2px 0 0}
-.file-list li{
-  padding:6px 9px;gap:6px;font-size:12.5px;border-radius:8px;
-  display:flex;align-items:center;flex-wrap:nowrap;
-}
-.file-list li .fname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
-.file-list li .pill{font-size:9px;padding:2px 6px}
-.file-list li .btn{flex-shrink:0}
-/* 자막 직접입력 textarea 테두리 정상화 */
-.f-text{border-color:#cbd5e1!important;background:#fff}
-.f-text:focus{border-color:#3b82f6!important}
-/* 도움 요청 박스 정리 */
-.help{display:flex;flex-direction:column;gap:6px}
-.help .check{margin:0}
-.help .f-helpnote{margin-top:0!important}
-/* 순서 카드 상단 버튼 작게 + 정렬 */
-.cue-head > div{display:flex;gap:6px;align-items:center}
-.cue-head .btn-xs{padding:6px 10px;height:30px;min-width:30px;display:inline-flex;align-items:center;justify-content:center}
-/* input file 기본 스타일 초기화 - 네이티브 박스 제거 */
-input[type=file]{border:none!important;background:transparent!important;padding:0!important;box-shadow:none!important}
-input[type=file]::file-selector-button{display:none}
-
-
-/* === 순서 카드 블루 음영 제거 & 통일화 === */
-.cue{
-  background:#fff !important;
-  border:1.5px solid #e2e8f0 !important;
-  border-left:4px solid #0f172a !important;
-  box-shadow:0 2px 12px rgba(0,0,0,.04) !important;
-}
-.cue:hover{box-shadow:0 6px 20px rgba(0,0,0,.07) !important;transform:none !important}
-.f-text{border-color:#cbd5e1 !important;background:#fff !important}
-.f-text:focus{border-color:#0f172a !important;box-shadow:0 0 0 4px rgba(15,23,42,.1) !important}
-.upload-box{border:1.5px solid #e2e8f0 !important;background:#f8fafc !important;border-style:solid !important}
-.upload-box:hover{border-color:#94a3b8 !important;background:#f1f5f9 !important}
-.cue-play-row{
-  display:flex;gap:12px;align-items:center;flex-wrap:wrap;
-  padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;
-  margin-top:12px;
-}
-.cue-play-row label{margin:0}
-.cue-files-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-@media(max-width:860px){.cue-files-grid{grid-template-columns:1fr}}
-.cue-file-col{display:flex;flex-direction:column;gap:10px}
-
-
-.cue-req{display:inline-flex;gap:4px;flex-wrap:wrap;margin-top:4px}
-.cue-req .pill{font-size:9.5px;padding:2px 7px}
-
-
-/* === 음영 완전 제거 - 플랫 디자인 === */
-:root{--shadow:none;--shadow-lg:none}
-.card{box-shadow:none !important;border:1px solid #e2e8f0 !important}
-.card:hover{box-shadow:none !important;transform:none !important}
-.banner{box-shadow:none !important}
-.topbar{box-shadow:none !important}
-.cue{box-shadow:none !important;background:#fff !important;border:1px solid #e2e8f0 !important;border-left:4px solid #0f172a !important}
-.cue:hover{box-shadow:none !important;transform:none !important}
-.upload-box{box-shadow:none !important;background:#fff !important;border:1px solid #e2e8f0 !important}
-.upload-box:hover{box-shadow:none !important;background:#fff !important;border-color:#cbd5e1 !important}
-.file-list li{box-shadow:none !important}
-.file-list li:hover{box-shadow:none !important;transform:none !important;background:#f8fafc !important}
-.table-wrap{box-shadow:none !important}
-.cue-play-row{background:#fff !important;border:1px solid #e2e8f0 !important;box-shadow:none !important}
-.dept-bar{background:#fff !important;border:1px solid #e2e8f0 !important;box-shadow:none !important}
-.dept-chips{background:#fff !important;border:1px solid #e2e8f0 !important}
-.toast{box-shadow:none !important}
-.progress{background:#fff !important;border:1px solid #e2e8f0 !important}
-.danger{box-shadow:none !important}
-.empty{background:#fff !important;border:1px dashed #cbd5e1 !important;box-shadow:none !important}
-/* 버튼 호버 그림자 제거 */
-.btn:hover{box-shadow:none !important;transform:none !important}
-.dept-chip:hover{box-shadow:none !important;transform:none !important}
-.chip:hover{box-shadow:none !important;transform:none !important}
-.media-btn:hover{box-shadow:none !important;transform:none !important}
-.yt:hover{transform:none !important}
-
-/* 어드민 테이블 정렬 개선 */
-.table-wrap table{border-collapse:separate;border-spacing:0}
-.table-wrap th{background:#f8fafc !important;box-shadow:none !important;border-bottom:1.5px solid #e2e8f0}
-.table-wrap td{vertical-align:top !important;padding:12px 14px !important}
-.media-stack{gap:6px !important;max-width:320px;align-items:flex-start !important}
-.media-item{border:none !important;background:#f1f5f9 !important;border-radius:8px !important;padding:6px 10px !important;box-shadow:none !important}
-.media-item.youtube{background:#fef2f2 !important;border:1px solid #fecaca !important}
-.media-item.doc{background:#eff6ff !important;border:1px solid #bfdbfe !important}
-.media-item .fname{font-size:12.5px !important;font-weight:500 !important}
-.media-more{background:#fff !important;border:1px solid #e2e8f0 !important;box-shadow:none !important}
-
-/* 순서조정 하이픈 제거 */
-.order-hyphen-hidden{visibility:hidden !important}
-
-
-.cue-files-grid{align-items:start}
-.upload-box{min-height:120px}
-.cue-file-col .upload-box{min-height:100px}
-
-
-/* === 상단 관리자 버튼 띄우기 === */
-#topbarActions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-#topbarActions .btn, #topbarActions .user-badge{margin-left:2px}
-#topbarActions .btn{padding:8px 14px;border-radius:999px;font-size:13px}
-#topbarActions .btn-ghost{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22)}
-#topbarActions .btn-ghost:hover{background:rgba(255,255,255,.22)}
-.topbar{padding:14px 28px;gap:16px}
-
-
-/* === 음원/영상/자막 일자로 가로 배치 === */
-.media-stack{flex-direction:row !important;flex-wrap:wrap !important;gap:6px !important;align-items:center !important;max-width:420px !important}
-.media-item{flex-shrink:0 !important;max-width:180px !important;padding:5px 9px !important}
-.media-item .fname{max-width:100px !important}
 
 </style>
 </head>
@@ -424,12 +308,7 @@ function setSub(acc,sub){state.subs[acc.id]=normSub(sub,acc)}
 function renderAll(){const u=currentUser();if(!u){$("#loginView").classList.remove("hidden");$("#appView").classList.add("hidden");$("#topbarActions").innerHTML=`<span class="user-badge">로그아웃 상태</span>`;return}$("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");$("#topbarActions").innerHTML=`<span class="user-badge">${esc(u.role==="admin"?`관리자 (${u.dept})`:`${u.dept} (${u.id})`)}</span><button class="btn btn-ghost btn-sm" id="syncBtn">B2 동기화</button><button class="btn btn-ghost btn-sm" id="logoutBtn">로그아웃</button>`;$("#syncBtn").onclick=async()=>{await syncFromB2({});if(u.role==="admin")await refreshB2Files();toast("B2 동기화 완료")};$("#logoutBtn").onclick=()=>{state.sessionId=null;adminEditId=null;dirty=false;saveLocal();renderAll()};$("#bannerName").textContent=state.event?.name||"행사명이 아직 설정되지 않았습니다";$("#bannerMeta").innerHTML=[state.event.date?`<span>일시/장소: ${esc(state.event.date)}</span>`:"",state.event.notice?`<span>안내: ${esc(state.event.notice)}</span>`:"",`<span>저장소: B2 (${BUCKET})</span>`].join("");if(u.role==="admin"){$("#navTabs").innerHTML=`<button class="tab ${adminTab==="overview"?"active":""}" data-tab="overview">전체 통합 큐시트</button><button class="tab ${adminTab==="dept"?"active":""}" data-tab="dept">부서 큐시트 입력/수정</button><button class="tab ${adminTab==="manage"?"active":""}" data-tab="manage">행사 · 계정 · 초기화</button>`;$("#navTabs").querySelectorAll("[data-tab]").forEach(b=>b.onclick=async()=>{adminTab=b.dataset.tab;renderAll();if(adminTab==="overview")await refreshB2Files()});$("#overviewTab").classList.toggle("hidden",adminTab!=="overview");$("#deptTab").classList.toggle("hidden",adminTab!=="dept");$("#manageTab").classList.toggle("hidden",adminTab!=="manage");if(adminTab==="overview")renderOverview();else if(adminTab==="dept")renderDept(true);else renderManage()}else{$("#navTabs").innerHTML=`<button class="tab active">부서 큐시트 및 자료 제출</button>`;$("#deptTab").classList.remove("hidden");$("#overviewTab").classList.add("hidden");$("#manageTab").classList.add("hidden");renderDept(false)}}
 function renderDept(isAdmin){const acc=editingAcc();const card=$("#adminDeptCard");if(!acc){if(card)card.classList.add("hidden");$("#deptBadge").textContent="대상 부서 없음";return}if(isAdmin&&card){card.classList.remove("hidden");const list=deptList();$("#adminDeptSelect").innerHTML=list.map((a,i)=>{const s=getSub(a);return `<option value="${esc(a.id)}" ${a.id===acc.id?"selected":""}>${s.order||a.order||i+1}순서 · ${esc(a.dept)} (${esc(a.id)}) — 순서 ${s.cues.length}개</option>`}).join("");$("#adminDeptChips").innerHTML=list.map((a,i)=>{const s=getSub(a);return `<button class="dept-chip ${a.id===acc.id?"active":""}" data-pick="${esc(a.id)}">${s.order||a.order||i+1}.${esc(a.dept)} (${s.cues.length})</button>`}).join("");$("#adminDeptChips").querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{adminEditId=b.dataset.pick;dirty=false;renderDept(true)})}else if(card)card.classList.add("hidden");$("#deptBadge").textContent=`${acc.dept} (${acc.id})`;const sub=getSub(acc);$("#deptContact").value=sub.contact||"";$("#deptMicCount").value=sub.mic||0;$("#chkStand").checked=!!sub.reqStand;$("#standWrap").classList.toggle("hidden",!sub.reqStand);$("#deptStandCount").value=sub.standCount||1;$("#chkCeiling").checked=!!sub.useCeiling;$("#deptNote").value=sub.note||"";const sel=new Set(sub.instruments||[]);$("#instBox").innerHTML=INSTRUMENTS.map(inst=>`<button class="chip ${inst==="악기 사용안함"?"none":""} ${sel.has(inst)?"active":""}" data-inst="${esc(inst)}">${esc(inst)}</button>`).join("");$("#instBox").querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{const v=ch.dataset.inst;if(v==="악기 사용안함"){const on=!ch.classList.contains("active");$("#instBox").querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));if(on)ch.classList.add("active")}else{$("#instBox").querySelector('.chip[data-inst="악기 사용안함"]')?.classList.remove("active");ch.classList.toggle("active")}markDirty(acc)});$("#btnBgm").classList.toggle("active",!!sub.reqBgm);$("#btnVideo").classList.toggle("active",!!sub.reqVideo);$("#btnBgm").onclick=()=>{$("#btnBgm").classList.toggle("active");markDirty(acc)};$("#btnVideo").onclick=()=>{$("#btnVideo").classList.toggle("active");markDirty(acc)};renderCustom(sub,acc);renderCues(sub,acc)}
 function renderCustom(sub,acc){const w=$("#customFileList");const files=sub.customFiles||[];if(!files.length){w.innerHTML=`<div class="helper">등록된 자체 부서 큐시트 파일이 없습니다.</div>`;return}w.innerHTML=`<ul class="file-list">${files.map((f,i)=>`<li>${esc(f.name)} (${fmt(f.size)}) ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-c="${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-c="${i}">삭제</button></li>`).join("")}</ul>`;w.querySelectorAll("[data-dl-c]").forEach(b=>b.onclick=async()=>{const f=files[Number(b.dataset.dlC)];if(f)await downloadFile(f)});w.querySelectorAll("[data-del-c]").forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.delC);const cur=collectDept(acc);const f=cur.customFiles[i];cur.customFiles.splice(i,1);if(f?.b2Key)await b2.deleteFile(f.b2Key).catch(()=>null);if(f?.id)await idbDel(f.id);setSub(acc,cur);saveLocal();renderCustom(cur,acc);toast("자체 큐시트 파일이 삭제되었습니다.")})}
-function renderCues(sub,acc){const c=$("#cueList");const cues=sub.cues||[];if(!cues.length){c.innerHTML=`<div class="helper" style="padding:10px 0">등록된 순서가 없습니다. <b>+ 순서 추가</b>를 눌러 추가하세요.</div>`;return}c.innerHTML=cues.map((cue,idx)=>{const n=normCue(cue,idx);const yt=ytNorm(n.youtube);return `<div class="cue" data-idx="${idx}"><div class="cue-head"><b data-num="${idx+1}">순서 ${idx+1}</b><div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" data-up="${idx}" ${idx===0?"disabled":""}>▲</button><button class="btn btn-outline btn-xs" data-down="${idx}" ${idx===cues.length-1?"disabled":""}>▼</button><button class="btn btn-danger btn-xs" data-del="${idx}">삭제</button></div></div><div class="grid3"><div><label>순서명 / 주제<input type="text" class="f-title" value="${esc(n.title)}" placeholder="예: 찬양, 특송, 율동"></label></div><div><label>예상 소요 시간<input type="text" class="f-dur" value="${esc(n.duration)}" placeholder="예: 3분"></label></div><div><label>유튜브 링크 (선택)<input type="url" class="f-yt" value="${esc(n.youtube)}" placeholder="https://youtu.be/..."></label>${yt?`<div style="margin-top:4px"><a class="yt" href="${esc(yt)}" target="_blank" rel="noopener">▶ 유튜브 링크 열기</a></div>`:(n.youtube?`<div class="helper" style="color:var(--danger)">올바른 유튜브 URL을 확인해 주세요.</div>`:"")}</div></div><div class="cue-play-row">
-<label class="check"><input type="checkbox" class="f-reqBgm" ${n.reqBgm?"checked":""}> 🎵 BGM 재생 요청</label>
-<input type="text" class="f-bgmNote" value="${esc(n.bgmNote||"")}" placeholder="BGM 상세 (예: 01:20부터 페이드인)" style="flex:1;min-width:160px;padding:6px 10px;font-size:13px">
-<label class="check"><input type="checkbox" class="f-reqVideo" ${n.reqVideo?"checked":""}> 🎬 영상 재생 요청</label>
-<input type="text" class="f-videoNote" value="${esc(n.videoNote||"")}" placeholder="영상 상세 (예: 풀스크린)" style="flex:1;min-width:160px;padding:6px 10px;font-size:13px">
-</div><div class="upload-grid"><div class="upload-box"><div class="upload-top"><span class="upload-title">🎵 음원 / 영상 파일 <small>최대 500MB</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-media" accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.mov,.avi,.mkv,.webm" multiple></label></div><div class="upload-hint">MP3 · WAV · MP4 · MOV 등 음원/영상 파일</div>${n.media.length?`<ul class="file-list">${n.media.map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span style="color:#94a3b8;font-size:11px;flex-shrink:0">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-m="${idx}:${i}">↓</button> <button class="btn btn-danger btn-xs" data-del-m="${idx}:${i}">✕</button></li>`).join("")}</ul>`:`<div class="helper" style="margin:0">등록된 파일이 없습니다.</div>`}</div><div style="display:flex;flex-direction:column;gap:10px"><div class="upload-box"><div class="upload-top"><span class="upload-title">📄 자막 파일 <small>.txt · B2 저장</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-txt" accept=".txt,text/plain" multiple></label></div><div class="upload-hint">.txt 자막 파일만</div>${txtFiles(n).length?`<ul class="file-list">${txtFiles(n).map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span style="color:#94a3b8;font-size:11px;flex-shrink:0">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-t="${idx}:${i}">↓</button> <button class="btn btn-danger btn-xs" data-del-t="${idx}:${i}">✕</button></li>`).join("")}</ul>`:`<div class="helper" style="margin:0">등록된 .txt 자막이 없습니다.</div>`}</div><div class="upload-box"><div class="upload-top"><span class="upload-title">📑 자막 워드/문서 <small>별도 첨부</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-doc" accept=".doc,.docx,.hwp,.hwpx,.pdf,.ppt,.pptx" multiple></label></div><div class="upload-hint">DOC · HWP · PDF · PPT 등</div>${docFiles(n).length?`<ul class="file-list">${docFiles(n).map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span style="color:#94a3b8;font-size:11px;flex-shrink:0">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-d="${idx}:${i}">↓</button> <button class="btn btn-danger btn-xs" data-del-d="${idx}:${i}">✕</button></li>`).join("")}</ul>`:``}</div></div></div><div style="margin-top:8px"><label>자막 직접 입력 / 붙여넣기 (저장 시 .txt로 B2 자동 업로드)<textarea class="f-text" style="min-height:76px;border-color:#93c5fd" placeholder="자막 가사나 대사를 여기에 직접 입력하거나 붙여넣으세요.">${esc(n.subtitleText||"")}</textarea></label></div><div class="help ${n.needHelp?"req":""}"><label class="check"><input type="checkbox" class="f-help" ${n.needHelp?"checked":""}>자막 제작/정리 도움 요청</label><input type="text" class="f-helpnote" style="margin-top:6px" value="${esc(n.helpNote||"")}" placeholder="예: 찬양 후렴 반복 구간 자막 정리 필요"></div><div style="margin-top:8px"><label>순서별 음향/영상/진행 메모<input type="text" class="f-note" value="${esc(n.note||"")}" placeholder="예: 01:20 페이드아웃, 조명 어둡게"></label></div></div>`}).join("");
+function renderCues(sub,acc){const c=$("#cueList");const cues=sub.cues||[];if(!cues.length){c.innerHTML=`<div class="helper" style="padding:10px 0">등록된 순서가 없습니다. <b>+ 순서 추가</b>를 눌러 추가하세요.</div>`;return}c.innerHTML=cues.map((cue,idx)=>{const n=normCue(cue,idx);const yt=ytNorm(n.youtube);return `<div class="cue" data-idx="${idx}"><div class="cue-head"><b data-num="${idx+1}">순서 ${idx+1}</b><div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" data-up="${idx}" ${idx===0?"disabled":""}>▲</button><button class="btn btn-outline btn-xs" data-down="${idx}" ${idx===cues.length-1?"disabled":""}>▼</button><button class="btn btn-danger btn-xs" data-del="${idx}">삭제</button></div></div><div class="grid3"><div><label>순서명 / 주제<input type="text" class="f-title" value="${esc(n.title)}" placeholder="예: 찬양, 특송, 율동"></label></div><div><label>예상 소요 시간<input type="text" class="f-dur" value="${esc(n.duration)}" placeholder="예: 3분"></label></div><div><label>유튜브 링크 (선택)<input type="url" class="f-yt" value="${esc(n.youtube)}" placeholder="https://youtu.be/..."></label>${yt?`<div style="margin-top:4px"><a class="yt" href="${esc(yt)}" target="_blank" rel="noopener">▶ 유튜브 링크 열기</a></div>`:(n.youtube?`<div class="helper" style="color:var(--danger)">올바른 유튜브 URL을 확인해 주세요.</div>`:"")}</div></div><div class="grid2" style="margin-top:8px"><div><label>음원 / 영상 파일 (최대 500MB)<input type="file" class="f-media" accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.mov,.avi,.mkv,.webm" multiple></label>${n.media.length?`<ul class="file-list">${n.media.map((f,i)=>`<li>${esc(f.name)} (${fmt(f.size)}) ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-m="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-m="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:`<div class="helper">등록된 음원/영상 파일이 없습니다.</div>`}</div><div><label>자막 파일 (.txt · B2 저장)<input type="file" class="f-txt" accept=".txt,text/plain" multiple></label>${txtFiles(n).length?`<ul class="file-list">${txtFiles(n).map((f,i)=>`<li>${esc(f.name)} (${fmt(f.size)}) ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-t="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-t="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:`<div class="helper">등록된 .txt 자막 파일이 없습니다.</div>`}<div style="margin-top:8px"><label style="font-size:12px">자막 워드/문서 별도 첨부<input type="file" class="f-doc" accept=".doc,.docx,.hwp,.hwpx,.pdf,.ppt,.pptx" multiple></label>${docFiles(n).length?`<ul class="file-list">${docFiles(n).map((f,i)=>`<li>${esc(f.name)} (${fmt(f.size)}) ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-d="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-d="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:""}</div></div></div><div style="margin-top:8px"><label>자막 직접 입력 / 붙여넣기 (저장 시 .txt로 B2 자동 업로드)<textarea class="f-text" style="min-height:76px;border-color:#93c5fd" placeholder="자막 가사나 대사를 여기에 직접 입력하거나 붙여넣으세요.">${esc(n.subtitleText||"")}</textarea></label></div><div class="help ${n.needHelp?"req":""}"><label class="check"><input type="checkbox" class="f-help" ${n.needHelp?"checked":""}>자막 제작/정리 도움 요청</label><input type="text" class="f-helpnote" style="margin-top:6px" value="${esc(n.helpNote||"")}" placeholder="예: 찬양 후렴 반복 구간 자막 정리 필요"></div><div style="margin-top:8px"><label>순서별 음향/영상/진행 메모<input type="text" class="f-note" value="${esc(n.note||"")}" placeholder="예: 01:20 페이드아웃, 조명 어둡게"></label></div></div>`}).join("");
   c.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{const i=Number(b.dataset.up);const cur=collectDept(acc);if(i>0){const [it]=cur.cues.splice(i,1);cur.cues.splice(i-1,0,it);setSub(acc,cur);saveLocal();renderCues(cur,acc)}});
   c.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>{const i=Number(b.dataset.down);const cur=collectDept(acc);if(i<cur.cues.length-1){const [it]=cur.cues.splice(i,1);cur.cues.splice(i+1,0,it);setSub(acc,cur);saveLocal();renderCues(cur,acc)}});
   c.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.del);const cur=collectDept(acc);const rem=cur.cues[i];cur.cues.splice(i,1);if(rem){for(const f of [...(rem.media||[]),...txtFiles(rem),...docFiles(rem)]){if(f?.b2Key)await b2.deleteFile(f.b2Key).catch(()=>null);if(f?.id)await idbDel(f.id)}}setSub(acc,cur);saveLocal();renderCues(cur,acc);toast(`순서 ${i+1}이 삭제되었습니다.`)});
@@ -444,14 +323,12 @@ function renderCues(sub,acc){const c=$("#cueList");const cues=sub.cues||[];if(!c
   c.querySelectorAll("[data-del-m]").forEach(b=>b.onclick=async()=>{const [ci,fi]=b.dataset.delM.split(":").map(Number);const cur=collectDept(acc);const m=cur.cues[ci]?.media?.[fi];if(!m)return;cur.cues[ci].media.splice(fi,1);if(m.b2Key)await b2.deleteFile(m.b2Key).catch(()=>null);if(m.id)await idbDel(m.id);setSub(acc,cur);saveLocal();renderCues(cur,acc)});
   c.querySelectorAll("[data-del-t]").forEach(b=>b.onclick=async()=>{const [ci,fi]=b.dataset.delT.split(":").map(Number);const cur=collectDept(acc);const m=txtFiles(cur.cues[ci])[fi];if(!m)return;const idx=cur.cues[ci].subtitleFiles.findIndex(x=>x.id===m.id&&x.name===m.name);if(idx>=0)cur.cues[ci].subtitleFiles.splice(idx,1);if(m.b2Key)await b2.deleteFile(m.b2Key).catch(()=>null);if(m.id)await idbDel(m.id);setSub(acc,cur);saveLocal();renderCues(cur,acc)});
   c.querySelectorAll("[data-del-d]").forEach(b=>b.onclick=async()=>{const [ci,fi]=b.dataset.delD.split(":").map(Number);const cur=collectDept(acc);const m=docFiles(cur.cues[ci])[fi];if(!m)return;const idx=cur.cues[ci].docSubtitleFiles.findIndex(x=>x.id===m.id&&x.name===m.name);if(idx>=0)cur.cues[ci].docSubtitleFiles.splice(idx,1);else{const li=cur.cues[ci].subtitleFiles.findIndex(x=>x.id===m.id);if(li>=0)cur.cues[ci].subtitleFiles.splice(li,1)}if(m.b2Key)await b2.deleteFile(m.b2Key).catch(()=>null);if(m.id)await idbDel(m.id);setSub(acc,cur);saveLocal();renderCues(cur,acc)});
-  c.querySelectorAll(".f-reqBgm, .f-reqVideo").forEach(ch=>ch.onchange=()=>markDirty(acc));
-  c.querySelectorAll(".f-bgmNote, .f-videoNote").forEach(inp=>inp.oninput=()=>markDirty(acc));
   c.querySelectorAll(".f-help").forEach(ch=>ch.onchange=()=>{ch.closest(".help")?.classList.toggle("req",ch.checked);markDirty(acc)});
   c.querySelectorAll("input:not([type=file]), textarea").forEach(el=>el.addEventListener("input",()=>markDirty(acc)));
 }
 function getField(cue,field){return cue[field]}
 async function uploadToCue(acc,cueIdx,files,kind){const cur=collectDept(acc);const cue=cur.cues[cueIdx];if(!cue)return;for(const file of files){if(file.size>MAX_FILE){toast(`'${file.name}' 500MB 초과`);continue}if(kind==="subtitle_txt"&&!isTxt(file)){toast(`'${file.name}'은 .txt가 아닙니다`);continue}const fid=`f_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;await idbPut(file,fid);let info=null;try{setDeptProg(`${acc.dept} · 순서 ${cueIdx+1} · '${file.name}' B2 업로드 중...`);info=await b2.upload(file,acc.dept,kind,fid,msg=>setDeptProg(msg))}catch(e){toast(`'${file.name}' B2 업로드 실패: ${e.message}`)}finally{setDeptProg("")}const meta={id:fid,name:file.name,size:file.size,type:file.type||(kind==="subtitle_txt"?"text/plain":"application/octet-stream"),b2Key:info?.b2Key||"",b2Bucket:info?.b2Bucket||"",uploadedAt:new Date().toISOString()};if(kind==="media")cue.media.push(meta);else if(kind==="subtitle_txt")cue.subtitleFiles.push(meta);else cue.docSubtitleFiles.push(meta)}setSub(acc,cur);saveLocal();renderCues(cur,acc);toast("파일이 반영되었습니다. '저장 및 B2 동기화'를 눌러주세요.")}
-function collectDept(acc){const base=getSub(acc);const inst=[];document.querySelectorAll("#instBox .chip.active").forEach(ch=>inst.push(ch.dataset.inst));const cueEls=Array.from(document.querySelectorAll("#cueList .cue"));const cues=cueEls.map((el,idx)=>{const old=base.cues[idx]?normCue(base.cues[idx],idx):normCue({id:el.dataset.idx},idx);return{...old,title:el.querySelector(".f-title")?.value.trim()||"",duration:el.querySelector(".f-dur")?.value.trim()||"",youtube:el.querySelector(".f-yt")?.value.trim()||"",subtitleText:el.querySelector(".f-text")?.value||"",needHelp:!!el.querySelector(".f-help")?.checked,helpNote:el.querySelector(".f-helpnote")?.value.trim()||"",note:el.querySelector(".f-note")?.value.trim()||"",reqBgm:!!el.querySelector(".f-reqBgm")?.checked,reqVideo:!!el.querySelector(".f-reqVideo")?.checked,bgmNote:el.querySelector(".f-bgmNote")?.value.trim()||"",videoNote:el.querySelector(".f-videoNote")?.value.trim()||""}});const reqStand=!!$("#chkStand")?.checked;return{...base,uid:acc.id,id:acc.id,dept:acc.dept,order:base.order||acc.order||99,contact:$("#deptContact")?.value.trim()||"",mic:Math.max(0,Number($("#deptMicCount")?.value||0)),reqStand,standCount:reqStand?Math.max(1,Number($("#deptStandCount")?.value||1)):0,useCeiling:!!$("#chkCeiling")?.checked,instruments:inst,reqBgm:!!$("#btnBgm")?.classList.contains("active"),reqVideo:!!$("#btnVideo")?.classList.contains("active"),note:$("#deptNote")?.value.trim()||"",cues,updatedAt:base.updatedAt||null}}
+function collectDept(acc){const base=getSub(acc);const inst=[];document.querySelectorAll("#instBox .chip.active").forEach(ch=>inst.push(ch.dataset.inst));const cueEls=Array.from(document.querySelectorAll("#cueList .cue"));const cues=cueEls.map((el,idx)=>{const old=base.cues[idx]?normCue(base.cues[idx],idx):normCue({id:el.dataset.idx},idx);return{...old,title:el.querySelector(".f-title")?.value.trim()||"",duration:el.querySelector(".f-dur")?.value.trim()||"",youtube:el.querySelector(".f-yt")?.value.trim()||"",subtitleText:el.querySelector(".f-text")?.value||"",needHelp:!!el.querySelector(".f-help")?.checked,helpNote:el.querySelector(".f-helpnote")?.value.trim()||"",note:el.querySelector(".f-note")?.value.trim()||""}});const reqStand=!!$("#chkStand")?.checked;return{...base,uid:acc.id,id:acc.id,dept:acc.dept,order:base.order||acc.order||99,contact:$("#deptContact")?.value.trim()||"",mic:Math.max(0,Number($("#deptMicCount")?.value||0)),reqStand,standCount:reqStand?Math.max(1,Number($("#deptStandCount")?.value||1)):0,useCeiling:!!$("#chkCeiling")?.checked,instruments:inst,reqBgm:!!$("#btnBgm")?.classList.contains("active"),reqVideo:!!$("#btnVideo")?.classList.contains("active"),note:$("#deptNote")?.value.trim()||"",cues,updatedAt:base.updatedAt||null}}
 function markDirty(acc){if(!acc)return;dirty=true;const draft=collectDept(acc);draft.updatedAt=baseUpdated(draft);setSub(acc,draft);saveLocal()}
 function baseUpdated(d){return d.updatedAt||null}
 function setDeptProg(t){const el=$("#deptProgress");if(!t){el.textContent="";el.classList.add("hidden")}else{el.textContent=t;el.classList.remove("hidden")}}
@@ -460,27 +337,10 @@ async function downloadFile(meta){if(!meta)return;try{toast(`'${meta.name}' 다�
 async function saveDept(acc,{keepalive=false}={}){if(!acc)return false;const col=collectDept(acc);col.updatedAt=new Date().toISOString();for(let i=0;i<col.cues.length;i++){const cue=col.cues[i];const txt=String(cue.subtitleText||"").trim();if(txt&&!txtFiles(cue).length){const name=`${acc.dept}_순서${i+1}_${sanitize(cue.title||`순서${i+1}`)}_자막.txt`;const bytes=new TextEncoder().encode(cue.subtitleText);const file=new File([bytes],name,{type:"text/plain; charset=utf-8"});const fid=`subtxt_${Date.now().toString(36)}_${i}`;await idbPut(file,fid);try{setDeptProg(`${acc.dept} · 순서 ${i+1} 자막(.txt) B2 저장 중...`);const info=await b2.upload(file,acc.dept,"subtitle_txt",fid,null);cue.subtitleFiles=[{id:fid,name,size:bytes.byteLength,type:"text/plain; charset=utf-8",b2Key:info.b2Key,b2Bucket:info.b2Bucket,uploadedAt:new Date().toISOString(),auto:true}]}catch(e){console.warn(e)}finally{setDeptProg("")}}}setSub(acc,col);saveLocal();dirty=false;try{await b2.saveDept(acc,col);$("#b2Status").textContent=`B2 저장 완료 (${new Date().toLocaleTimeString("ko-KR")})`;toast(`${acc.dept} 큐시트가 저장되고 B2에 동기화되었습니다.`);return true}catch(e){$("#b2Status").textContent=`B2 저장 오류: ${e.message}`;toast(`로컬 저장됨 · B2 오류: ${e.message}`);return false}}
 function renderOverview(){const list=deptList();let totalCues=0,totalMics=0,totalStands=0,helpCnt=0,submitted=0;list.forEach(acc=>{const s=getSub(acc);const has=s.cues.length||s.contact||s.note||s.customFiles.length||s.instruments.length;if(has)submitted++;totalMics+=s.mic||0;if(s.reqStand)totalStands+=s.standCount||1;totalCues+=s.cues.length;s.cues.forEach(c=>{if(c.needHelp)helpCnt++})});$("#summaryBadges").innerHTML=`<span class="pill pill-blue">전체 부서 ${list.length}개</span><span class="pill pill-green">제출/입력 부서 ${submitted}개</span><span class="pill pill-blue">총 큐시트 순서 ${totalCues}개</span><span class="pill pill-muted">마이크 ${totalMics}개 · 스탠드 ${totalStands}개</span>${helpCnt?`<span class="pill pill-warn">자막 도움 요청 ${helpCnt}건</span>`:`<span class="pill pill-green">자막 도움 요청 0건</span>`}`;
   const rows=[];let seq=1;list.forEach((acc,di)=>{const s=getSub(acc);const cues=s.cues.length?s.cues:[null];cues.forEach((cue,ci)=>rows.push({seq:seq++,acc,sub:s,cue,ci,di,total:list.length,first:ci===0}))});
-  const body=$("#masterBody");if(!rows.length)body.innerHTML=`<tr><td colspan="12" class="helper">등록된 부서 및 큐시트가 없습니다.</td></tr>`;else body.innerHTML=rows.map(r=>{const th=colorOf(r.acc.id);const idPill=`<span class="pill" style="background:${th.bg};color:${th.fg};border:1px solid ${th.bd}">${r.sub.order||r.acc.order} · ${esc(r.acc.id)}</span>`;const deptName=`<strong style="color:${th.fg}">${esc(r.acc.dept)}</strong>`;const orderBtns=r.first?`<div style="display:flex;gap:3px" class="nowrap"><button class="order-btn" data-move="${esc(r.acc.id)}" data-d="-1" ${r.di===0?"disabled":""}>▲</button><button class="order-btn" data-move="${esc(r.acc.id)}" data-d="1" ${r.di>=r.total-1?"disabled":""}>▼</button></div>`:`<span></span>`;const title=r.cue?esc(r.cue.title||`순서 ${r.ci+1}`):`<span class="helper">미등록</span>`;const dur=r.cue?.duration?esc(r.cue.duration):`<span class="helper">-</span>`;const mic=`${r.sub.mic||0}개 · 스탠드 ${r.sub.reqStand?`${r.sub.standCount||1}개`:"X"} · 천장 ${r.sub.useCeiling?"O":"X"}`;const inst=(r.sub.instruments||[]).join(", ")||"악기 없음";const req=[r.sub.reqBgm?"BGM":"",r.sub.reqVideo?"영상":"",...(r.sub.customFiles?.length?[`자체큐시트(${r.sub.customFiles.length})`]:[])].filter(Boolean).join(" · ")||"-";let subHtml=`<span class="pill pill-muted">없음</span>`;if(r.cue){const hasTxt=!!String(r.cue.subtitleText||"").trim()||txtFiles(r.cue).length>0;const hasDoc=docFiles(r.cue).length>0;if(r.cue.needHelp)subHtml=`<span class="pill pill-warn" title="${esc(r.cue.helpNote||"")}">도움요청</span>`;else if(hasTxt)subHtml=`<span class="pill pill-green">자막완료</span>`;else if(hasDoc)subHtml=`<span class="pill pill-blue">문서첨부</span>`}const chips=[];if(r.cue){
-  const all=[];
-  (r.cue.media||[]).forEach(f=>all.push({name:f.name, type:'media'}));
-  txtFiles(r.cue).forEach(f=>all.push({name:f.name, type:'txt'}));
-  docFiles(r.cue).forEach(f=>all.push({name:f.name, type:'doc'}));
-  const yt=ytNorm(r.cue.youtube||"");
-  if(yt) all.push({name:'유튜브 링크', type:'yt', url:yt});
-  // Add per-cue BGM/Video requests
-  if(r.cue.reqBgm) all.push({name: r.cue.bgmNote ? `BGM: ${r.cue.bgmNote}` : 'BGM 요청', type:'req'});
-  if(r.cue.reqVideo) all.push({name: r.cue.videoNote ? `영상: ${r.cue.videoNote}` : '영상 요청', type:'req'});
-  all.forEach(f=>{
-    if(f.type==='yt') chips.push(`<div class="media-item youtube"><span class="icon">▶</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="pill pill-red" style="font-size:9px">유튜브</span></div>`);
-    else if(f.type==='txt') chips.push(`<div class="media-item doc"><span class="icon">📄</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="pill pill-green" style="font-size:9px">TXT</span></div>`);
-    else if(f.type==='doc') chips.push(`<div class="media-item doc"><span class="icon">📑</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="pill pill-blue" style="font-size:9px">문서</span></div>`);
-    else if(f.type==='req') chips.push(`<div class="media-item" style="background:#fffbeb !important;border:1px solid #fde68a !important"><span class="icon">⚡</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span></div>`);
-    else chips.push(`<div class="media-item"><span class="icon">🎵</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="pill pill-blue" style="font-size:9px">미디어</span></div>`);
-  });
-}const memo=[r.cue?.note,r.sub.note].filter(Boolean).join(" / ");const del=r.first?`<button class="btn btn-danger btn-xs nowrap" data-del-sub="${esc(r.acc.id)}">제출삭제</button>`:`<span></span>`;return `<tr><td class="nowrap"><b>${r.seq}</b></td><td>${orderBtns}</td><td class="nowrap">${idPill}</td><td class="nowrap">${deptName}</td><td>${title}</td><td class="nowrap">${dur}</td><td class="nowrap">${esc(mic)}</td><td>${noteCell(`${inst} | ${req}`,30)}</td><td class="nowrap">${subHtml}</td><td>${chips.length?chips.join(""):`<span class="helper">-</span>`}</td><td>${noteCell(memo,28)}</td><td>${del}</td></tr>`}).join("");
+  const body=$("#masterBody");if(!rows.length)body.innerHTML=`<tr><td colspan="12" class="helper">등록된 부서 및 큐시트가 없습니다.</td></tr>`;else body.innerHTML=rows.map(r=>{const th=colorOf(r.acc.id);const idPill=`<span class="pill" style="background:${th.bg};color:${th.fg};border:1px solid ${th.bd}">${r.sub.order||r.acc.order} · ${esc(r.acc.id)}</span>`;const deptName=`<strong style="color:${th.fg}">${esc(r.acc.dept)}</strong>`;const orderBtns=r.first?`<div style="display:flex;gap:3px" class="nowrap"><button class="btn btn-outline btn-xs" data-move="${esc(r.acc.id)}" data-d="-1" ${r.di===0?"disabled":""}>▲</button><button class="btn btn-outline btn-xs" data-move="${esc(r.acc.id)}" data-d="1" ${r.di>=r.total-1?"disabled":""}>▼</button></div>`:`<span class="helper">-</span>`;const title=r.cue?esc(r.cue.title||`순서 ${r.ci+1}`):`<span class="helper">미등록</span>`;const dur=r.cue?.duration?esc(r.cue.duration):`<span class="helper">-</span>`;const mic=`${r.sub.mic||0}개 · 스탠드 ${r.sub.reqStand?`${r.sub.standCount||1}개`:"X"} · 천장 ${r.sub.useCeiling?"O":"X"}`;const inst=(r.sub.instruments||[]).join(", ")||"악기 없음";const req=[r.sub.reqBgm?"BGM":"",r.sub.reqVideo?"영상":"",...(r.sub.customFiles?.length?[`자체큐시트(${r.sub.customFiles.length})`]:[])].filter(Boolean).join(" · ")||"-";let subHtml=`<span class="pill pill-muted">없음</span>`;if(r.cue){const hasTxt=!!String(r.cue.subtitleText||"").trim()||txtFiles(r.cue).length>0;const hasDoc=docFiles(r.cue).length>0;if(r.cue.needHelp)subHtml=`<span class="pill pill-warn" title="${esc(r.cue.helpNote||"")}">도움요청</span>`;else if(hasTxt)subHtml=`<span class="pill pill-green">자막완료</span>`;else if(hasDoc)subHtml=`<span class="pill pill-blue">문서첨부</span>`}const chips=[];if(r.cue){(r.cue.media||[]).forEach(f=>chips.push(`<div><span class="pill pill-blue">미디어</span> ${esc(f.name)}</div>`));txtFiles(r.cue).forEach(f=>chips.push(`<div><span class="pill pill-green">.txt</span> ${esc(f.name)}</div>`));docFiles(r.cue).forEach(f=>chips.push(`<div><span class="pill pill-muted">문서</span> ${esc(f.name)}</div>`));const yt=ytNorm(r.cue.youtube||"");if(yt)chips.push(`<div><a class="yt" href="${esc(yt)}" target="_blank" rel="noopener">▶ 유튜브</a></div>`)}const memo=[r.cue?.note,r.sub.note].filter(Boolean).join(" / ");const del=r.first?`<button class="btn btn-danger btn-xs nowrap" data-del-sub="${esc(r.acc.id)}">제출삭제</button>`:`<span class="helper">-</span>`;return `<tr><td class="nowrap"><b>${r.seq}</b></td><td>${orderBtns}</td><td class="nowrap">${idPill}</td><td class="nowrap">${deptName}</td><td>${title}</td><td class="nowrap">${dur}</td><td class="nowrap">${esc(mic)}</td><td>${noteCell(`${inst} | ${req}`,30)}</td><td class="nowrap">${subHtml}</td><td>${chips.length?chips.join(""):`<span class="helper">-</span>`}</td><td>${noteCell(memo,28)}</td><td>${del}</td></tr>`}).join("");
   body.querySelectorAll("[data-move]").forEach(b=>b.onclick=()=>moveOrder(b.dataset.move,Number(b.dataset.d)));
   body.querySelectorAll("[data-del-sub]").forEach(b=>b.onclick=async()=>{const acc=state.accounts.find(a=>a.id===b.dataset.delSub);if(!acc)return;if(!confirm(`'${acc.dept}' 제출 데이터를 삭제하시겠습니까?`))return;delete state.subs[acc.id];saveLocal();await b2.deleteSub(acc.id);renderAll();await refreshB2Files();toast(`'${acc.dept}' 제출 데이터가 삭제되었습니다.`)});
-  $("#deptSummaryBody").innerHTML=list.map((acc,i)=>{const s=getSub(acc);const help=(s.cues||[]).filter(c=>c.needHelp).length;return `<tr><td class="nowrap"><b>${s.order||acc.order||i+1}</b></td><td class="nowrap"><strong style="color:${colorOf(acc.id).fg}">${esc(acc.dept)}</strong></td><td>${noteCell(s.contact||"-",22)}</td><td class="nowrap">${s.cues.length}개</td><td class="nowrap">${s.mic||0}개</td><td class="nowrap">${s.reqStand?`${s.standCount||1}개`:"-"}</td><td class="nowrap">${s.useCeiling?"사용":""}</td><td>${noteCell((s.instruments||[]).join(", ")||"-",24)}</td><td class="nowrap">${esc([s.reqBgm?"BGM":"",s.reqVideo?"영상":""].filter(Boolean).join(", ")||"")}</td><td class="nowrap">${s.customFiles.length?`${s.customFiles.length}개`:"-"}</td><td class="nowrap">${help?`<span class="pill pill-warn">${help}건</span>`:`<span class="helper">-</span>`}</td><td>${noteCell(s.note||"-",24)}</td><td class="nowrap"><button class="btn btn-outline btn-xs" data-edit="${esc(acc.id)}">직접편집</button></td></tr>`}).join("");
+  $("#deptSummaryBody").innerHTML=list.map((acc,i)=>{const s=getSub(acc);const help=(s.cues||[]).filter(c=>c.needHelp).length;return `<tr><td class="nowrap"><b>${s.order||acc.order||i+1}</b></td><td class="nowrap"><strong style="color:${colorOf(acc.id).fg}">${esc(acc.dept)}</strong></td><td>${noteCell(s.contact||"-",22)}</td><td class="nowrap">${s.cues.length}개</td><td class="nowrap">${s.mic||0}개</td><td class="nowrap">${s.reqStand?`${s.standCount||1}개`:"-"}</td><td class="nowrap">${s.useCeiling?"사용":"-"}</td><td>${noteCell((s.instruments||[]).join(", ")||"-",24)}</td><td class="nowrap">${esc([s.reqBgm?"BGM":"",s.reqVideo?"영상":""].filter(Boolean).join(", ")||"-")}</td><td class="nowrap">${s.customFiles.length?`${s.customFiles.length}개`:"-"}</td><td class="nowrap">${help?`<span class="pill pill-warn">${help}건</span>`:`<span class="helper">-</span>`}</td><td>${noteCell(s.note||"-",24)}</td><td class="nowrap"><button class="btn btn-outline btn-xs" data-edit="${esc(acc.id)}">직접편집</button></td></tr>`}).join("");
   $("#deptSummaryBody").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{adminEditId=b.dataset.edit;dirty=false;adminTab="dept";renderAll()});
   renderB2Table();
 }
