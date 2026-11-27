@@ -438,7 +438,6 @@
     tr:hover td { background: #fafcff; }
     .nowrap-col { white-space: nowrap; }
 
-    /* 어드민 메모/전달사항 컴팩트 말줄임 */
     .admin-note-cell {
       display: inline-block;
       max-width: 175px;
@@ -770,7 +769,7 @@
           <div class="danger-zone">
             <div style="font-weight:700; color:var(--danger); margin-bottom:4px;">전체 데이터 및 B2 파일 영구 초기화</div>
             <div class="helper-text" style="margin-bottom:8px;">
-              행사명, 제출된 큐시트, 장비/재생 요청, 자체 큐시트, 자막 및 B2 업로드 파일이 모두 삭제됩니다. (계정은 유지)
+              행사명, 제출된 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청 및 B2 파일이 모두 영구 삭제됩니다. (계정은 유지)
             </div>
             <button type="button" class="btn btn-danger btn-sm" id="resetEventBtn">행사 데이터 및 B2 파일 전체 초기화</button>
           </div>
@@ -1509,22 +1508,23 @@
 
     function scheduleAutoSaveAndSync(user) {
       if (!user || user.role !== "dept") return;
+
       hasDirtyDeptChanges = true;
       setSavedStatusLabel("입력 중... 자동저장 대기");
 
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(() => {
-        const current = getCurrentUser();
-        if (!current || current.role !== "dept") return;
-        const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
+        const activeUser = getCurrentUser();
+        if (!activeUser || activeUser.role !== "dept") return;
+        const sub = collectDeptFormIntoState(activeUser, { preserveExistingSubmittedAt: true, markClean: false });
         setSavedStatusLabel(`로컬 자동저장됨 (${sub.updatedAt}) · B2 동기화 대기...`);
       }, 600);
 
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
       autoSyncTimer = setTimeout(async () => {
-        const current = getCurrentUser();
-        if (!current || current.role !== "dept") return;
-        const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
+        const activeUser = getCurrentUser();
+        if (!activeUser || activeUser.role !== "dept") return;
+        const sub = collectDeptFormIntoState(activeUser, { preserveExistingSubmittedAt: true, markClean: false });
         setSavedStatusLabel("B2 동기화 중...");
         const ok = await syncSubmissionToB2(sub, { silent: true });
         setSavedStatusLabel(
@@ -1621,7 +1621,7 @@
     }
 
     async function fetchSingleDeptSubmissionFromB2(user) {
-      if (!user || !isB2Configured()) return null;
+      if (!user || user.role !== "dept" || !isB2Configured()) return null;
       const uid = ensureAccountUid(user);
       const legacyId = Object.entries(LEGACY_ID_TO_UID).find(([, v]) => v === uid)?.[0] || "";
       const candidates = [...new Set([uid, user.id, user.deptName, legacyId].filter(Boolean))];
@@ -2394,6 +2394,7 @@
     }
 
     async function fillDeptSampleData(user) {
+      if (!user || user.role !== "dept") return;
       const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
       if (!ok) return;
       clearAutoTimers();
@@ -2416,7 +2417,7 @@
       saveState();
       const synced = await syncSubmissionToB2(sampleSub, { silent: true });
       renderDeptView(user, { skipRemoteFetch: true });
-      showToast(synced ? `${user.deptName} 예시 데이터가 B2에 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
+      showToast(synced ? "예시 데이터가 입력 및 B2에 동기화되었습니다." : "예시 데이터가 입력되었습니다.");
     }
 
     async function fillAdminSampleData() {
@@ -2791,16 +2792,17 @@
 
       if (skipRemoteFetch) return;
 
+      const requestedUid = ensureAccountUid(user);
       (async () => {
         try {
           await fetchRemoteB2Files(false);
           const remoteSub = await fetchSingleDeptSubmissionFromB2(user);
-          const activeUser = getCurrentUser();
-          if (!activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
+          const currentUser = getCurrentUser();
+          if (!currentUser || ensureAccountUid(currentUser) !== requestedUid) return;
           if (hasDirtyDeptChanges || activeUploadCount > 0) return;
 
-          const latest = ensureDeptSubmission(activeUser);
-          await reconcileDeptFilesWithB2List(latest, activeUser);
+          const latest = ensureDeptSubmission(currentUser);
+          await reconcileDeptFilesWithB2List(latest, currentUser);
           if (remoteSub) {
             applyDeptFormValues(latest);
             if (latest.updatedAt) {
@@ -4051,9 +4053,7 @@
     });
 
     document.getElementById("fillDeptSampleBtn").addEventListener("click", async () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      await fillDeptSampleData(user);
+      await fillDeptSampleData(getCurrentUser());
     });
 
     document.getElementById("fillAdminSampleBtn").addEventListener("click", async () => {
@@ -4078,7 +4078,7 @@
       clearAutoTimers();
       const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
       setSavedStatusLabel(`B2 동기화 중... (${sub.updatedAt})`);
-      showToast("부서 내용 저장 및 B2 동기화 중...");
+      showToast("내용 저장 및 B2 동기화 중...");
       const ok = await syncSubmissionToB2(sub, { silent: true });
       setSavedStatusLabel(
         ok
