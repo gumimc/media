@@ -873,8 +873,8 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v15";
-    const IDB_NAME = "gm_media_guide_files_b2_v15";
+    const STORAGE_KEY = "gm_media_guide_b2_v16";
+    const IDB_NAME = "gm_media_guide_files_b2_v16";
     const IDB_STORE = "files";
 
     const ACCOUNT_COLOR_PALETTE = [
@@ -932,7 +932,6 @@
       return getAccountColorTheme(candidates[0] || "default");
     }
 
-    // 내부 orderSeq는 유지하되, 관리자 화면에서는 숫자(#번호)를 숨기고 식별 ID/부서명만 표시
     function renderColoredIdPill(orderSeq, idLabel, colorKey, deptName = "") {
       const t = resolveThemeForEntity(colorKey, idLabel, deptName);
       const labelText = String(idLabel || deptName || "").trim();
@@ -1116,7 +1115,7 @@
     function loadState() {
       const fallback = deepClone(DEFAULT_STATE);
       try {
-        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("gm_media_guide_b2_v14");
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("gm_media_guide_b2_v15") || localStorage.getItem("gm_media_guide_b2_v14");
         if (!raw) return fallback;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return fallback;
@@ -1999,6 +1998,26 @@
       } catch {
         return null;
       }
+    }
+
+    async function resolveFileBytesForZip(item) {
+      if (!item) return null;
+      if (item.key) {
+        const rec = await getFileRecord(item.key);
+        if (rec && rec.dataUrl) {
+          return dataUrlToUint8Array(rec.dataUrl);
+        }
+      }
+      const dlUrl = item.b2Key
+        ? buildWorkerDownloadUrl(item.b2Key, item.name)
+        : (item.publicUrl || "");
+      if (dlUrl) {
+        const res = await fetch(dlUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const buf = await res.arrayBuffer();
+        return new Uint8Array(buf);
+      }
+      return null;
     }
 
     async function deleteFileRecords(keys) {
@@ -3822,95 +3841,119 @@
         return;
       }
       if (!hasCueFiles && !hasCustomFiles) {
-        showToast("로컬에 보관된 파일(80MB 이하)이 없습니다. B2 파일 목록에서 개별 다운로드하세요.");
+        showToast("포함할 음원·영상·자막·큐시트 파일이 없습니다.");
         return;
       }
 
-      const zip = new JSZip();
-      const eventFolder = zip.folder(sanitizeName(state.eventInfo.name || "행사_자료"));
-      let addedCount = 0;
-      let missingLocalCount = 0;
+      const zipBtn = document.getElementById("exportZipBtn");
+      if (zipBtn) zipBtn.disabled = true;
+      showToast("ZIP 파일 생성 중... (B2 파일 포함)");
 
-      for (const s of subs) {
-        const customFiles = (s.customCueFiles || []).filter((cf) => !cf?.b2Key || !recentlyDeletedB2Keys.has(cf.b2Key));
-        if (customFiles.length > 0) {
-          const deptFolder = eventFolder.folder(sanitizeName(s.deptName));
-          const customFolder = deptFolder.folder("00_부서자체큐시트");
-          for (const cf of customFiles) {
-            const rec = await getFileRecord(cf.key);
-            if (rec && rec.dataUrl) {
-              customFolder.file(cf.name, dataUrlToUint8Array(rec.dataUrl));
-              addedCount += 1;
-            } else {
-              missingLocalCount += 1;
+      try {
+        const zip = new JSZip();
+        const eventFolder = zip.folder(sanitizeName(state.eventInfo.name || "행사_자료"));
+        let addedCount = 0;
+        let failedCount = 0;
+
+        for (const s of subs) {
+          const customFiles = (s.customCueFiles || []).filter((cf) => !cf?.b2Key || !recentlyDeletedB2Keys.has(cf.b2Key));
+          if (customFiles.length > 0) {
+            const deptFolder = eventFolder.folder(sanitizeName(s.deptName));
+            const customFolder = deptFolder.folder("00_부서자체큐시트");
+            for (const cf of customFiles) {
+              try {
+                const bytes = await resolveFileBytesForZip(cf);
+                if (bytes) {
+                  customFolder.file(cf.name, bytes);
+                  addedCount += 1;
+                } else {
+                  failedCount += 1;
+                }
+              } catch {
+                failedCount += 1;
+              }
             }
           }
         }
-      }
 
-      for (const r of rows) {
-        if (!r.mediaFiles.length && !r.subtitleFiles.length && !r.docSubtitleFiles.length && !r.hasSubText && !r.youtubeUrl) continue;
-        const deptFolder = eventFolder.folder(sanitizeName(r.deptName));
-        const cueFolderName = `${String(r.seq).padStart(2, "0")}_${sanitizeName(r.title)}`;
-        const cueFolder = deptFolder.folder(cueFolderName);
+        for (const r of rows) {
+          if (!r.mediaFiles.length && !r.subtitleFiles.length && !r.docSubtitleFiles.length && !r.hasSubText && !r.youtubeUrl) continue;
+          const deptFolder = eventFolder.folder(sanitizeName(r.deptName));
+          const cueFolderName = `${String(r.seq).padStart(2, "0")}_${sanitizeName(r.title)}`;
+          const cueFolder = deptFolder.folder(cueFolderName);
 
-        if (r.youtubeUrl) {
-          cueFolder.file(`${sanitizeName(r.title)}_유튜브음원링크.txt`, `\uFEFF${r.youtubeUrl}`);
-          addedCount += 1;
-        }
-
-        for (const mf of r.mediaFiles) {
-          const rec = await getFileRecord(mf.key);
-          if (rec && rec.dataUrl) {
-            cueFolder.file(mf.name, dataUrlToUint8Array(rec.dataUrl));
+          if (r.youtubeUrl) {
+            cueFolder.file(`${sanitizeName(r.title)}_유튜브음원링크.txt`, `\uFEFF${r.youtubeUrl}`);
             addedCount += 1;
-          } else {
-            missingLocalCount += 1;
           }
-        }
 
-        if (r.subtitleFiles.length) {
-          for (const sf of r.subtitleFiles) {
-            const sRec = await getFileRecord(sf.key);
-            if (sRec && sRec.dataUrl) {
-              cueFolder.file(sf.name, dataUrlToUint8Array(sRec.dataUrl));
-              addedCount += 1;
-            } else {
-              missingLocalCount += 1;
+          for (const mf of r.mediaFiles) {
+            try {
+              const bytes = await resolveFileBytesForZip(mf);
+              if (bytes) {
+                cueFolder.file(mf.name, bytes);
+                addedCount += 1;
+              } else {
+                failedCount += 1;
+              }
+            } catch {
+              failedCount += 1;
             }
           }
-        } else if (r.hasSubText) {
-          const txtFileName = `${sanitizeName(r.title)}_자막.txt`;
-          cueFolder.file(txtFileName, "\uFEFF" + r.subtitleText);
-          addedCount += 1;
-        }
 
-        if (r.docSubtitleFiles.length) {
-          const docSubFolder = cueFolder.folder("자막문서_워드등");
-          for (const df of r.docSubtitleFiles) {
-            const dRec = await getFileRecord(df.key);
-            if (dRec && dRec.dataUrl) {
-              docSubFolder.file(df.name, dataUrlToUint8Array(dRec.dataUrl));
-              addedCount += 1;
-            } else {
-              missingLocalCount += 1;
+          if (r.subtitleFiles.length) {
+            for (const sf of r.subtitleFiles) {
+              try {
+                const bytes = await resolveFileBytesForZip(sf);
+                if (bytes) {
+                  cueFolder.file(sf.name, bytes);
+                  addedCount += 1;
+                } else {
+                  failedCount += 1;
+                }
+              } catch {
+                failedCount += 1;
+              }
+            }
+          } else if (r.hasSubText) {
+            const txtFileName = `${sanitizeName(r.title)}_자막.txt`;
+            cueFolder.file(txtFileName, "\uFEFF" + r.subtitleText);
+            addedCount += 1;
+          }
+
+          if (r.docSubtitleFiles.length) {
+            const docSubFolder = cueFolder.folder("자막문서_워드등");
+            for (const df of r.docSubtitleFiles) {
+              try {
+                const bytes = await resolveFileBytesForZip(df);
+                if (bytes) {
+                  docSubFolder.file(df.name, bytes);
+                  addedCount += 1;
+                } else {
+                  failedCount += 1;
+                }
+              } catch {
+                failedCount += 1;
+              }
             }
           }
         }
-      }
 
-      if (!addedCount) {
-        showToast("로컬에 보관된 파일이 없어 ZIP을 만들 수 없습니다. B2 목록에서 개별 다운로드하세요.");
-        return;
-      }
+        if (!addedCount) {
+          showToast("파일을 내려받지 못해 ZIP을 생성할 수 없습니다. B2 목록에서 개별 다운로드해 주세요.");
+          return;
+        }
 
-      const blob = await zip.generateAsync({ type: "blob" });
-      saveBlobAsFile(blob, `${sanitizeName(state.eventInfo.name || "행사")}_부서별_순서별_자료.zip`);
-      showToast(
-        missingLocalCount > 0
-          ? `ZIP 생성 완료 (${addedCount}개 포함 · 대용량/원격 ${missingLocalCount}개는 B2 목록에서 다운로드)`
-          : `부서별/순서별 폴더 ZIP 파일 (${addedCount}개 항목)이 생성되었습니다.`
-      );
+        const blob = await zip.generateAsync({ type: "blob" });
+        saveBlobAsFile(blob, `${sanitizeName(state.eventInfo.name || "행사")}_부서별_순서별_자료.zip`);
+        showToast(
+          failedCount > 0
+            ? `ZIP 생성 완료 (${addedCount}개 포함 · ${failedCount}개는 B2 목록에서 개별 다운로드 필요)`
+            : `부서별/순서별 폴더 ZIP 파일 (${addedCount}개 항목)이 생성되었습니다.`
+        );
+      } finally {
+        if (zipBtn) zipBtn.disabled = false;
+      }
     }
 
     document.getElementById("loginForm").addEventListener("submit", (e) => {
@@ -3956,6 +3999,7 @@
       remoteB2Files = [];
       remoteB2Loaded = false;
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("gm_media_guide_b2_v15");
       localStorage.removeItem("gm_media_guide_b2_v14");
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
