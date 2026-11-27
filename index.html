@@ -107,6 +107,36 @@
       color: var(--muted);
     }
 
+    .dept-switcher-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: var(--primary-light);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .dept-switcher-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .dept-switcher-controls select {
+      width: auto;
+      min-width: 210px;
+      font-weight: 700;
+    }
+    .dept-quick-chips {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
     .event-banner {
       background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
       color: #fff;
@@ -438,7 +468,6 @@
     tr:hover td { background: #fafcff; }
     .nowrap-col { white-space: nowrap; }
 
-    /* 어드민 메모/전달사항 컴팩트 말줄임 */
     .admin-note-cell {
       display: inline-block;
       max-width: 175px;
@@ -540,6 +569,21 @@
       <nav class="nav-tabs" id="navTabs"></nav>
 
       <div id="deptTab" class="hidden">
+        <div class="card hidden" id="adminDeptSelectorCard">
+          <div class="dept-switcher-bar">
+            <div>
+              <div style="font-weight:800; color:var(--primary);">관리자 부서별 직접 편집 모드</div>
+              <div class="helper-text" style="margin-top:2px;">편집할 부서를 선택하면 해당 부서의 장비·재생요청·자체큐시트·순서별 음원/자막을 바로 수정하고 B2에 반영합니다.</div>
+            </div>
+            <div class="dept-switcher-controls">
+              <label for="adminTargetDeptSelect" style="margin-bottom:0;">대상 부서</label>
+              <select id="adminTargetDeptSelect"></select>
+              <button type="button" class="btn btn-outline btn-sm" id="reloadTargetDeptBtn">B2 최신 불러오기</button>
+            </div>
+          </div>
+          <div class="dept-quick-chips" id="adminTargetDeptChips"></div>
+        </div>
+
         <div class="card">
           <div class="card-title">
             <span>1. 부서 기본 정보 및 음향·영상 요청 (<span id="deptNameBadge"></span>)</span>
@@ -770,7 +814,7 @@
           <div class="danger-zone">
             <div style="font-weight:700; color:var(--danger); margin-bottom:4px;">전체 데이터 및 B2 파일 영구 초기화</div>
             <div class="helper-text" style="margin-bottom:8px;">
-              행사명, 제출된 큐시트, 장비/재생 요청, 자체 큐시트, 자막 및 B2 업로드 파일이 모두 삭제됩니다. (계정은 유지)
+              행사명, 제출된 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청 및 B2 파일이 모두 영구 삭제됩니다. (계정은 유지)
             </div>
             <button type="button" class="btn btn-danger btn-sm" id="resetEventBtn">행사 데이터 및 B2 파일 전체 초기화</button>
           </div>
@@ -1005,7 +1049,8 @@
 
       return Array.from(map.values());
     }
-    function loadState() {
+
+        function loadState() {
       const fallback = deepClone(DEFAULT_STATE);
       try {
         const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("gm_media_guide_b2_v16") || localStorage.getItem("gm_media_guide_b2_v15") || localStorage.getItem("gm_media_guide_b2_v14");
@@ -1056,6 +1101,7 @@
 
     let state = loadState();
     let activeTab = null;
+    let adminEditingDeptUid = null;
     let fileCache = {};
     let downloadableFileRegistry = {};
     let remoteB2Files = [];
@@ -1507,24 +1553,60 @@
       }
     }
 
-    function scheduleAutoSaveAndSync(user) {
-      if (!user || user.role !== "dept") return;
+    function getDeptAccounts() {
+      return state.accounts.filter((a) => a && a.role === "dept");
+    }
+
+    function getTargetDeptAccount(loggedInUser = null) {
+      const actor = loggedInUser || getCurrentUser();
+      if (!actor) return null;
+      if (actor.role !== "admin") return actor;
+
+      const deptList = getDeptAccounts();
+      if (!deptList.length) return null;
+
+      if (adminEditingDeptUid) {
+        const matched = deptList.find((d) => ensureAccountUid(d) === adminEditingDeptUid || d.id === adminEditingDeptUid);
+        if (matched) {
+          adminEditingDeptUid = ensureAccountUid(matched);
+          return matched;
+        }
+      }
+      adminEditingDeptUid = ensureAccountUid(deptList[0]);
+      return deptList[0];
+    }
+
+    function getEditableTargetAccount() {
+      const actor = getCurrentUser();
+      if (!actor) return null;
+      if (actor.role === "dept") return actor;
+      if (actor.role === "admin" && activeTab === "adminDeptEdit") {
+        return getTargetDeptAccount(actor);
+      }
+      return null;
+    }
+
+    function scheduleAutoSaveAndSync(targetAcc) {
+      const actor = getCurrentUser();
+      const target = targetAcc || getEditableTargetAccount();
+      if (!actor || !target || target.role !== "dept") return;
+
       hasDirtyDeptChanges = true;
       setSavedStatusLabel("입력 중... 자동저장 대기");
 
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(() => {
-        const current = getCurrentUser();
-        if (!current || current.role !== "dept") return;
-        const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
+        const activeTarget = getEditableTargetAccount();
+        if (!activeTarget || activeTarget.role !== "dept") return;
+        const sub = collectDeptFormIntoState(activeTarget, { preserveExistingSubmittedAt: true, markClean: false });
         setSavedStatusLabel(`로컬 자동저장됨 (${sub.updatedAt}) · B2 동기화 대기...`);
       }, 600);
 
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
       autoSyncTimer = setTimeout(async () => {
-        const current = getCurrentUser();
-        if (!current || current.role !== "dept") return;
-        const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
+        const activeTarget = getEditableTargetAccount();
+        if (!activeTarget || activeTarget.role !== "dept") return;
+        const sub = collectDeptFormIntoState(activeTarget, { preserveExistingSubmittedAt: true, markClean: false });
         setSavedStatusLabel("B2 동기화 중...");
         const ok = await syncSubmissionToB2(sub, { silent: true });
         setSavedStatusLabel(
@@ -1536,11 +1618,11 @@
     }
 
     async function flushPendingDeptChanges({ keepaliveOnly = false } = {}) {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
+      const target = getEditableTargetAccount();
+      if (!target || target.role !== "dept") return;
       if (!hasDirtyDeptChanges && !autoSaveTimer && !autoSyncTimer) return;
       clearAutoTimers();
-      const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
+      const sub = collectDeptFormIntoState(target, { preserveExistingSubmittedAt: true });
       if (keepaliveOnly) {
         syncSubmissionToB2(sub, { silent: true });
       } else {
@@ -2393,12 +2475,13 @@
       };
     }
 
-    async function fillDeptSampleData(user) {
-      const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
+    async function fillDeptSampleData(targetAcc) {
+      if (!targetAcc || targetAcc.role !== "dept") return;
+      const ok = confirm(`'${targetAcc.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
       if (!ok) return;
       clearAutoTimers();
       hasDirtyDeptChanges = false;
-      const uid = ensureAccountUid(user);
+      const uid = ensureAccountUid(targetAcc);
       const existing = state.deptSubmissions[uid];
       const existingSeq = Number(existing?.orderSeq);
       const orderSeq = Number.isInteger(existingSeq) && existingSeq > 0
@@ -2409,14 +2492,14 @@
         Number.isFinite(Number(existing?.submittedAt)) && Number(existing.submittedAt) > 0
           ? Number(existing.submittedAt)
           : now;
-      const sampleSub = await buildSampleSubmissionForDept(user, submittedAt, orderSeq);
+      const sampleSub = await buildSampleSubmissionForDept(targetAcc, submittedAt, orderSeq);
       sampleSub.syncedAt = now;
       sampleSub.updatedAt = new Date(now).toLocaleString("ko-KR");
       state.deptSubmissions[uid] = sampleSub;
       saveState();
       const synced = await syncSubmissionToB2(sampleSub, { silent: true });
-      renderDeptView(user, { skipRemoteFetch: true });
-      showToast(synced ? `${user.deptName} 예시 데이터가 B2에 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
+      renderDeptView(targetAcc, { skipRemoteFetch: true });
+      showToast(synced ? `${targetAcc.deptName} 예시 데이터가 B2에 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
     }
 
     async function fillAdminSampleData() {
@@ -2706,6 +2789,7 @@
           await flushPendingDeptChanges();
           state.sessionUserId = null;
           activeTab = null;
+          adminEditingDeptUid = null;
           hasDirtyDeptChanges = false;
           saveState();
           renderAll();
@@ -2729,9 +2813,10 @@
 
       const navTabs = document.getElementById("navTabs");
       if (user.role === "admin") {
-        if (!["adminOverview", "adminManage"].includes(activeTab)) activeTab = "adminOverview";
+        if (!["adminOverview", "adminDeptEdit", "adminManage"].includes(activeTab)) activeTab = "adminOverview";
         navTabs.innerHTML = `
           <button type="button" class="tab-btn ${activeTab === "adminOverview" ? "active" : ""}" data-tab="adminOverview">종합 큐시트 현황 · 내보내기</button>
+          <button type="button" class="tab-btn ${activeTab === "adminDeptEdit" ? "active" : ""}" data-tab="adminDeptEdit">부서별 제출 편집</button>
           <button type="button" class="tab-btn ${activeTab === "adminManage" ? "active" : ""}" data-tab="adminManage">행사명 · 계정 · 초기화</button>
         `;
       } else {
@@ -2749,12 +2834,14 @@
         });
       });
 
-      document.getElementById("deptTab").classList.toggle("hidden", activeTab !== "dept");
+      const showDeptEditView = activeTab === "dept" || (user.role === "admin" && activeTab === "adminDeptEdit");
+      document.getElementById("deptTab").classList.toggle("hidden", !showDeptEditView);
       document.getElementById("adminOverviewTab").classList.toggle("hidden", activeTab !== "adminOverview");
       document.getElementById("adminManageTab").classList.toggle("hidden", activeTab !== "adminManage");
 
-      if (activeTab === "dept") {
-        renderDeptView(user);
+      if (showDeptEditView) {
+        const targetAcc = user.role === "admin" ? getTargetDeptAccount(user) : user;
+        renderDeptView(targetAcc, { isAdminProxy: user.role === "admin" });
       } else if (activeTab === "adminOverview") {
         renderAdminOverview();
         fetchRemoteSubmissions(false);
@@ -2765,6 +2852,53 @@
           if (activeTab === "adminManage") renderAdminManage();
         });
       }
+    }
+
+    function renderAdminDeptSelector(targetAcc) {
+      const card = document.getElementById("adminDeptSelectorCard");
+      const selectEl = document.getElementById("adminTargetDeptSelect");
+      const chipsEl = document.getElementById("adminTargetDeptChips");
+      if (!card || !selectEl || !chipsEl) return;
+
+      const deptList = getDeptAccounts();
+      card.classList.remove("hidden");
+
+      if (!deptList.length) {
+        selectEl.innerHTML = `<option value="">등록된 부서 계정이 없습니다</option>`;
+        chipsEl.innerHTML = `<span class="helper-text">행사명 · 계정 · 초기화 탭에서 부서 계정을 먼저 추가해 주세요.</span>`;
+        return;
+      }
+
+      const activeUid = targetAcc ? ensureAccountUid(targetAcc) : "";
+      selectEl.innerHTML = deptList.map((acc) => {
+        const uid = ensureAccountUid(acc);
+        const hasSub = Boolean(state.deptSubmissions[uid]);
+        return `<option value="${escapeHtml(uid)}" ${uid === activeUid ? "selected" : ""}>${escapeHtml(acc.deptName)} (${escapeHtml(acc.id)})${hasSub ? " · 제출됨" : ""}</option>`;
+      }).join("");
+
+      chipsEl.innerHTML = deptList.map((acc) => {
+        const uid = ensureAccountUid(acc);
+        const isSelected = uid === activeUid;
+        return `
+          <button
+            type="button"
+            class="btn ${isSelected ? "btn-primary" : "btn-outline"} btn-xs"
+            data-select-admin-dept="${escapeHtml(uid)}"
+          >${escapeHtml(acc.deptName)}</button>
+        `;
+      }).join("");
+
+      chipsEl.querySelectorAll("[data-select-admin-dept]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const nextUid = btn.dataset.selectAdminDept;
+          if (!nextUid || nextUid === adminEditingDeptUid) return;
+          await flushPendingDeptChanges();
+          hasDirtyDeptChanges = false;
+          adminEditingDeptUid = nextUid;
+          const nextAcc = getTargetDeptAccount();
+          if (nextAcc) renderDeptView(nextAcc, { isAdminProxy: true });
+        });
+      });
     }
 
     function applyDeptFormValues(sub) {
@@ -2783,24 +2917,45 @@
       renderCueList(sub);
     }
 
-    function renderDeptView(user, { skipRemoteFetch = false } = {}) {
-      const sub = ensureDeptSubmission(user);
+    function renderDeptView(targetAcc, { skipRemoteFetch = false, isAdminProxy = false } = {}) {
+      const selectorCard = document.getElementById("adminDeptSelectorCard");
+      if (!targetAcc) {
+        if (selectorCard) {
+          selectorCard.classList.remove("hidden");
+          renderAdminDeptSelector(null);
+        }
+        document.getElementById("deptNameBadge").textContent = "선택된 부서 없음";
+        return;
+      }
+
+      if (isAdminProxy) {
+        renderAdminDeptSelector(targetAcc);
+      } else if (selectorCard) {
+        selectorCard.classList.add("hidden");
+      }
+
+      const sub = ensureDeptSubmission(targetAcc);
       pruneDeletedFilesFromSubmission(sub);
-      document.getElementById("deptNameBadge").textContent = user.deptName;
+      document.getElementById("deptNameBadge").textContent = isAdminProxy
+        ? `${targetAcc.deptName} · 관리자 직접 편집 중`
+        : targetAcc.deptName;
       applyDeptFormValues(sub);
 
       if (skipRemoteFetch) return;
 
+      const requestedUid = ensureAccountUid(targetAcc);
       (async () => {
         try {
           await fetchRemoteB2Files(false);
-          const remoteSub = await fetchSingleDeptSubmissionFromB2(user);
-          const activeUser = getCurrentUser();
-          if (!activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
+          const remoteSub = await fetchSingleDeptSubmissionFromB2(targetAcc);
+          const actor = getCurrentUser();
+          const currentEditable = getEditableTargetAccount();
+          if (!actor || !currentEditable) return;
+          if (ensureAccountUid(currentEditable) !== requestedUid) return;
           if (hasDirtyDeptChanges || activeUploadCount > 0) return;
 
-          const latest = ensureDeptSubmission(activeUser);
-          await reconcileDeptFilesWithB2List(latest, activeUser);
+          const latest = ensureDeptSubmission(currentEditable);
+          await reconcileDeptFilesWithB2List(latest, currentEditable);
           if (remoteSub) {
             applyDeptFormValues(latest);
             if (latest.updatedAt) {
@@ -2854,7 +3009,7 @@
             else sub.instruments.push(inst);
           }
           renderInstrumentButtons(sub);
-          scheduleAutoSaveAndSync(getCurrentUser());
+          scheduleAutoSaveAndSync(getEditableTargetAccount());
         });
       });
     }
@@ -2892,7 +3047,7 @@
           if (!target) return;
           sub.customCueFiles.splice(idx, 1);
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCustomCueFiles(sub);
@@ -3034,7 +3189,7 @@
       container.querySelectorAll(".cue-item").forEach((el) => {
         const idx = Number(el.dataset.cueIdx);
         const cue = sub.cues[idx];
-        const onCueFieldChange = () => scheduleAutoSaveAndSync(getCurrentUser());
+        const onCueFieldChange = () => scheduleAutoSaveAndSync(getEditableTargetAccount());
 
         el.querySelector(".cue-title").addEventListener("input", (e) => { cue.title = e.target.value; onCueFieldChange(); });
         el.querySelector(".cue-topic").addEventListener("input", (e) => { cue.topic = e.target.value; onCueFieldChange(); });
@@ -3099,7 +3254,7 @@
           }
           e.target.value = "";
           if (added > 0) {
-            collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+            collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
             const synced = await syncSubmissionToB2(sub, { silent: true });
             setSavedStatusLabel(
               synced
@@ -3148,7 +3303,7 @@
                 ? `${currentTrim}\n\n${appendedTexts.join("\n\n")}`
                 : appendedTexts.join("\n\n");
             }
-            collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+            collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
             await syncSubmissionToB2(sub, { silent: true });
             renderCueList(sub);
             if (txtAdded > 0 && docAdded > 0) {
@@ -3170,7 +3325,7 @@
             [sub.cues[i - 1], sub.cues[i]] = [sub.cues[i], sub.cues[i - 1]];
             clearAllCueCustomRanks(sub);
             renderCueList(sub);
-            scheduleAutoSaveAndSync(getCurrentUser());
+            scheduleAutoSaveAndSync(getEditableTargetAccount());
           }
         });
       });
@@ -3182,7 +3337,7 @@
             [sub.cues[i + 1], sub.cues[i]] = [sub.cues[i], sub.cues[i + 1]];
             clearAllCueCustomRanks(sub);
             renderCueList(sub);
-            scheduleAutoSaveAndSync(getCurrentUser());
+            scheduleAutoSaveAndSync(getEditableTargetAccount());
           }
         });
       });
@@ -3193,7 +3348,7 @@
           sub.cues.splice(i, 1);
           clearAllCueCustomRanks(sub);
           renderCueList(sub);
-          scheduleAutoSaveAndSync(getCurrentUser());
+          scheduleAutoSaveAndSync(getEditableTargetAccount());
         });
       });
 
@@ -3204,7 +3359,7 @@
           if (!target) return;
           sub.cues[cIdx].mediaFiles.splice(fIdx, 1);
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -3219,7 +3374,7 @@
           if (!target) return;
           sub.cues[cIdx].subtitleFiles.splice(sIdx, 1);
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -3234,7 +3389,7 @@
           if (!target) return;
           sub.cues[cIdx].docSubtitleFiles.splice(dIdx, 1);
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
-          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
+          collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -3247,14 +3402,14 @@
           const i = Number(btn.dataset.toggleHelp);
           sub.cues[i].subtitleHelp = !sub.cues[i].subtitleHelp;
           renderCueList(sub);
-          scheduleAutoSaveAndSync(getCurrentUser());
+          scheduleAutoSaveAndSync(getEditableTargetAccount());
         });
       });
     }
 
-    function collectDeptFormIntoState(user, options = {}) {
+    function collectDeptFormIntoState(targetAcc, options = {}) {
       const { preserveExistingSubmittedAt = true, markClean = true } = options;
-      const sub = ensureDeptSubmission(user);
+      const sub = ensureDeptSubmission(targetAcc);
       sub.contact = document.getElementById("deptContact").value.trim();
       sub.micCount = Math.max(0, Number(document.getElementById("deptMicCount").value || 0));
       sub.requestMicStand = !!document.getElementById("chkReqMicStand").checked;
@@ -3679,6 +3834,9 @@
           if (!ok) return;
 
           const uid = ensureAccountUid(target);
+          if (adminEditingDeptUid === uid) {
+            adminEditingDeptUid = null;
+          }
           const sub = state.deptSubmissions[uid] || state.deptSubmissions[target.id];
           const { fileKeys, b2Keys } = collectSubmissionFileKeys(sub);
 
@@ -3954,6 +4112,10 @@
         const uid = ensureAccountUid(found);
         state.sessionUserId = uid;
         activeTab = found.role === "admin" ? "adminOverview" : "dept";
+        if (found.role === "admin") {
+          const firstDept = getDeptAccounts()[0];
+          adminEditingDeptUid = firstDept ? ensureAccountUid(firstDept) : null;
+        }
         hasDirtyDeptChanges = false;
         saveState();
         document.getElementById("loginForm").reset();
@@ -3980,59 +4142,81 @@
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
       activeTab = null;
+      adminEditingDeptUid = null;
       await fetchRemoteSystemMeta(true);
       renderAll();
       showToast("브라우저 저장 데이터가 초기화되었습니다.");
     });
 
+    document.getElementById("adminTargetDeptSelect").addEventListener("change", async (e) => {
+      const nextUid = e.target.value;
+      if (!nextUid || nextUid === adminEditingDeptUid) return;
+      await flushPendingDeptChanges();
+      hasDirtyDeptChanges = false;
+      adminEditingDeptUid = nextUid;
+      const targetAcc = getTargetDeptAccount();
+      if (targetAcc) renderDeptView(targetAcc, { isAdminProxy: true });
+    });
+
+    document.getElementById("reloadTargetDeptBtn").addEventListener("click", async () => {
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc) return;
+      await flushPendingDeptChanges();
+      hasDirtyDeptChanges = false;
+      await fetchRemoteB2Files(false);
+      await fetchSingleDeptSubmissionFromB2(targetAcc);
+      renderDeptView(targetAcc, { skipRemoteFetch: true, isAdminProxy: getCurrentUser()?.role === "admin" });
+      showToast(`'${targetAcc.deptName}' 최신 B2 데이터를 불러왔습니다.`);
+    });
+
     ["deptContact", "deptMicCount", "deptMicStandCount", "deptGeneralNote"].forEach((id) => {
       const el = document.getElementById(id);
-      el.addEventListener("input", () => scheduleAutoSaveAndSync(getCurrentUser()));
-      el.addEventListener("change", () => scheduleAutoSaveAndSync(getCurrentUser()));
+      el.addEventListener("input", () => scheduleAutoSaveAndSync(getEditableTargetAccount()));
+      el.addEventListener("change", () => scheduleAutoSaveAndSync(getEditableTargetAccount()));
     });
 
     document.getElementById("chkReqMicStand").addEventListener("change", (e) => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user);
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc || targetAcc.role !== "dept") return;
+      const sub = ensureDeptSubmission(targetAcc);
       sub.requestMicStand = !!e.target.checked;
       if (sub.requestMicStand && (!sub.micStandCount || sub.micStandCount < 1)) {
         sub.micStandCount = 1;
       }
       renderMicOptionsControl(sub);
-      scheduleAutoSaveAndSync(user);
+      scheduleAutoSaveAndSync(targetAcc);
     });
 
     document.getElementById("chkCeilingMic").addEventListener("change", (e) => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user);
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc || targetAcc.role !== "dept") return;
+      const sub = ensureDeptSubmission(targetAcc);
       sub.useCeilingMic = !!e.target.checked;
-      scheduleAutoSaveAndSync(user);
+      scheduleAutoSaveAndSync(targetAcc);
     });
 
     document.getElementById("btnReqBgm").addEventListener("click", () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user);
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc || targetAcc.role !== "dept") return;
+      const sub = ensureDeptSubmission(targetAcc);
       sub.requestBgm = !sub.requestBgm;
       renderMediaReqButtons(sub);
-      scheduleAutoSaveAndSync(user);
+      scheduleAutoSaveAndSync(targetAcc);
     });
 
     document.getElementById("btnReqVideo").addEventListener("click", () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user);
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc || targetAcc.role !== "dept") return;
+      const sub = ensureDeptSubmission(targetAcc);
       sub.requestVideo = !sub.requestVideo;
       renderMediaReqButtons(sub);
-      scheduleAutoSaveAndSync(user);
+      scheduleAutoSaveAndSync(targetAcc);
     });
 
     document.getElementById("deptCustomCueFile").addEventListener("change", async (e) => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user);
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc || targetAcc.role !== "dept") return;
+      const sub = ensureDeptSubmission(targetAcc);
       const files = Array.from(e.target.files || []);
       let added = 0;
       for (const f of files) {
@@ -4044,16 +4228,16 @@
       }
       e.target.value = "";
       if (added > 0) {
-        collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
+        collectDeptFormIntoState(targetAcc, { preserveExistingSubmittedAt: true });
         await syncSubmissionToB2(sub, { silent: true });
         renderCustomCueFiles(sub);
       }
     });
 
     document.getElementById("fillDeptSampleBtn").addEventListener("click", async () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      await fillDeptSampleData(user);
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc || targetAcc.role !== "dept") return;
+      await fillDeptSampleData(targetAcc);
     });
 
     document.getElementById("fillAdminSampleBtn").addEventListener("click", async () => {
@@ -4063,29 +4247,29 @@
     });
 
     document.getElementById("addCueBtn").addEventListener("click", () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
-      const sub = ensureDeptSubmission(user);
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc || targetAcc.role !== "dept") return;
+      const sub = ensureDeptSubmission(targetAcc);
       sub.cues.push(createEmptyCue());
       clearAllCueCustomRanks(sub);
       renderCueList(sub);
-      scheduleAutoSaveAndSync(user);
+      scheduleAutoSaveAndSync(targetAcc);
     });
 
     document.getElementById("saveDeptBtn").addEventListener("click", async () => {
-      const user = getCurrentUser();
-      if (!user || user.role !== "dept") return;
+      const targetAcc = getEditableTargetAccount();
+      if (!targetAcc || targetAcc.role !== "dept") return;
       clearAutoTimers();
-      const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
+      const sub = collectDeptFormIntoState(targetAcc, { preserveExistingSubmittedAt: true });
       setSavedStatusLabel(`B2 동기화 중... (${sub.updatedAt})`);
-      showToast("부서 내용 저장 및 B2 동기화 중...");
+      showToast(`${targetAcc.deptName} 내용 저장 및 B2 동기화 중...`);
       const ok = await syncSubmissionToB2(sub, { silent: true });
       setSavedStatusLabel(
         ok
           ? `✓ B2 동기화 완료 (${sub.updatedAt})`
           : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · B2 동기화 재시도 필요`
       );
-      showToast(ok ? "✓ 저장 및 B2 동기화되었습니다." : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
+      showToast(ok ? `✓ ${targetAcc.deptName} 저장 및 B2 동기화되었습니다.` : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
     });
 
     document.getElementById("saveMasterOrderBtn").addEventListener("click", async () => {
@@ -4112,8 +4296,9 @@
         if (user && user.role === "admin" && activeTab === "adminOverview") {
           fetchRemoteSubmissions(false);
           fetchRemoteB2Files(false);
-        } else if (user && user.role === "dept" && !hasDirtyDeptChanges && activeUploadCount === 0) {
-          renderDeptView(user);
+        } else if (user && !hasDirtyDeptChanges && activeUploadCount === 0) {
+          const targetAcc = getEditableTargetAccount();
+          if (targetAcc) renderDeptView(targetAcc, { isAdminProxy: user.role === "admin" });
         }
       }
     });
@@ -4163,6 +4348,7 @@
       const cleanSlug = id.replace(/[^a-zA-Z0-9가-힣_-]/g, "_") || "dept";
       const deptUid = `uid_${cleanSlug}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`;
       state.accounts.push({ id, pw, deptName, role: "dept", deptUid, defaultOrderSeq: 0 });
+      if (!adminEditingDeptUid) adminEditingDeptUid = deptUid;
       saveState();
       document.getElementById("addAccountForm").reset();
       await syncSystemMetaToB2({ silent: true });
