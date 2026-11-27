@@ -254,6 +254,53 @@ input[type=file]::file-selector-button{display:none}
 .cue-req{display:inline-flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 .cue-req .pill{font-size:9.5px;padding:2px 7px}
 
+
+/* === 음영 완전 제거 - 플랫 디자인 === */
+:root{--shadow:none;--shadow-lg:none}
+.card{box-shadow:none !important;border:1px solid #e2e8f0 !important}
+.card:hover{box-shadow:none !important;transform:none !important}
+.banner{box-shadow:none !important}
+.topbar{box-shadow:none !important}
+.cue{box-shadow:none !important;background:#fff !important;border:1px solid #e2e8f0 !important;border-left:4px solid #0f172a !important}
+.cue:hover{box-shadow:none !important;transform:none !important}
+.upload-box{box-shadow:none !important;background:#fff !important;border:1px solid #e2e8f0 !important}
+.upload-box:hover{box-shadow:none !important;background:#fff !important;border-color:#cbd5e1 !important}
+.file-list li{box-shadow:none !important}
+.file-list li:hover{box-shadow:none !important;transform:none !important;background:#f8fafc !important}
+.table-wrap{box-shadow:none !important}
+.cue-play-row{background:#fff !important;border:1px solid #e2e8f0 !important;box-shadow:none !important}
+.dept-bar{background:#fff !important;border:1px solid #e2e8f0 !important;box-shadow:none !important}
+.dept-chips{background:#fff !important;border:1px solid #e2e8f0 !important}
+.toast{box-shadow:none !important}
+.progress{background:#fff !important;border:1px solid #e2e8f0 !important}
+.danger{box-shadow:none !important}
+.empty{background:#fff !important;border:1px dashed #cbd5e1 !important;box-shadow:none !important}
+/* 버튼 호버 그림자 제거 */
+.btn:hover{box-shadow:none !important;transform:none !important}
+.dept-chip:hover{box-shadow:none !important;transform:none !important}
+.chip:hover{box-shadow:none !important;transform:none !important}
+.media-btn:hover{box-shadow:none !important;transform:none !important}
+.yt:hover{transform:none !important}
+
+/* 어드민 테이블 정렬 개선 */
+.table-wrap table{border-collapse:separate;border-spacing:0}
+.table-wrap th{background:#f8fafc !important;box-shadow:none !important;border-bottom:1.5px solid #e2e8f0}
+.table-wrap td{vertical-align:top !important;padding:12px 14px !important}
+.media-stack{gap:6px !important;max-width:320px;align-items:flex-start !important}
+.media-item{border:none !important;background:#f1f5f9 !important;border-radius:8px !important;padding:6px 10px !important;box-shadow:none !important}
+.media-item.youtube{background:#fef2f2 !important;border:1px solid #fecaca !important}
+.media-item.doc{background:#eff6ff !important;border:1px solid #bfdbfe !important}
+.media-item .fname{font-size:12.5px !important;font-weight:500 !important}
+.media-more{background:#fff !important;border:1px solid #e2e8f0 !important;box-shadow:none !important}
+
+/* 순서조정 하이픈 제거 */
+.order-hyphen-hidden{visibility:hidden !important}
+
+
+.cue-files-grid{align-items:start}
+.upload-box{min-height:120px}
+.cue-file-col .upload-box{min-height:100px}
+
 </style>
 </head>
 <body>
@@ -398,10 +445,27 @@ async function downloadFile(meta){if(!meta)return;try{toast(`'${meta.name}' 다�
 async function saveDept(acc,{keepalive=false}={}){if(!acc)return false;const col=collectDept(acc);col.updatedAt=new Date().toISOString();for(let i=0;i<col.cues.length;i++){const cue=col.cues[i];const txt=String(cue.subtitleText||"").trim();if(txt&&!txtFiles(cue).length){const name=`${acc.dept}_순서${i+1}_${sanitize(cue.title||`순서${i+1}`)}_자막.txt`;const bytes=new TextEncoder().encode(cue.subtitleText);const file=new File([bytes],name,{type:"text/plain; charset=utf-8"});const fid=`subtxt_${Date.now().toString(36)}_${i}`;await idbPut(file,fid);try{setDeptProg(`${acc.dept} · 순서 ${i+1} 자막(.txt) B2 저장 중...`);const info=await b2.upload(file,acc.dept,"subtitle_txt",fid,null);cue.subtitleFiles=[{id:fid,name,size:bytes.byteLength,type:"text/plain; charset=utf-8",b2Key:info.b2Key,b2Bucket:info.b2Bucket,uploadedAt:new Date().toISOString(),auto:true}]}catch(e){console.warn(e)}finally{setDeptProg("")}}}setSub(acc,col);saveLocal();dirty=false;try{await b2.saveDept(acc,col);$("#b2Status").textContent=`B2 저장 완료 (${new Date().toLocaleTimeString("ko-KR")})`;toast(`${acc.dept} 큐시트가 저장되고 B2에 동기화되었습니다.`);return true}catch(e){$("#b2Status").textContent=`B2 저장 오류: ${e.message}`;toast(`로컬 저장됨 · B2 오류: ${e.message}`);return false}}
 function renderOverview(){const list=deptList();let totalCues=0,totalMics=0,totalStands=0,helpCnt=0,submitted=0;list.forEach(acc=>{const s=getSub(acc);const has=s.cues.length||s.contact||s.note||s.customFiles.length||s.instruments.length;if(has)submitted++;totalMics+=s.mic||0;if(s.reqStand)totalStands+=s.standCount||1;totalCues+=s.cues.length;s.cues.forEach(c=>{if(c.needHelp)helpCnt++})});$("#summaryBadges").innerHTML=`<span class="pill pill-blue">전체 부서 ${list.length}개</span><span class="pill pill-green">제출/입력 부서 ${submitted}개</span><span class="pill pill-blue">총 큐시트 순서 ${totalCues}개</span><span class="pill pill-muted">마이크 ${totalMics}개 · 스탠드 ${totalStands}개</span>${helpCnt?`<span class="pill pill-warn">자막 도움 요청 ${helpCnt}건</span>`:`<span class="pill pill-green">자막 도움 요청 0건</span>`}`;
   const rows=[];let seq=1;list.forEach((acc,di)=>{const s=getSub(acc);const cues=s.cues.length?s.cues:[null];cues.forEach((cue,ci)=>rows.push({seq:seq++,acc,sub:s,cue,ci,di,total:list.length,first:ci===0}))});
-  const body=$("#masterBody");if(!rows.length)body.innerHTML=`<tr><td colspan="12" class="helper">등록된 부서 및 큐시트가 없습니다.</td></tr>`;else body.innerHTML=rows.map(r=>{const th=colorOf(r.acc.id);const idPill=`<span class="pill" style="background:${th.bg};color:${th.fg};border:1px solid ${th.bd}">${r.sub.order||r.acc.order} · ${esc(r.acc.id)}</span>`;const deptName=`<strong style="color:${th.fg}">${esc(r.acc.dept)}</strong>`;const orderBtns=r.first?`<div style="display:flex;gap:3px" class="nowrap"><button class="btn btn-outline btn-xs" data-move="${esc(r.acc.id)}" data-d="-1" ${r.di===0?"disabled":""}>▲</button><button class="btn btn-outline btn-xs" data-move="${esc(r.acc.id)}" data-d="1" ${r.di>=r.total-1?"disabled":""}>▼</button></div>`:`<span class="helper">-</span>`;const title=r.cue?esc(r.cue.title||`순서 ${r.ci+1}`):`<span class="helper">미등록</span>`;const dur=r.cue?.duration?esc(r.cue.duration):`<span class="helper">-</span>`;const mic=`${r.sub.mic||0}개 · 스탠드 ${r.sub.reqStand?`${r.sub.standCount||1}개`:"X"} · 천장 ${r.sub.useCeiling?"O":"X"}`;const inst=(r.sub.instruments||[]).join(", ")||"악기 없음";const req=[r.sub.reqBgm?"BGM":"",r.sub.reqVideo?"영상":"",...(r.sub.customFiles?.length?[`자체큐시트(${r.sub.customFiles.length})`]:[])].filter(Boolean).join(" · ")||"-";let subHtml=`<span class="pill pill-muted">없음</span>`;if(r.cue){const hasTxt=!!String(r.cue.subtitleText||"").trim()||txtFiles(r.cue).length>0;const hasDoc=docFiles(r.cue).length>0;if(r.cue.needHelp)subHtml=`<span class="pill pill-warn" title="${esc(r.cue.helpNote||"")}">도움요청</span>`;else if(hasTxt)subHtml=`<span class="pill pill-green">자막완료</span>`;else if(hasDoc)subHtml=`<span class="pill pill-blue">문서첨부</span>`}const chips=[];if(r.cue){(r.cue.media||[]).forEach(f=>chips.push(`<div><span class="pill pill-blue">미디어</span> ${esc(f.name)}</div>`));txtFiles(r.cue).forEach(f=>chips.push(`<div><span class="pill pill-green">.txt</span> ${esc(f.name)}</div>`));docFiles(r.cue).forEach(f=>chips.push(`<div><span class="pill pill-muted">문서</span> ${esc(f.name)}</div>`));const yt=ytNorm(r.cue.youtube||"");if(yt)chips.push(`<div><a class="yt" href="${esc(yt)}" target="_blank" rel="noopener">▶ 유튜브</a></div>`)}const memo=[r.cue?.note,r.sub.note].filter(Boolean).join(" / ");const del=r.first?`<button class="btn btn-danger btn-xs nowrap" data-del-sub="${esc(r.acc.id)}">제출삭제</button>`:`<span class="helper">-</span>`;return `<tr><td class="nowrap"><b>${r.seq}</b></td><td>${orderBtns}</td><td class="nowrap">${idPill}</td><td class="nowrap">${deptName}</td><td>${title}</td><td class="nowrap">${dur}</td><td class="nowrap">${esc(mic)}</td><td>${noteCell(`${inst} | ${req}`,30)}</td><td class="nowrap">${subHtml}</td><td>${chips.length?chips.join(""):`<span class="helper">-</span>`}</td><td>${noteCell(memo,28)}</td><td>${del}</td></tr>`}).join("");
+  const body=$("#masterBody");if(!rows.length)body.innerHTML=`<tr><td colspan="12" class="helper">등록된 부서 및 큐시트가 없습니다.</td></tr>`;else body.innerHTML=rows.map(r=>{const th=colorOf(r.acc.id);const idPill=`<span class="pill" style="background:${th.bg};color:${th.fg};border:1px solid ${th.bd}">${r.sub.order||r.acc.order} · ${esc(r.acc.id)}</span>`;const deptName=`<strong style="color:${th.fg}">${esc(r.acc.dept)}</strong>`;const orderBtns=r.first?`<div style="display:flex;gap:3px" class="nowrap"><button class="order-btn" data-move="${esc(r.acc.id)}" data-d="-1" ${r.di===0?"disabled":""}>▲</button><button class="order-btn" data-move="${esc(r.acc.id)}" data-d="1" ${r.di>=r.total-1?"disabled":""}>▼</button></div>`:`<span></span>`;const title=r.cue?esc(r.cue.title||`순서 ${r.ci+1}`):`<span class="helper">미등록</span>`;const dur=r.cue?.duration?esc(r.cue.duration):`<span class="helper">-</span>`;const mic=`${r.sub.mic||0}개 · 스탠드 ${r.sub.reqStand?`${r.sub.standCount||1}개`:"X"} · 천장 ${r.sub.useCeiling?"O":"X"}`;const inst=(r.sub.instruments||[]).join(", ")||"악기 없음";const req=[r.sub.reqBgm?"BGM":"",r.sub.reqVideo?"영상":"",...(r.sub.customFiles?.length?[`자체큐시트(${r.sub.customFiles.length})`]:[])].filter(Boolean).join(" · ")||"-";let subHtml=`<span class="pill pill-muted">없음</span>`;if(r.cue){const hasTxt=!!String(r.cue.subtitleText||"").trim()||txtFiles(r.cue).length>0;const hasDoc=docFiles(r.cue).length>0;if(r.cue.needHelp)subHtml=`<span class="pill pill-warn" title="${esc(r.cue.helpNote||"")}">도움요청</span>`;else if(hasTxt)subHtml=`<span class="pill pill-green">자막완료</span>`;else if(hasDoc)subHtml=`<span class="pill pill-blue">문서첨부</span>`}const chips=[];if(r.cue){
+  const all=[];
+  (r.cue.media||[]).forEach(f=>all.push({name:f.name, type:'media'}));
+  txtFiles(r.cue).forEach(f=>all.push({name:f.name, type:'txt'}));
+  docFiles(r.cue).forEach(f=>all.push({name:f.name, type:'doc'}));
+  const yt=ytNorm(r.cue.youtube||"");
+  if(yt) all.push({name:'유튜브 링크', type:'yt', url:yt});
+  // Add per-cue BGM/Video requests
+  if(r.cue.reqBgm) all.push({name: r.cue.bgmNote ? `BGM: ${r.cue.bgmNote}` : 'BGM 요청', type:'req'});
+  if(r.cue.reqVideo) all.push({name: r.cue.videoNote ? `영상: ${r.cue.videoNote}` : '영상 요청', type:'req'});
+  all.forEach(f=>{
+    if(f.type==='yt') chips.push(`<div class="media-item youtube"><span class="icon">▶</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="pill pill-red" style="font-size:9px">유튜브</span></div>`);
+    else if(f.type==='txt') chips.push(`<div class="media-item doc"><span class="icon">📄</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="pill pill-green" style="font-size:9px">TXT</span></div>`);
+    else if(f.type==='doc') chips.push(`<div class="media-item doc"><span class="icon">📑</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="pill pill-blue" style="font-size:9px">문서</span></div>`);
+    else if(f.type==='req') chips.push(`<div class="media-item" style="background:#fffbeb !important;border:1px solid #fde68a !important"><span class="icon">⚡</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span></div>`);
+    else chips.push(`<div class="media-item"><span class="icon">🎵</span><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span><span class="pill pill-blue" style="font-size:9px">미디어</span></div>`);
+  });
+}const memo=[r.cue?.note,r.sub.note].filter(Boolean).join(" / ");const del=r.first?`<button class="btn btn-danger btn-xs nowrap" data-del-sub="${esc(r.acc.id)}">제출삭제</button>`:`<span></span>`;return `<tr><td class="nowrap"><b>${r.seq}</b></td><td>${orderBtns}</td><td class="nowrap">${idPill}</td><td class="nowrap">${deptName}</td><td>${title}</td><td class="nowrap">${dur}</td><td class="nowrap">${esc(mic)}</td><td>${noteCell(`${inst} | ${req}`,30)}</td><td class="nowrap">${subHtml}</td><td>${chips.length?chips.join(""):`<span class="helper">-</span>`}</td><td>${noteCell(memo,28)}</td><td>${del}</td></tr>`}).join("");
   body.querySelectorAll("[data-move]").forEach(b=>b.onclick=()=>moveOrder(b.dataset.move,Number(b.dataset.d)));
   body.querySelectorAll("[data-del-sub]").forEach(b=>b.onclick=async()=>{const acc=state.accounts.find(a=>a.id===b.dataset.delSub);if(!acc)return;if(!confirm(`'${acc.dept}' 제출 데이터를 삭제하시겠습니까?`))return;delete state.subs[acc.id];saveLocal();await b2.deleteSub(acc.id);renderAll();await refreshB2Files();toast(`'${acc.dept}' 제출 데이터가 삭제되었습니다.`)});
-  $("#deptSummaryBody").innerHTML=list.map((acc,i)=>{const s=getSub(acc);const help=(s.cues||[]).filter(c=>c.needHelp).length;return `<tr><td class="nowrap"><b>${s.order||acc.order||i+1}</b></td><td class="nowrap"><strong style="color:${colorOf(acc.id).fg}">${esc(acc.dept)}</strong></td><td>${noteCell(s.contact||"-",22)}</td><td class="nowrap">${s.cues.length}개</td><td class="nowrap">${s.mic||0}개</td><td class="nowrap">${s.reqStand?`${s.standCount||1}개`:"-"}</td><td class="nowrap">${s.useCeiling?"사용":"-"}</td><td>${noteCell((s.instruments||[]).join(", ")||"-",24)}</td><td class="nowrap">${esc([s.reqBgm?"BGM":"",s.reqVideo?"영상":""].filter(Boolean).join(", ")||"-")}</td><td class="nowrap">${s.customFiles.length?`${s.customFiles.length}개`:"-"}</td><td class="nowrap">${help?`<span class="pill pill-warn">${help}건</span>`:`<span class="helper">-</span>`}</td><td>${noteCell(s.note||"-",24)}</td><td class="nowrap"><button class="btn btn-outline btn-xs" data-edit="${esc(acc.id)}">직접편집</button></td></tr>`}).join("");
+  $("#deptSummaryBody").innerHTML=list.map((acc,i)=>{const s=getSub(acc);const help=(s.cues||[]).filter(c=>c.needHelp).length;return `<tr><td class="nowrap"><b>${s.order||acc.order||i+1}</b></td><td class="nowrap"><strong style="color:${colorOf(acc.id).fg}">${esc(acc.dept)}</strong></td><td>${noteCell(s.contact||"-",22)}</td><td class="nowrap">${s.cues.length}개</td><td class="nowrap">${s.mic||0}개</td><td class="nowrap">${s.reqStand?`${s.standCount||1}개`:"-"}</td><td class="nowrap">${s.useCeiling?"사용":""}</td><td>${noteCell((s.instruments||[]).join(", ")||"-",24)}</td><td class="nowrap">${esc([s.reqBgm?"BGM":"",s.reqVideo?"영상":""].filter(Boolean).join(", ")||"")}</td><td class="nowrap">${s.customFiles.length?`${s.customFiles.length}개`:"-"}</td><td class="nowrap">${help?`<span class="pill pill-warn">${help}건</span>`:`<span class="helper">-</span>`}</td><td>${noteCell(s.note||"-",24)}</td><td class="nowrap"><button class="btn btn-outline btn-xs" data-edit="${esc(acc.id)}">직접편집</button></td></tr>`}).join("");
   $("#deptSummaryBody").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{adminEditId=b.dataset.edit;dirty=false;adminTab="dept";renderAll()});
   renderB2Table();
 }
