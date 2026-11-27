@@ -688,6 +688,7 @@
           </div>
         </div>
 
+        <div id="zipProgressBanner" class="upload-progress-banner hidden"></div>
         <div id="adminSummaryBadges" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;"></div>
 
         <div class="table-wrap">
@@ -873,8 +874,8 @@
     const MAX_FILE_BYTES = 500 * 1024 * 1024;
     const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
     const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
-    const STORAGE_KEY = "gm_media_guide_b2_v16";
-    const IDB_NAME = "gm_media_guide_files_b2_v16";
+    const STORAGE_KEY = "gm_media_guide_b2_v17";
+    const IDB_NAME = "gm_media_guide_files_b2_v17";
     const IDB_STORE = "files";
 
     const ACCOUNT_COLOR_PALETTE = [
@@ -1115,7 +1116,7 @@
     function loadState() {
       const fallback = deepClone(DEFAULT_STATE);
       try {
-        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("gm_media_guide_b2_v15") || localStorage.getItem("gm_media_guide_b2_v14");
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("gm_media_guide_b2_v16") || localStorage.getItem("gm_media_guide_b2_v15") || localStorage.getItem("gm_media_guide_b2_v14");
         if (!raw) return fallback;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return fallback;
@@ -1933,6 +1934,25 @@
       } else {
         box.classList.remove("hidden");
         box.textContent = text;
+      }
+    }
+
+    function setZipProgressState(text, pct = null) {
+      const box = document.getElementById("zipProgressBanner");
+      const btn = document.getElementById("exportZipBtn");
+      if (box) {
+        if (!text) {
+          box.classList.add("hidden");
+          box.textContent = "";
+        } else {
+          box.classList.remove("hidden");
+          box.textContent = text;
+        }
+      }
+      if (btn && pct !== null) {
+        btn.textContent = `ZIP 다운로드 중... (${pct}%)`;
+      } else if (btn && !text) {
+        btn.textContent = "부서별·순서별 ZIP 다운로드";
       }
     }
 
@@ -3847,13 +3867,11 @@
 
       const zipBtn = document.getElementById("exportZipBtn");
       if (zipBtn) zipBtn.disabled = true;
-      showToast("ZIP 파일 생성 중... (B2 파일 포함)");
 
       try {
         const zip = new JSZip();
         const eventFolder = zip.folder(sanitizeName(state.eventInfo.name || "행사_자료"));
-        let addedCount = 0;
-        let failedCount = 0;
+        const tasks = [];
 
         for (const s of subs) {
           const customFiles = (s.customCueFiles || []).filter((cf) => !cf?.b2Key || !recentlyDeletedB2Keys.has(cf.b2Key));
@@ -3861,17 +3879,15 @@
             const deptFolder = eventFolder.folder(sanitizeName(s.deptName));
             const customFolder = deptFolder.folder("00_부서자체큐시트");
             for (const cf of customFiles) {
-              try {
-                const bytes = await resolveFileBytesForZip(cf);
-                if (bytes) {
+              tasks.push({
+                label: `[${s.deptName}] ${cf.name}`,
+                run: async () => {
+                  const bytes = await resolveFileBytesForZip(cf);
+                  if (!bytes) return false;
                   customFolder.file(cf.name, bytes);
-                  addedCount += 1;
-                } else {
-                  failedCount += 1;
+                  return true;
                 }
-              } catch {
-                failedCount += 1;
-              }
+              });
             }
           }
         }
@@ -3883,68 +3899,100 @@
           const cueFolder = deptFolder.folder(cueFolderName);
 
           if (r.youtubeUrl) {
-            cueFolder.file(`${sanitizeName(r.title)}_유튜브음원링크.txt`, `\uFEFF${r.youtubeUrl}`);
-            addedCount += 1;
+            tasks.push({
+              label: `[${r.deptName}] ${r.title} 유튜브 링크`,
+              run: async () => {
+                cueFolder.file(`${sanitizeName(r.title)}_유튜브음원링크.txt`, `\uFEFF${r.youtubeUrl}`);
+                return true;
+              }
+            });
           }
 
           for (const mf of r.mediaFiles) {
-            try {
-              const bytes = await resolveFileBytesForZip(mf);
-              if (bytes) {
+            tasks.push({
+              label: `[${r.deptName}] ${mf.name}`,
+              run: async () => {
+                const bytes = await resolveFileBytesForZip(mf);
+                if (!bytes) return false;
                 cueFolder.file(mf.name, bytes);
-                addedCount += 1;
-              } else {
-                failedCount += 1;
+                return true;
               }
-            } catch {
-              failedCount += 1;
-            }
+            });
           }
 
           if (r.subtitleFiles.length) {
             for (const sf of r.subtitleFiles) {
-              try {
-                const bytes = await resolveFileBytesForZip(sf);
-                if (bytes) {
+              tasks.push({
+                label: `[${r.deptName}] ${sf.name}`,
+                run: async () => {
+                  const bytes = await resolveFileBytesForZip(sf);
+                  if (!bytes) return false;
                   cueFolder.file(sf.name, bytes);
-                  addedCount += 1;
-                } else {
-                  failedCount += 1;
+                  return true;
                 }
-              } catch {
-                failedCount += 1;
-              }
+              });
             }
           } else if (r.hasSubText) {
             const txtFileName = `${sanitizeName(r.title)}_자막.txt`;
-            cueFolder.file(txtFileName, "\uFEFF" + r.subtitleText);
-            addedCount += 1;
+            tasks.push({
+              label: `[${r.deptName}] ${txtFileName}`,
+              run: async () => {
+                cueFolder.file(txtFileName, "\uFEFF" + r.subtitleText);
+                return true;
+              }
+            });
           }
 
           if (r.docSubtitleFiles.length) {
             const docSubFolder = cueFolder.folder("자막문서_워드등");
             for (const df of r.docSubtitleFiles) {
-              try {
-                const bytes = await resolveFileBytesForZip(df);
-                if (bytes) {
+              tasks.push({
+                label: `[${r.deptName}] ${df.name}`,
+                run: async () => {
+                  const bytes = await resolveFileBytesForZip(df);
+                  if (!bytes) return false;
                   docSubFolder.file(df.name, bytes);
-                  addedCount += 1;
-                } else {
-                  failedCount += 1;
+                  return true;
                 }
-              } catch {
-                failedCount += 1;
-              }
+              });
             }
           }
         }
 
+        const totalTasks = tasks.length;
+        let addedCount = 0;
+        let failedCount = 0;
+
+        setZipProgressState(`ZIP 자료 수집 중... 0% (0/${totalTasks})`, 0);
+
+        for (let i = 0; i < totalTasks; i++) {
+          const t = tasks[i];
+          const dlPct = Math.round((i / totalTasks) * 80);
+          setZipProgressState(`ZIP 다운로드 중: ${t.label} (${i + 1}/${totalTasks}) · ${dlPct}%`, dlPct);
+          try {
+            const ok = await t.run();
+            if (ok) addedCount += 1;
+            else failedCount += 1;
+          } catch {
+            failedCount += 1;
+          }
+          const donePct = Math.round(((i + 1) / totalTasks) * 80);
+          setZipProgressState(`ZIP 다운로드 중: ${t.label} (${i + 1}/${totalTasks}) · ${donePct}%`, donePct);
+        }
+
         if (!addedCount) {
+          setZipProgressState("", null);
           showToast("파일을 내려받지 못해 ZIP을 생성할 수 없습니다. B2 목록에서 개별 다운로드해 주세요.");
           return;
         }
 
-        const blob = await zip.generateAsync({ type: "blob" });
+        setZipProgressState("ZIP 파일 압축 중... 80%", 80);
+        const blob = await zip.generateAsync({ type: "blob" }, (meta) => {
+          const zipPct = 80 + Math.round(((meta?.percent || 0) / 100) * 20);
+          setZipProgressState(`ZIP 파일 압축 중... ${zipPct}%`, zipPct);
+        });
+
+        setZipProgressState("ZIP 파일 압축 완료 · 100%", 100);
         saveBlobAsFile(blob, `${sanitizeName(state.eventInfo.name || "행사")}_부서별_순서별_자료.zip`);
         showToast(
           failedCount > 0
@@ -3952,7 +4000,10 @@
             : `부서별/순서별 폴더 ZIP 파일 (${addedCount}개 항목)이 생성되었습니다.`
         );
       } finally {
-        if (zipBtn) zipBtn.disabled = false;
+        setTimeout(() => {
+          setZipProgressState("", null);
+          if (zipBtn) zipBtn.disabled = false;
+        }, 600);
       }
     }
 
@@ -3995,10 +4046,12 @@
       hasDirtyDeptChanges = false;
       activeUploadCount = 0;
       setUploadProgressText("");
+      setZipProgressState("", null);
       recentlyDeletedB2Keys.clear();
       remoteB2Files = [];
       remoteB2Loaded = false;
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("gm_media_guide_b2_v16");
       localStorage.removeItem("gm_media_guide_b2_v15");
       localStorage.removeItem("gm_media_guide_b2_v14");
       await clearAllFileRecords();
@@ -4215,6 +4268,7 @@
         hasDirtyDeptChanges = false;
         activeUploadCount = 0;
         setUploadProgressText("");
+        setZipProgressState("", null);
         recentlyDeletedB2Keys.clear();
         state.eventInfo = {
           name: "새 행사를 설정해 주세요",
