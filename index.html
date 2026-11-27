@@ -37,6 +37,7 @@ body{
   line-height:1.65;
   letter-spacing:-0.015em;
   -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
 }
 .hidden{display:none!important}
 .nowrap{white-space:nowrap}
@@ -79,6 +80,7 @@ body{
   padding:22px 24px;
   margin-bottom:16px;
   box-shadow:var(--shadow);
+  min-width:0;
 }
 .card-title{
   margin:0 0 14px;
@@ -147,6 +149,7 @@ label{
 }
 input[type=text],input[type=password],input[type=number],input[type=url],textarea,select{
   width:100%;
+  min-width:0;
   padding:10px 13px;
   border:1.5px solid var(--line-strong);
   border-radius:10px;
@@ -162,15 +165,16 @@ input:focus,textarea:focus,select:focus{
   border-color:var(--ink);
   box-shadow:0 0 0 3px rgba(15,23,42,0.08);
 }
-input[type=file]{border:none!important;background:transparent!important;padding:0!important}
+input[type=file]{border:none!important;background:transparent!important;padding:0!important;max-width:100%}
 input[type=file]::file-selector-button{display:none}
 
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid2 > div,.grid3 > div{min-width:0}
 @media(max-width:900px){
   .grid2,.grid3{grid-template-columns:1fr}
-  .container{padding:0 14px 56px}
-  .card{padding:18px 16px}
+  .container{padding:0 12px 56px}
+  .card{padding:16px 14px}
 }
 
 /* 버튼 */
@@ -187,6 +191,7 @@ input[type=file]::file-selector-button{display:none}
   font-size:13.5px;
   cursor:pointer;
   transition:opacity 0.15s,background-color 0.15s,border-color 0.15s;
+  flex-shrink:0;
 }
 .btn:hover:not(:disabled){opacity:0.92}
 .btn:disabled{opacity:0.42;cursor:not-allowed}
@@ -198,7 +203,7 @@ input[type=file]::file-selector-button{display:none}
 .btn-ghost{background:rgba(255,255,255,0.12);color:#fff;border-color:rgba(255,255,255,0.22)}
 .btn-ghost:hover:not(:disabled){background:rgba(255,255,255,0.2)}
 .btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px}
-.btn-xs{padding:4px 10px;font-size:11.5px;border-radius:7px}
+.btn-xs{padding:4px 9px;font-size:11.5px;border-radius:7px}
 
 /* 부서 선택 & 칩 */
 .dept-bar{
@@ -272,7 +277,7 @@ input[type=file]::file-selector-button{display:none}
   color:var(--sub);
   cursor:pointer;
 }
-.check input{width:17px;height:17px;accent-color:var(--ink);cursor:pointer}
+.check input{width:17px;height:17px;accent-color:var(--ink);cursor:pointer;flex-shrink:0}
 .mic-row{
   display:inline-flex;
   align-items:center;
@@ -291,8 +296,10 @@ input[type=file]::file-selector-button{display:none}
   border:1px solid var(--line);
   background:var(--surface);
   border-radius:14px;
-  padding:20px;
+  padding:18px;
   margin-bottom:14px;
+  min-width:0;
+  max-width:100%;
 }
 .cue-head{
   display:flex;
@@ -336,8 +343,17 @@ input[type=file]::file-selector-button{display:none}
 }
 
 /* 파일 업로드 박스 */
-.upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
-@media(max-width:1024px){.upload-grid{grid-template-columns:1fr}}
+.upload-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-top:12px;
+  width:100%;
+}
+@media(max-width:1024px){
+  .upload-grid{grid-template-columns:minmax(0,1fr)}
+  .cue{padding:14px 12px}
+}
 .upload-box{
   border:1px solid var(--line);
   background:#fff;
@@ -346,6 +362,8 @@ input[type=file]::file-selector-button{display:none}
   display:flex;
   flex-direction:column;
   gap:6px;
+  min-width:0;
+  max-width:100%;
 }
 .upload-top{
   display:flex;
@@ -353,6 +371,7 @@ input[type=file]::file-selector-button{display:none}
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
+  min-width:0;
 }
 .upload-title{
   font-weight:750;
@@ -361,6 +380,8 @@ input[type=file]::file-selector-button{display:none}
   display:inline-flex;
   align-items:center;
   gap:5px;
+  flex-wrap:wrap;
+  min-width:0;
 }
 .upload-btn{
   display:inline-flex;
@@ -372,23 +393,30 @@ input[type=file]::file-selector-button{display:none}
   font-size:12px;
   font-weight:700;
   cursor:pointer;
+  flex-shrink:0;
+  white-space:nowrap;
 }
 .upload-btn:hover{opacity:0.9}
 .upload-btn input{display:none}
-.file-list{margin:6px 0 0;padding:0;list-style:none}
+.file-list{margin:6px 0 0;padding:0;list-style:none;min-width:0}
 .file-list li{
   display:flex;
   align-items:center;
-  gap:6px;
-  padding:7px 9px;
+  gap:5px;
+  padding:7px 8px;
   border:1px solid var(--line);
   border-radius:9px;
   background:var(--surface);
   margin-bottom:6px;
-  font-size:12.5px;
+  font-size:12px;
+  min-width:0;
+  flex-wrap:wrap;
 }
 .file-list li:last-child{margin-bottom:0}
-.file-list li .fname{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.file-list li .fname{flex:1 1 90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:60px}
+.file-list li .fsize{color:#94a3b8;font-size:11px;flex-shrink:0;white-space:nowrap}
+.file-list li .pill{flex-shrink:0}
+.file-list li .btn{flex-shrink:0}
 
 /* 자막 입력 & 도움 요청 */
 .f-text{
@@ -423,6 +451,7 @@ input[type=file]::file-selector-button{display:none}
   font-size:11px;
   font-weight:750;
   line-height:1.3;
+  white-space:nowrap;
 }
 .pill-green{background:var(--success-soft);color:var(--success);border:1px solid #a7f3d0}
 .pill-warn{background:var(--warn-soft);color:var(--warn);border:1px solid #fde68a}
@@ -475,6 +504,7 @@ input[type=file]::file-selector-button{display:none}
   border:1px solid var(--line);
   border-radius:12px;
   background:#fff;
+  max-width:100%;
 }
 table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:1080px}
 #b2Body{min-width:0}
@@ -680,8 +710,8 @@ function getSub(acc){return state.subs[acc.id]?normSub(state.subs[acc.id],acc):e
 function setSub(acc,sub){const norm=normSub(sub,acc);state.deletedSubs=(state.deletedSubs||[]).filter(id=>id!==acc.id);if(hasSubContent(norm))state.hiddenSubs=(state.hiddenSubs||[]).filter(id=>id!==acc.id);state.subs[acc.id]=norm}
 function renderAll(){const u=currentUser();if(!u){$("#loginView").classList.remove("hidden");$("#appView").classList.add("hidden");$("#topbarActions").innerHTML=`<span class="user-badge">로그아웃 상태</span>`;return}$("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");$("#topbarActions").innerHTML=`<span class="user-badge">${esc(u.role==="admin"?`관리자 (${u.dept})`:`${u.dept} (${u.id})`)}</span><button class="btn btn-ghost btn-sm" id="syncBtn">B2 동기화</button><button class="btn btn-ghost btn-sm" id="logoutBtn">로그아웃</button>`;$("#syncBtn").onclick=async()=>{cancelAutoSave();await syncFromB2({});if(u.role==="admin")await refreshB2Files();toast("B2 동기화 완료")};$("#logoutBtn").onclick=()=>{cancelAutoSave();state.sessionId=null;adminEditId=null;dirty=false;saveLocal();renderAll()};$("#bannerName").textContent=state.event?.name||"행사명이 아직 설정되지 않았습니다";$("#bannerMeta").innerHTML=[state.event.date?`<span>일시/장소: ${esc(state.event.date)}</span>`:"",state.event.notice?`<span>안내: ${esc(state.event.notice)}</span>`:"",`<span>저장소: B2 (${BUCKET})</span>`].join("");if(u.role==="admin"){$("#navTabs").innerHTML=`<button class="tab ${adminTab==="overview"?"active":""}" data-tab="overview">전체 통합 큐시트</button><button class="tab ${adminTab==="dept"?"active":""}" data-tab="dept">부서 큐시트 입력/수정</button><button class="tab ${adminTab==="manage"?"active":""}" data-tab="manage">행사 · 계정 · 초기화</button>`;$("#navTabs").querySelectorAll("[data-tab]").forEach(b=>b.onclick=async()=>{cancelAutoSave();adminTab=b.dataset.tab;renderAll();if(adminTab==="overview")await refreshB2Files()});$("#overviewTab").classList.toggle("hidden",adminTab!=="overview");$("#deptTab").classList.toggle("hidden",adminTab!=="dept");$("#manageTab").classList.toggle("hidden",adminTab!=="manage");if(adminTab==="overview")renderOverview();else if(adminTab==="dept")renderDept(true);else renderManage()}else{$("#navTabs").innerHTML=`<button class="tab active">부서 큐시트 및 자료 제출</button>`;$("#deptTab").classList.remove("hidden");$("#overviewTab").classList.add("hidden");$("#manageTab").classList.add("hidden");renderDept(false)}}
 function renderDept(isAdmin){const acc=editingAcc();const card=$("#adminDeptCard");if(!acc){if(card)card.classList.add("hidden");$("#deptBadge").textContent="대상 부서 없음";return}if(isAdmin&&card){card.classList.remove("hidden");const list=deptList();$("#adminDeptSelect").innerHTML=list.map((a,i)=>{const s=getSub(a);return `<option value="${esc(a.id)}" ${a.id===acc.id?"selected":""}>${s.order||a.order||i+1}순서 · ${esc(a.dept)} (${esc(a.id)}) — 순서 ${s.cues.length}개</option>`}).join("");$("#adminDeptChips").innerHTML=list.map((a,i)=>{const s=getSub(a);return `<button class="dept-chip ${a.id===acc.id?"active":""}" data-pick="${esc(a.id)}">${s.order||a.order||i+1}.${esc(a.dept)} (${s.cues.length})</button>`}).join("");$("#adminDeptChips").querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{cancelAutoSave();adminEditId=b.dataset.pick;dirty=false;renderDept(true)})}else if(card)card.classList.add("hidden");$("#deptBadge").textContent=`${acc.dept} (${acc.id})`;const sub=getSub(acc);setAutoSaveStatus(sub.updatedAt?`B2 저장됨 (${new Date(sub.updatedAt).toLocaleTimeString("ko-KR")})`:"자동 저장 활성",sub.updatedAt?"green":"muted");$("#deptContact").value=sub.contact||"";$("#deptMicCount").value=sub.mic||0;$("#chkStand").checked=!!sub.reqStand;$("#standWrap").classList.toggle("hidden",!sub.reqStand);$("#deptStandCount").value=sub.standCount||1;$("#chkCeiling").checked=!!sub.useCeiling;$("#deptNote").value=sub.note||"";const sel=new Set(sub.instruments||[]);$("#instBox").innerHTML=INSTRUMENTS.map(inst=>`<button class="chip ${inst==="악기 사용안함"?"none":""} ${sel.has(inst)?"active":""}" data-inst="${esc(inst)}">${esc(inst)}</button>`).join("");$("#instBox").querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{const v=ch.dataset.inst;if(v==="악기 사용안함"){const on=!ch.classList.contains("active");$("#instBox").querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));if(on)ch.classList.add("active")}else{$("#instBox").querySelector('.chip[data-inst="악기 사용안함"]')?.classList.remove("active");ch.classList.toggle("active")}markDirty(acc)});$("#btnBgm").classList.toggle("active",!!sub.reqBgm);$("#btnVideo").classList.toggle("active",!!sub.reqVideo);$("#btnBgm").onclick=()=>{$("#btnBgm").classList.toggle("active");markDirty(acc)};$("#btnVideo").onclick=()=>{$("#btnVideo").classList.toggle("active");markDirty(acc)};renderCustom(sub,acc);renderCues(sub,acc)}
-function renderCustom(sub,acc){const w=$("#customFileList");const files=sub.customFiles||[];if(!files.length){w.innerHTML=`<div class="helper">등록된 자체 부서 큐시트 파일이 없습니다.</div>`;return}w.innerHTML=`<ul class="file-list">${files.map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span style="color:#94a3b8;font-size:11px">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-c="${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-c="${i}">삭제</button></li>`).join("")}</ul>`;w.querySelectorAll("[data-dl-c]").forEach(b=>b.onclick=async()=>{const f=files[Number(b.dataset.dlC)];if(f)await downloadFile(f)});w.querySelectorAll("[data-del-c]").forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.delC);const cur=collectDept(acc);const f=cur.customFiles[i];cur.customFiles.splice(i,1);if(f?.b2Key)await b2.deleteFile(f.b2Key).catch(()=>null);if(f?.id)await idbDel(f.id);setSub(acc,cur);saveLocal();renderCustom(cur,acc);toast("자체 큐시트 파일이 삭제되었습니다.");await saveDept(acc,{silent:true})})}
-function renderCues(sub,acc){const c=$("#cueList");const cues=sub.cues||[];if(!cues.length){c.innerHTML=`<div class="helper" style="padding:10px 0">등록된 순서가 없습니다. <b>+ 순서 추가</b>를 눌러 추가하세요.</div>`;return}c.innerHTML=cues.map((cue,idx)=>{const n=normCue(cue,idx);const yt=ytNorm(n.youtube);return `<div class="cue" data-idx="${idx}"><div class="cue-head"><b data-num="${idx+1}">순서 ${idx+1}</b><div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" data-up="${idx}" ${idx===0?"disabled":""}>▲</button><button class="btn btn-outline btn-xs" data-down="${idx}" ${idx===cues.length-1?"disabled":""}>▼</button><button class="btn btn-danger btn-xs" data-del="${idx}">삭제</button></div></div><div class="grid3"><div><label>순서명 / 주제<input type="text" class="f-title" value="${esc(n.title)}" placeholder="예: 찬양, 특송, 율동"></label></div><div><label>예상 소요 시간<input type="text" class="f-dur" value="${esc(n.duration)}" placeholder="예: 3분"></label></div><div><label>유튜브 링크 (선택)<input type="url" class="f-yt" value="${esc(n.youtube)}" placeholder="https://youtu.be/..."></label>${yt?`<div style="margin-top:4px"><a class="yt" href="${esc(yt)}" target="_blank" rel="noopener">▶ 유튜브 링크 열기</a></div>`:(n.youtube?`<div class="helper" style="color:var(--danger)">올바른 유튜브 URL을 확인해 주세요.</div>`:"")}</div></div><div class="cue-play-row"><label class="check"><input type="checkbox" class="f-reqBgm" ${n.reqBgm?"checked":""}> 🎵 BGM 재생 요청</label><input type="text" class="f-bgmNote" value="${esc(n.bgmNote||"")}" placeholder="BGM 상세" style="flex:1;min-width:160px;padding:6px 10px;font-size:13px"><label class="check"><input type="checkbox" class="f-reqVideo" ${n.reqVideo?"checked":""}> 🎬 영상 재생 요청</label><input type="text" class="f-videoNote" value="${esc(n.videoNote||"")}" placeholder="영상 상세" style="flex:1;min-width:160px;padding:6px 10px;font-size:13px"></div><div class="upload-grid"><div class="upload-box"><div class="upload-top"><span class="upload-title">🎵 음원 / 영상 파일 <small style="color:#94a3b8">최대 500MB</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-media" accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.mov,.avi,.mkv,.webm" multiple></label></div><div style="font-size:11px;color:#94a3b8">MP3 · WAV · MP4 · MOV 등</div>${n.media.length?`<ul class="file-list">${n.media.map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span style="color:#94a3b8;font-size:11px">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-m="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-m="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:`<div class="helper">등록된 음원/영상 파일이 없습니다.</div>`}</div><div class="upload-box"><div class="upload-top"><span class="upload-title">📄 자막 파일 <small style="color:#94a3b8">.txt</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-txt" accept=".txt,text/plain" multiple></label></div>${txtFiles(n).length?`<ul class="file-list">${txtFiles(n).map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span style="color:#94a3b8;font-size:11px">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-t="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-t="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:`<div class="helper">등록된 .txt 자막 파일이 없습니다.</div>`}</div><div class="upload-box"><div class="upload-top"><span class="upload-title">📑 워드/문서 <small style="color:#94a3b8">별도 첨부</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-doc" accept=".doc,.docx,.hwp,.hwpx,.pdf,.ppt,.pptx" multiple></label></div>${docFiles(n).length?`<ul class="file-list">${docFiles(n).map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span style="color:#94a3b8;font-size:11px">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-d="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-d="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:`<div class="helper">첨부된 참고 문서가 없습니다.</div>`}</div></div><div style="margin-top:10px"><label>자막 직접 입력 / 붙여넣기 (저장 시 .txt로 B2 자동 업로드)<textarea class="f-text" style="min-height:76px" placeholder="자막 가사나 대사를 여기에 직접 입력하거나 붙여넣으세요.">${esc(n.subtitleText||"")}</textarea></label></div><div class="help ${n.needHelp?"req":""}"><label class="check"><input type="checkbox" class="f-help" ${n.needHelp?"checked":""}>자막 제작/정리 도움 요청</label><input type="text" class="f-helpnote" style="margin-top:8px" value="${esc(n.helpNote||"")}" placeholder="예: 찬양 후렴 반복 구간 자막 정리 필요"></div><div style="margin-top:10px"><label>순서별 음향/영상/진행 메모<input type="text" class="f-note" value="${esc(n.note||"")}" placeholder="예: 01:20 페이드아웃, 조명 어둡게"></label></div></div>`}).join("");
+function renderCustom(sub,acc){const w=$("#customFileList");const files=sub.customFiles||[];if(!files.length){w.innerHTML=`<div class="helper">등록된 자체 부서 큐시트 파일이 없습니다.</div>`;return}w.innerHTML=`<ul class="file-list">${files.map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span class="fsize">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-c="${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-c="${i}">삭제</button></li>`).join("")}</ul>`;w.querySelectorAll("[data-dl-c]").forEach(b=>b.onclick=async()=>{const f=files[Number(b.dataset.dlC)];if(f)await downloadFile(f)});w.querySelectorAll("[data-del-c]").forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.delC);const cur=collectDept(acc);const f=cur.customFiles[i];cur.customFiles.splice(i,1);if(f?.b2Key)await b2.deleteFile(f.b2Key).catch(()=>null);if(f?.id)await idbDel(f.id);setSub(acc,cur);saveLocal();renderCustom(cur,acc);toast("자체 큐시트 파일이 삭제되었습니다.");await saveDept(acc,{silent:true})})}
+function renderCues(sub,acc){const c=$("#cueList");const cues=sub.cues||[];if(!cues.length){c.innerHTML=`<div class="helper" style="padding:10px 0">등록된 순서가 없습니다. <b>+ 순서 추가</b>를 눌러 추가하세요.</div>`;return}c.innerHTML=cues.map((cue,idx)=>{const n=normCue(cue,idx);const yt=ytNorm(n.youtube);return `<div class="cue" data-idx="${idx}"><div class="cue-head"><b data-num="${idx+1}">순서 ${idx+1}</b><div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" data-up="${idx}" ${idx===0?"disabled":""}>▲</button><button class="btn btn-outline btn-xs" data-down="${idx}" ${idx===cues.length-1?"disabled":""}>▼</button><button class="btn btn-danger btn-xs" data-del="${idx}">삭제</button></div></div><div class="grid3"><div><label>순서명 / 주제<input type="text" class="f-title" value="${esc(n.title)}" placeholder="예: 찬양, 특송, 율동"></label></div><div><label>예상 소요 시간<input type="text" class="f-dur" value="${esc(n.duration)}" placeholder="예: 3분"></label></div><div><label>유튜브 링크 (선택)<input type="url" class="f-yt" value="${esc(n.youtube)}" placeholder="https://youtu.be/..."></label>${yt?`<div style="margin-top:4px"><a class="yt" href="${esc(yt)}" target="_blank" rel="noopener">▶ 유튜브 링크 열기</a></div>`:(n.youtube?`<div class="helper" style="color:var(--danger)">올바른 유튜브 URL을 확인해 주세요.</div>`:"")}</div></div><div class="cue-play-row"><label class="check"><input type="checkbox" class="f-reqBgm" ${n.reqBgm?"checked":""}> 🎵 BGM 재생 요청</label><input type="text" class="f-bgmNote" value="${esc(n.bgmNote||"")}" placeholder="BGM 상세" style="flex:1;min-width:160px;padding:6px 10px;font-size:13px"><label class="check"><input type="checkbox" class="f-reqVideo" ${n.reqVideo?"checked":""}> 🎬 영상 재생 요청</label><input type="text" class="f-videoNote" value="${esc(n.videoNote||"")}" placeholder="영상 상세" style="flex:1;min-width:160px;padding:6px 10px;font-size:13px"></div><div class="upload-grid"><div class="upload-box"><div class="upload-top"><span class="upload-title">🎵 음원 / 영상 파일 <small style="color:#94a3b8">최대 500MB</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-media" accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.mov,.avi,.mkv,.webm" multiple></label></div><div style="font-size:11px;color:#94a3b8">MP3 · WAV · MP4 · MOV 등</div>${n.media.length?`<ul class="file-list">${n.media.map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span class="fsize">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-m="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-m="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:`<div class="helper">등록된 음원/영상 파일이 없습니다.</div>`}</div><div class="upload-box"><div class="upload-top"><span class="upload-title">📄 자막 파일 <small style="color:#94a3b8">.txt</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-txt" accept=".txt,text/plain" multiple></label></div>${txtFiles(n).length?`<ul class="file-list">${txtFiles(n).map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span class="fsize">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-t="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-t="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:`<div class="helper">등록된 .txt 자막 파일이 없습니다.</div>`}</div><div class="upload-box"><div class="upload-top"><span class="upload-title">📑 워드/문서 <small style="color:#94a3b8">별도 첨부</small></span><label class="upload-btn">📁 파일 선택<input type="file" class="f-doc" accept=".doc,.docx,.hwp,.hwpx,.pdf,.ppt,.pptx" multiple></label></div>${docFiles(n).length?`<ul class="file-list">${docFiles(n).map((f,i)=>`<li><span class="fname" title="${esc(f.name)}">${esc(f.name)}</span> <span class="fsize">(${fmt(f.size)})</span> ${f.b2Key?`<span class="pill pill-green">B2</span>`:`<span class="pill pill-warn">로컬</span>`} <button class="btn btn-outline btn-xs" data-dl-d="${idx}:${i}">다운로드</button> <button class="btn btn-danger btn-xs" data-del-d="${idx}:${i}">삭제</button></li>`).join("")}</ul>`:`<div class="helper">첨부된 참고 문서가 없습니다.</div>`}</div></div><div style="margin-top:10px"><label>자막 직접 입력 / 붙여넣기 (저장 시 .txt로 B2 자동 업로드)<textarea class="f-text" style="min-height:76px" placeholder="자막 가사나 대사를 여기에 직접 입력하거나 붙여넣으세요.">${esc(n.subtitleText||"")}</textarea></label></div><div class="help ${n.needHelp?"req":""}"><label class="check"><input type="checkbox" class="f-help" ${n.needHelp?"checked":""}>자막 제작/정리 도움 요청</label><input type="text" class="f-helpnote" style="margin-top:8px" value="${esc(n.helpNote||"")}" placeholder="예: 찬양 후렴 반복 구간 자막 정리 필요"></div><div style="margin-top:10px"><label>순서별 음향/영상/진행 메모<input type="text" class="f-note" value="${esc(n.note||"")}" placeholder="예: 01:20 페이드아웃, 조명 어둡게"></label></div></div>`}).join("");
   c.querySelectorAll("[data-up]").forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.up);const cur=collectDept(acc);if(i>0){const [it]=cur.cues.splice(i,1);cur.cues.splice(i-1,0,it);setSub(acc,cur);saveLocal();dirty=true;renderCues(cur,acc);scheduleAutoSave(acc)}});
   c.querySelectorAll("[data-down]").forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.down);const cur=collectDept(acc);if(i<cur.cues.length-1){const [it]=cur.cues.splice(i,1);cur.cues.splice(i+1,0,it);setSub(acc,cur);saveLocal();dirty=true;renderCues(cur,acc);scheduleAutoSave(acc)}});
   c.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{const i=Number(b.dataset.del);const cur=collectDept(acc);const rem=cur.cues[i];cur.cues.splice(i,1);if(rem){for(const f of [...(rem.media||[]),...txtFiles(rem),...docFiles(rem)]){if(f?.b2Key)await b2.deleteFile(f.b2Key).catch(()=>null);if(f?.id)await idbDel(f.id)}}setSub(acc,cur);saveLocal();dirty=true;renderCues(cur,acc);toast(`순서 ${i+1}이 삭제되었습니다.`);await saveDept(acc,{silent:true})});
