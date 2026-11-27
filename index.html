@@ -8,195 +8,199 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     :root {
-      --bg: #f4f6f9;
+      --bg: #f1f5f9;
       --card: #ffffff;
-      --primary: #1e3a8a;
-      --primary-hover: #172554;
-      --primary-light: #eff6ff;
-      --text: #111827;
-      --text-secondary: #374151;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --danger: #dc2626;
-      --danger-bg: #fef2f2;
+      --card-subtle: #f8fafc;
+      --text: #0f172a;
+      --text-secondary: #334155;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --line-strong: #cbd5e1;
+      --primary: #1d4ed8;
+      --primary-hover: #1e40af;
+      --primary-soft: #eff6ff;
       --success: #15803d;
-      --success-bg: #f0fdf4;
+      --success-soft: #f0fdf4;
       --warn: #b45309;
-      --warn-bg: #fffbeb;
-      --radius: 10px;
-      --shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+      --warn-soft: #fffbeb;
+      --danger: #b91c1c;
+      --danger-soft: #fef2f2;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04);
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.45;
-      font-size: 13.5px;
+      line-height: 1.58;
+      letter-spacing: -0.015em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.92em;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: #0f172a;
     }
 
     .hidden { display: none !important; }
 
     .topbar {
-      background: var(--primary);
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(10px);
       color: #fff;
-      padding: 11px 18px;
+      padding: 13px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .topbar-brand {
+    .brand {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #f8fafc;
+    }
+    .topbar-right {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-weight: 700;
-      font-size: 15.5px;
-      letter-spacing: -0.2px;
-    }
-    .topbar-actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
       flex-wrap: wrap;
     }
     .user-badge {
-      background: rgba(255, 255, 255, 0.16);
-      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 5px 12px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 600;
+      color: #f1f5f9;
     }
 
     .container {
       max-width: 1280px;
-      margin: 14px auto;
-      padding: 0 14px 36px;
-    }
-
-    .login-wrap {
-      max-width: 430px;
-      margin: 36px auto;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      box-shadow: var(--shadow);
-      margin-bottom: 12px;
-    }
-    .card-title {
-      margin: 0 0 10px;
-      font-size: 15.5px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .card-subtitle {
-      margin: -4px 0 10px;
-      font-size: 12.5px;
-      color: var(--muted);
-    }
-
-    .dept-switcher-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-      background: var(--primary-light);
-      border: 1px solid #bfdbfe;
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 10px;
-    }
-    .dept-switcher-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .dept-switcher-controls select {
-      width: auto;
-      min-width: 210px;
-      font-weight: 700;
-    }
-    .dept-quick-chips {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-      margin-top: 8px;
+      margin: 22px auto;
+      padding: 0 16px 64px;
     }
 
     .event-banner {
-      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      background: linear-gradient(125deg, #0f172a 0%, #1e3a8a 62%, #1d4ed8 100%);
       color: #fff;
       border-radius: var(--radius);
-      padding: 13px 18px;
-      margin-bottom: 12px;
+      padding: 22px 24px;
+      margin-bottom: 18px;
       box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
-    .event-banner-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .event-banner-title {
-      font-size: 17px;
+    .event-banner h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
       font-weight: 800;
-      margin: 0;
-      letter-spacing: -0.3px;
+      letter-spacing: -0.025em;
+      line-height: 1.35;
     }
-    .event-banner-meta {
-      margin-top: 5px;
-      font-size: 12.5px;
-      opacity: 0.96;
+    .event-meta {
+      font-size: 13.5px;
+      color: rgba(255, 255, 255, 0.92);
       display: flex;
-      gap: 14px;
+      gap: 18px;
       flex-wrap: wrap;
+      line-height: 1.5;
     }
 
-    .nav-tabs {
+    .tabs {
       display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-      border-bottom: 2px solid var(--border);
-      padding-bottom: 6px;
+      gap: 8px;
+      margin-bottom: 18px;
       flex-wrap: wrap;
     }
     .tab-btn {
-      border: none;
-      background: transparent;
-      padding: 7px 13px;
-      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text-secondary);
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
       font-weight: 700;
-      font-size: 13px;
-      color: var(--muted);
       cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-btn:hover {
+      border-color: var(--line-strong);
+      color: var(--text);
     }
     .tab-btn.active {
       background: var(--primary);
       color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.22);
     }
 
-    .form-group { margin-bottom: 10px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .card-title {
+      margin: 0;
+      font-size: 17.5px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .card-sub {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    @media (max-width: 820px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .container { margin: 16px auto; padding: 0 12px 56px; }
+      .card { padding: 16px; border-radius: 12px; }
+      .event-banner { padding: 18px; border-radius: 12px; }
+      .event-banner h1 { font-size: 19px; }
+    }
+
+    .form-group { margin-bottom: 14px; }
     label {
       display: block;
-      font-weight: 600;
-      font-size: 12.5px;
-      margin-bottom: 4px;
-      color: var(--text-secondary);
+      font-size: 13.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
     }
     input[type="text"],
     input[type="password"],
@@ -205,818 +209,878 @@
     textarea,
     select {
       width: 100%;
-      padding: 7px 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 7px;
-      font-size: 13px;
-      font-family: inherit;
+      padding: 10px 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      line-height: 1.5;
       background: #fff;
       color: var(--text);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
-    textarea { min-height: 76px; resize: vertical; }
-    input:focus, textarea:focus, select:focus {
+    input:focus,
+    textarea:focus,
+    select:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
     }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-    @media (max-width: 820px) {
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    textarea { min-height: 82px; resize: vertical; }
+    .subtitle-paste-area {
+      min-height: 118px;
+      margin-top: 8px;
+      background: var(--card-subtle);
+      line-height: 1.6;
     }
 
     .btn {
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      padding: 7px 12px;
-      border-radius: 7px;
-      border: 1px solid transparent;
-      font-weight: 700;
-      font-size: 12.5px;
-      cursor: pointer;
-      transition: 0.14s ease;
-      text-decoration: none;
-    }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-    .btn-success { background: var(--success); color: #fff; }
-    .btn-success:hover:not(:disabled) { filter: brightness(0.95); }
-    .btn-danger { background: var(--danger); color: #fff; }
-    .btn-danger:hover:not(:disabled) { filter: brightness(0.95); }
-    .btn-warn { background: #d97706; color: #fff; }
-    .btn-outline { background: #fff; color: var(--text); border-color: #cbd5e1; }
-    .btn-outline:hover:not(:disabled) { background: #f8fafc; }
-    .btn-ghost-light { background: rgba(255,255,255,0.14); color: #fff; border-color: rgba(255,255,255,0.28); }
-    .btn-ghost-light:hover:not(:disabled) { background: rgba(255,255,255,0.24); }
-    .btn-sm { padding: 5px 9px; font-size: 12px; }
-    .btn-xs { padding: 3px 7px; font-size: 11px; border-radius: 5px; }
-
-    .toggle-chip-group {
-      display: flex;
-      flex-wrap: wrap;
       gap: 6px;
-      margin-top: 4px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      line-height: 1.25;
+      min-height: 36px;
     }
-    .inst-chip {
-      padding: 5px 10px;
-      border-radius: 999px;
-      border: 1px solid #cbd5e1;
+    .btn-sm { padding: 7px 11px; font-size: 12.5px; min-height: 32px; }
+    .btn-xs { padding: 4px 8px; font-size: 11.5px; border-radius: 7px; min-height: 26px; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { filter: brightness(0.95); }
+    .btn-warn { background: var(--warn); color: #fff; }
+    .btn-warn:hover { filter: brightness(0.95); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { filter: brightness(0.95); }
+    .btn-outline {
       background: #fff;
+      color: var(--text-secondary);
+      border-color: var(--line-strong);
+    }
+    .btn-outline:hover {
+      background: var(--card-subtle);
       color: var(--text);
-      font-size: 12px;
+      border-color: #94a3b8;
+    }
+    .btn-ghost-light {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+    .btn-ghost-light:hover { background: rgba(255, 255, 255, 0.18); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .inst-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .inst-chip {
+      border: 1px solid var(--line-strong);
+      background: var(--card-subtle);
+      color: var(--text-secondary);
+      padding: 8px 13px;
+      border-radius: 999px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.15s ease;
     }
+    .inst-chip:hover { border-color: #94a3b8; color: var(--text); }
     .inst-chip.active {
-      background: var(--primary);
-      color: #fff;
+      background: var(--primary-soft);
       border-color: var(--primary);
+      color: var(--primary);
+      font-weight: 700;
     }
     .inst-chip.none-chip.active {
-      background: #475569;
+      background: #e2e8f0;
       border-color: #475569;
-      color: #fff;
+      color: #0f172a;
     }
 
+    .media-req-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
     .media-req-btn {
-      padding: 6px 12px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--line-strong);
       background: #fff;
-      color: var(--text);
-      font-size: 12.5px;
+      color: var(--text-secondary);
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
+      transition: all 0.15s ease;
     }
     .media-req-btn.active {
-      background: var(--success);
-      color: #fff;
-      border-color: var(--success);
+      background: var(--success-soft);
+      border-color: #22c55e;
+      color: var(--success);
     }
 
-    .inline-check-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      flex-wrap: wrap;
-      margin-top: 6px;
+    .custom-cue-box {
+      border: 1px dashed #93c5fd;
+      background: #f8fbff;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 14px;
     }
-    .inline-check-label {
+
+    .mic-extra-box {
+      border: 1px solid var(--line);
+      background: var(--card-subtle);
+      border-radius: var(--radius-sm);
+      padding: 11px 13px;
+      margin-top: 8px;
+    }
+    .check-inline {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      margin-bottom: 0;
+      gap: 7px;
+      font-size: 13px;
       font-weight: 600;
+      color: var(--text-secondary);
       cursor: pointer;
+      margin-bottom: 0;
     }
-    .inline-check-label input[type="checkbox"] {
-      width: auto;
+    .check-inline input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
       margin: 0;
-    }
-    .stand-count-inline {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .stand-count-inline input[type="number"] {
-      width: 72px;
-      padding: 4px 7px;
-      font-size: 12.5px;
+      cursor: pointer;
+      accent-color: var(--primary);
     }
 
     .cue-item {
-      border: 1px solid #dbeafe;
-      background: #fafcff;
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-bottom: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: var(--card-subtle);
     }
     .cue-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       gap: 8px;
-      margin-bottom: 8px;
-      padding-bottom: 6px;
-      border-bottom: 1px dashed #cbd5e1;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
     }
     .cue-num {
       font-weight: 800;
       color: var(--primary);
-      font-size: 14px;
+      font-size: 14.5px;
     }
 
     .help-box {
-      background: #f8fafc;
-      border: 1px dashed #94a3b8;
-      border-radius: 8px;
-      padding: 8px 10px;
-      margin-top: 6px;
+      background: var(--warn-soft);
+      border: 1px solid #fde68a;
+      border-radius: var(--radius-sm);
+      padding: 11px 13px;
+      margin-top: 10px;
     }
     .help-box.requested {
-      background: var(--warn-bg);
+      background: #fef3c7;
       border-color: #f59e0b;
-      border-style: solid;
-    }
-
-    .subtitle-paste-area {
-      width: 100%;
-      min-height: 76px;
-      margin-top: 6px;
-      padding: 7px 10px;
-      border: 1px solid #93c5fd;
-      border-radius: 7px;
-      background: #ffffff;
-      font-size: 12.5px;
-      line-height: 1.45;
-      resize: vertical;
-    }
-
-    .custom-cue-box {
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-top: 8px;
-    }
-
-    .helper-text {
-      font-size: 11.5px;
-      color: var(--muted);
-      margin-top: 3px;
     }
 
     .pill {
       display: inline-block;
-      padding: 2px 7px;
+      padding: 3px 9px;
       border-radius: 999px;
-      font-size: 11px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+    .pill-green { background: #dcfce7; color: #166534; }
+    .pill-warn { background: #fef3c7; color: #92400e; }
+    .pill-muted { background: #f1f5f9; color: #475569; }
+    .pill-blue { background: #dbeafe; color: #1e40af; }
+
+    .id-color-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+    .id-color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dept-color-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-weight: 700;
       white-space: nowrap;
     }
-    .pill-green { background: var(--success-bg); color: var(--success); }
-    .pill-warn { background: var(--warn-bg); color: var(--warn); }
-    .pill-muted { background: #f1f5f9; color: #64748b; }
-    .pill-blue { background: var(--primary-light); color: var(--primary); }
+    .id-code-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      font-size: 12px;
+      white-space: nowrap;
+    }
 
     .yt-link-badge {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #fef2f2;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 7px;
+      background: var(--danger-soft);
       border: 1px solid #fecaca;
-      color: #b91c1c;
-      font-size: 11.5px;
+      color: var(--danger);
+      font-size: 12px;
       font-weight: 700;
       text-decoration: none;
       white-space: nowrap;
+      flex-shrink: 0;
+      line-height: 1.2;
     }
-    .yt-link-badge:hover {
-      background: #fee2e2;
-    }
+    .yt-link-badge:hover { background: #fee2e2; }
     .yt-play-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 15px;
-      height: 15px;
-      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
       background: #dc2626;
       color: #fff;
-      font-size: 9px;
+      font-size: 10px;
       line-height: 1;
-    }
-
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      background: #fff;
-    }
-    th, td {
-      border-bottom: 1px solid var(--border);
-      padding: 6px 8px;
-      text-align: left;
-      vertical-align: middle;
-    }
-    th {
-      background: #f8fafc;
-      font-weight: 700;
-      color: var(--text-secondary);
-      white-space: nowrap;
-    }
-    tr:hover td { background: #fafcff; }
-    .nowrap-col { white-space: nowrap; }
-
-    .admin-note-cell {
-      display: inline-block;
-      max-width: 175px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      vertical-align: middle;
-      color: var(--text-secondary);
+      flex-shrink: 0;
     }
 
     .file-chip-row {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       flex-wrap: wrap;
-      margin-bottom: 3px;
+      margin-bottom: 5px;
     }
     .file-chip-row:last-child { margin-bottom: 0; }
 
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 11px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--card-subtle);
+      font-weight: 700;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    tbody tr:hover { background: #fafbfd; }
+    tbody tr:last-child td { border-bottom: none; }
+    .nowrap-col { white-space: nowrap; }
+
+    .login-box {
+      max-width: 420px;
+      margin: 56px auto;
+    }
+    .helper-text {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.5;
+    }
     .file-list {
-      margin: 4px 0 0;
-      padding-left: 16px;
-      font-size: 12px;
+      margin: 7px 0 0;
+      padding-left: 18px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
     }
 
-    .danger-zone {
-      border: 1px solid #fecaca;
-      background: var(--danger-bg);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-top: 12px;
+    .upload-progress-banner {
+      background: var(--primary-soft);
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 14px;
     }
 
     .toast {
       position: fixed;
-      bottom: 20px;
       right: 20px;
-      background: #111827;
+      bottom: 20px;
+      background: #0f172a;
       color: #fff;
-      padding: 9px 14px;
-      border-radius: 8px;
-      font-size: 12.5px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
       font-weight: 600;
-      z-index: 9999;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
-    }
-
-    .progress-banner {
-      margin-top: 8px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      color: #1e3a8a;
-      font-size: 12px;
-      font-weight: 700;
+      z-index: 99;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.24);
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="topbar-brand">
-      <span>행사 큐시트 및 미디어 자료 제출 시스템</span>
-    </div>
-    <div class="topbar-actions" id="topbarActions"></div>
+    <div class="brand">행사 큐시트 · 미디어 자료 제출 시스템</div>
+    <div class="topbar-right" id="topbarActions"></div>
   </header>
 
-  <main class="container">
-    <section id="loginView" class="login-wrap">
-      <div class="card">
-        <h2 class="card-title">로그인</h2>
-        <p class="card-subtitle">부서 계정 또는 관리자 계정으로 로그인하세요.</p>
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="loginId">아이디</label>
-            <input type="text" id="loginId" required autocomplete="username" placeholder="아이디 입력" />
-          </div>
-          <div class="form-group">
-            <label for="loginPw">비밀번호</label>
-            <input type="password" id="loginPw" required autocomplete="current-password" placeholder="비밀번호 입력" />
-          </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;">로그인</button>
-        </form>
-        <div style="margin-top:10px; display:flex; justify-content:flex-end;">
-          <button type="button" class="btn btn-outline btn-sm" id="resetLoginStorageBtn">브라우저 저장 초기화</button>
+  <section id="loginView" class="container">
+    <div class="card login-box">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">로그인</h2>
+          <p class="card-sub">부서 계정 또는 관리자 계정으로 로그인하세요.</p>
         </div>
       </div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="loginId">아이디</label>
+          <input type="text" id="loginId" placeholder="아이디를 입력하세요" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="loginPw">비밀번호</label>
+          <input type="password" id="loginPw" placeholder="비밀번호를 입력하세요" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px 14px;">로그인</button>
+      </form>
+      <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line); text-align:right;">
+        <button type="button" class="btn btn-outline btn-sm" id="resetLoginStorageBtn">브라우저 저장 데이터 초기화</button>
+      </div>
+    </div>
+  </section>
+
+  <main id="appView" class="container hidden">
+    <section class="event-banner">
+      <h1 id="bannerEventName">행사명</h1>
+      <div class="event-meta" id="bannerEventMeta"></div>
     </section>
 
-    <section id="appView" class="hidden">
-      <div class="event-banner" id="eventBanner">
-        <div class="event-banner-top">
-          <h1 class="event-banner-title" id="bannerEventName">행사명이 아직 설정되지 않았습니다</h1>
-          <span class="user-badge" id="lastSavedText">자동저장 및 B2 자동 동기화 활성화됨</span>
-        </div>
-        <div class="event-banner-meta" id="bannerEventMeta"></div>
-      </div>
+    <nav class="tabs" id="navTabs"></nav>
 
-      <nav class="nav-tabs" id="navTabs"></nav>
-
-      <div id="deptTab" class="hidden">
-        <div class="card hidden" id="adminDeptSelectorCard">
-          <div class="dept-switcher-bar">
-            <div>
-              <div style="font-weight:800; color:var(--primary);">관리자 부서별 직접 편집 모드</div>
-              <div class="helper-text" style="margin-top:2px;">편집할 부서를 선택하면 해당 부서의 장비·재생요청·자체큐시트·순서별 음원/자막을 바로 수정하고 B2에 반영합니다.</div>
-            </div>
-            <div class="dept-switcher-controls">
-              <label for="adminTargetDeptSelect" style="margin-bottom:0;">대상 부서</label>
-              <select id="adminTargetDeptSelect"></select>
-              <button type="button" class="btn btn-outline btn-sm" id="reloadTargetDeptBtn">B2 최신 불러오기</button>
-            </div>
+    <section id="deptTab" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title"><span id="deptNameBadge"></span> 큐시트 및 필요 항목 제출</h2>
+            <p class="card-sub">입력 내용은 자동으로 저장 및 동기화되며, 필요시 [저장 및 동기화] 버튼으로 즉시 반영할 수 있습니다.</p>
           </div>
-          <div class="dept-quick-chips" id="adminTargetDeptChips"></div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span id="lastSavedText" class="helper-text" style="margin:0;"></span>
+            <button type="button" class="btn btn-outline btn-sm" id="fillDeptSampleBtn">예시 데이터 채우기</button>
+            <button type="button" class="btn btn-success" id="saveDeptBtn">저장 및 동기화</button>
+          </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <span>1. 부서 기본 정보 및 음향·영상 요청 (<span id="deptNameBadge"></span>)</span>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              <button type="button" class="btn btn-outline btn-sm" id="fillDeptSampleBtn">예시 데이터 채우기</button>
-            </div>
-          </div>
+        <div id="deptUploadProgress" class="upload-progress-banner hidden"></div>
 
-          <div class="grid-2">
-            <div class="form-group">
-              <label for="deptContact">담당자 이름 및 연락처</label>
-              <input type="text" id="deptContact" placeholder="예: 홍길동 집사 / 010-1234-5678" />
-            </div>
-            <div class="form-group">
-              <label for="deptMicCount">필요 마이크 수량 (개)</label>
-              <input type="number" id="deptMicCount" min="0" max="50" value="0" />
-              <div class="inline-check-row">
-                <label class="inline-check-label">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="deptContact">부서 담당자 및 연락처</label>
+            <input type="text" id="deptContact" placeholder="예: 김청년 리더 (010-1234-5678)" />
+          </div>
+          <div class="form-group">
+            <label for="deptMicCount">필요 마이크 개수</label>
+            <input type="number" id="deptMicCount" min="0" max="50" value="0" />
+            <div class="mic-extra-box">
+              <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+                <label class="check-inline">
                   <input type="checkbox" id="chkReqMicStand" />
                   <span>마이크 스탠드 요청</span>
                 </label>
-                <span class="stand-count-inline hidden" id="micStandCountWrap">
-                  <label for="deptMicStandCount" style="margin-bottom:0; font-size:12px;">수량</label>
-                  <input type="number" id="deptMicStandCount" min="0" max="50" value="1" />
-                  <span class="helper-text" style="margin-top:0;">개</span>
-                </span>
-                <label class="inline-check-label">
+                <label class="check-inline">
                   <input type="checkbox" id="chkCeilingMic" />
                   <span>천장 E/L 마이크 사용</span>
                 </label>
               </div>
+              <div id="micStandCountWrap" class="hidden" style="margin-top:8px; max-width:220px;">
+                <label for="deptMicStandCount" style="margin-bottom:4px;">필요 마이크 스탠드 개수</label>
+                <input type="number" id="deptMicStandCount" min="0" max="50" value="1" />
+              </div>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label>사용 악기 선택 (복수 선택 가능)</label>
-            <div class="toggle-chip-group" id="instrumentSelector"></div>
-          </div>
-
-          <div class="form-group">
-            <label>미디어 재생 요청 (해당 항목 클릭 시 선택/해제)</label>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="media-req-btn" id="btnReqBgm">BGM 재생 요청</button>
-              <button type="button" class="media-req-btn" id="btnReqVideo">영상 재생 요청</button>
-            </div>
-          </div>
-
-          <div class="custom-cue-box">
-            <label for="deptCustomCueFile">자체 부서 큐시트 파일 업로드 (선택 · 한글/엑셀/PDF/이미지/기타)</label>
-            <input type="file" id="deptCustomCueFile" multiple />
-            <div class="helper-text">부서에서 별도로 작성한 큐시트 파일이 있다면 첨부해 주세요.</div>
-            <div id="customCueFileList"></div>
-          </div>
-
-          <div class="form-group" style="margin-top:10px; margin-bottom:0;">
-            <label for="deptGeneralNote">부서 전체 전달사항</label>
-            <textarea id="deptGeneralNote" placeholder="음향 리허설 희망 시간, 조명/무대 특이사항, 진행자 요청사항 등을 적어주세요."></textarea>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <span>2. 행사 순서별 큐시트 · 음원/영상 · 자막 등록</span>
-            <button type="button" class="btn btn-outline btn-sm" id="addCueBtn">+ 순서 추가</button>
-          </div>
-          <p class="card-subtitle">
-            순서별로 영상/음원 또는 유튜브 링크, 자막(.txt B2 저장 · 워드/문서 별도 분리 · 직접 Ctrl+V 붙여넣기)을 등록하세요.
-          </p>
+        <div class="form-group">
+          <label>사용 악기 선택 (복수 선택 가능)</label>
+          <div class="inst-group" id="instrumentSelector"></div>
+        </div>
 
-          <div id="cueListContainer"></div>
-          <div id="deptUploadProgress" class="progress-banner hidden"></div>
-
-          <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">
-            <button type="button" class="btn btn-primary" id="saveDeptBtn">저장 및 B2 동기화</button>
+        <div class="form-group">
+          <label>음향/영상 재생 요청</label>
+          <div class="media-req-group">
+            <button type="button" class="media-req-btn" id="btnReqBgm">BGM 재생 요청</button>
+            <button type="button" class="media-req-btn" id="btnReqVideo">영상 재생 요청</button>
           </div>
+          <div class="helper-text">해당하는 항목을 누르면 관리자 화면의 재생요청 컬럼에 표시됩니다.</div>
+        </div>
+
+        <div class="custom-cue-box">
+          <label for="deptCustomCueFile" style="margin-bottom:4px;">자체 부서 큐시트 파일 첨부 (선택 · 최대 500MB)</label>
+          <div class="helper-text" style="margin-bottom:8px;">
+            부서에서 별도로 작성한 큐시트 문서(한글, 워드, 엑셀, PDF, 이미지 등)가 있다면 첨부해 주세요.
+          </div>
+          <input type="file" id="deptCustomCueFile" multiple />
+          <div id="customCueFileList"></div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+          <label for="deptGeneralNote">미디어팀 전달사항 (음향·조명·영상·진행 공통 메모)</label>
+          <textarea id="deptGeneralNote" placeholder="예: 리허설 시간 희망, 암전 타이밍, 특수효과 요청 등"></textarea>
         </div>
       </div>
 
-      <div id="adminOverviewTab" class="hidden">
-        <div class="card">
-          <div class="card-title">
-            <span>전체 통합 큐시트 현황</span>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              <button type="button" class="btn btn-outline btn-sm" id="fillAdminSampleBtn">예시 데이터 채우기</button>
-              <button type="button" class="btn btn-outline btn-sm" id="refreshAllSyncBtn">B2 전체 새로고침</button>
-              <button type="button" class="btn btn-outline btn-sm" id="saveMasterOrderBtn">순번 변경 저장</button>
-              <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">엑셀(.xlsx) 다운로드</button>
-              <button type="button" class="btn btn-primary btn-sm" id="exportZipBtn">부서별·순서별 ZIP 다운로드</button>
-            </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">세부 순서(큐시트) · 음원/영상 · 자막 등록</h3>
+            <p class="card-sub">순서별로 영상/음원 파일 또는 유튜브 링크, 자막(.txt / 워드·문서 파일 분리 보관 / 직접 붙여넣기)을 등록하세요.</p>
           </div>
-          <div id="zipProgressBanner" class="progress-banner hidden"></div>
-          <div id="adminSummaryBadges" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
+          <button type="button" class="btn btn-primary btn-sm" id="addCueBtn">+ 순서 추가</button>
+        </div>
+        <div id="cueListContainer"></div>
+      </div>
+    </section>
 
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>순번</th>
-                  <th>순서조정</th>
-                  <th>아이디</th>
-                  <th>부서명</th>
-                  <th>순서명 / 주제</th>
-                  <th>시간</th>
-                  <th>마이크/스탠드/천장</th>
-                  <th>사용악기/재생요청</th>
-                  <th>자막</th>
-                  <th>음원/영상/자막/링크</th>
-                  <th>메모</th>
-                  <th>부서 삭제</th>
-                </tr>
-              </thead>
-              <tbody id="masterCueTableBody"></tbody>
-            </table>
+    <section id="adminOverviewTab" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">전체 통합 큐시트 현황</h2>
+            <p class="card-sub">각 부서가 제출한 순서와 장비·자막·파일 현황을 한눈에 확인하고 순번을 조정하거나 내보낼 수 있습니다.</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" id="fillAdminSampleBtn">예시 데이터 채우기</button>
+            <button type="button" class="btn btn-outline btn-sm" id="refreshAllSyncBtn">전체 동기화</button>
+            <button type="button" class="btn btn-primary btn-sm" id="saveMasterOrderBtn">순번 변경 저장</button>
+            <button type="button" class="btn btn-success btn-sm" id="exportExcelBtn">엑셀(.xlsx) 다운로드</button>
+            <button type="button" class="btn btn-outline btn-sm" id="exportZipBtn">부서별·순서별 ZIP 다운로드</button>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <span>부서별 순서·장비·재생요청·자체큐시트 요약</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>순서</th>
-                  <th>부서명</th>
-                  <th>담당자</th>
-                  <th>제출 순서</th>
-                  <th>마이크</th>
-                  <th>스탠드</th>
-                  <th>천장 E/L</th>
-                  <th>사용 악기</th>
-                  <th>재생 요청</th>
-                  <th>자체 큐시트</th>
-                  <th>자막 도움</th>
-                  <th>전달사항</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="deptSummaryTableBody"></tbody>
-            </table>
-          </div>
-        </div>
+        <div id="zipProgressBanner" class="upload-progress-banner hidden"></div>
+        <div id="adminSummaryBadges" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;"></div>
 
-        <div class="card">
-          <div class="card-title">
-            <span>B2 업로드 파일 목록 및 개별 다운로드</span>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <span class="helper-text" id="b2StatusText" style="margin-top:0;"></span>
-              <button type="button" class="btn btn-outline btn-sm" id="refreshB2FilesBtn">B2 파일 목록 새로고침</button>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>부서명</th>
-                  <th>구분</th>
-                  <th>파일명</th>
-                  <th>크기</th>
-                  <th>다운로드 / 삭제</th>
-                </tr>
-              </thead>
-              <tbody id="b2FilesTableBody"></tbody>
-            </table>
-          </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>순번</th>
+                <th>순번조정</th>
+                <th>식별ID</th>
+                <th>부서</th>
+                <th>순서명 / 주제</th>
+                <th>시간</th>
+                <th>마이크/스탠드/천장</th>
+                <th>악기 / 재생요청</th>
+                <th>자막</th>
+                <th>음원·자막문서·첨부</th>
+                <th>메모</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="masterCueTableBody"></tbody>
+          </table>
         </div>
       </div>
 
-      <div id="adminManageTab" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">부서별 순서 · 장비 · 재생요청 · 자체큐시트 요약</h3>
+            <p class="card-sub">부서별 등록 순서, 마이크/스탠드/천장 E/L, 사용악기, BGM/영상 재생요청, 자체 큐시트 및 자막 도움요청 내역입니다.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>식별ID</th>
+                <th>부서</th>
+                <th>담당자</th>
+                <th>등록 순서</th>
+                <th>마이크</th>
+                <th>스탠드</th>
+                <th>천장 E/L</th>
+                <th>사용악기</th>
+                <th>재생요청</th>
+                <th>자체 큐시트</th>
+                <th>자막 도움요청</th>
+                <th>전달사항</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="deptSummaryTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Backblaze B2 업로드 파일 목록</h3>
+            <p class="card-sub">B2 버킷(gumimc-media-files)에 업로드된 파일(최대 500MB) 목록이며 개별 다운로드 또는 삭제가 가능합니다.</p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span id="b2StatusText" class="helper-text" style="margin:0;"></span>
+            <button type="button" class="btn btn-outline btn-sm" id="refreshB2FilesBtn">B2 파일 목록 새로고침</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>부서</th>
+                <th>구분</th>
+                <th>파일명</th>
+                <th>용량</th>
+                <th>다운로드 / 삭제</th>
+              </tr>
+            </thead>
+            <tbody id="b2FilesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="adminManageTab" class="hidden">
+      <div class="grid-2">
         <div class="card">
-          <div class="card-title"><span>행사명 · 일시 · 안내 공지 설정</span></div>
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">행사 정보 설정</h3>
+              <p class="card-sub">행사명, 일시/장소, 공지사항을 변경하면 모든 사용자 화면에 동기화됩니다.</p>
+            </div>
+          </div>
           <form id="eventSettingsForm">
-            <div class="grid-2">
-              <div class="form-group">
-                <label for="cfgEventName">행사명</label>
-                <input type="text" id="cfgEventName" required placeholder="예: 2026 성탄전야 발표회" />
-              </div>
-              <div class="form-group">
-                <label for="cfgEventDate">행사 일시 / 장소</label>
-                <input type="text" id="cfgEventDate" placeholder="예: 2026.12.24(목) 19:30 / 본당" />
-              </div>
+            <div class="form-group">
+              <label for="cfgEventName">행사명</label>
+              <input type="text" id="cfgEventName" required />
             </div>
             <div class="form-group">
-              <label for="cfgEventNotice">공지 / 제출 안내</label>
-              <input type="text" id="cfgEventNotice" placeholder="예: 음원·자막 파일은 행사 3일 전까지 제출해 주세요." />
+              <label for="cfgEventDate">일시 / 장소</label>
+              <input type="text" id="cfgEventDate" />
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">행사 설정 저장 및 B2 동기화</button>
+            <div class="form-group">
+              <label for="cfgEventNotice">공지사항</label>
+              <textarea id="cfgEventNotice"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">행사 정보 저장 및 동기화</button>
           </form>
         </div>
 
         <div class="card">
-          <div class="card-title"><span>부서 계정 추가 및 관리</span></div>
-          <form id="addAccountForm" class="grid-3" style="margin-bottom:10px;">
-            <div class="form-group" style="margin-bottom:0;">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">부서 계정 추가</h3>
+              <p class="card-sub">새 부서 로그인 계정을 추가하고 동기화합니다.</p>
+            </div>
+          </div>
+          <form id="addAccountForm">
+            <div class="form-group">
               <label for="newAccDept">부서명</label>
-              <input type="text" id="newAccDept" required placeholder="예: 찬양대" />
+              <input type="text" id="newAccDept" placeholder="예: 새가족부" required />
             </div>
-            <div class="form-group" style="margin-bottom:0;">
+            <div class="form-group">
               <label for="newAccId">로그인 아이디</label>
-              <input type="text" id="newAccId" required placeholder="예: choir" />
+              <input type="text" id="newAccId" placeholder="예: 새가족부" required />
             </div>
-            <div class="form-group" style="margin-bottom:0;">
+            <div class="form-group">
               <label for="newAccPw">비밀번호</label>
-              <input type="text" id="newAccPw" required placeholder="비밀번호" />
+              <input type="text" id="newAccPw" placeholder="예: 1111" required />
             </div>
-            <div style="grid-column: 1 / -1;">
-              <button type="submit" class="btn btn-success btn-sm">부서 계정 추가</button>
-            </div>
+            <button type="submit" class="btn btn-success">계정 추가 및 동기화</button>
           </form>
+        </div>
+      </div>
 
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>부서명</th>
-                  <th>아이디</th>
-                  <th>비밀번호</th>
-                  <th>기본순서</th>
-                  <th>권한</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="accountTableBody"></tbody>
-            </table>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">계정 목록 및 수정/삭제</h3>
+            <p class="card-sub">부서명, 아이디, 비밀번호를 수정해도 기존 큐시트와 식별순서는 유지됩니다.</p>
           </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>부서명</th>
+                <th>아이디</th>
+                <th>비밀번호</th>
+                <th>식별ID</th>
+                <th>권한</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="accountTableBody"></tbody>
+          </table>
+        </div>
+      </div>
 
-          <div class="danger-zone">
-            <div style="font-weight:700; color:var(--danger); margin-bottom:4px;">전체 데이터 및 B2 파일 영구 초기화</div>
-            <div class="helper-text" style="margin-bottom:8px;">
-              행사명, 제출된 큐시트, 마이크/스탠드/천장 E/L/악기 선택, 재생 요청, 자체 큐시트, 자막 내용/도움요청 및 B2 파일이 모두 영구 삭제됩니다. (계정은 유지)
-            </div>
-            <button type="button" class="btn btn-danger btn-sm" id="resetEventBtn">행사 데이터 및 B2 파일 전체 초기화</button>
+      <div class="card" style="border-color:#fecaca;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title" style="color:var(--danger);">새 행사 시작 (전체 데이터 및 B2 파일 초기화)</h3>
+            <p class="card-sub">주의: 행사명, 모든 부서 큐시트, 자막, 요청사항, 업로드된 B2 파일이 영구 삭제됩니다. (계정 정보는 유지)</p>
           </div>
+          <button type="button" class="btn btn-danger" id="resetEventBtn">전체 데이터 및 B2 파일 영구 초기화</button>
         </div>
       </div>
     </section>
   </main>
 
   <script>
+    const B2_CONFIG = {
+      signerBaseUrl: "https://lingering-bread-b3e6.winnee.workers.dev",
+      bucketName: "gumimc-media-files",
+      bucketId: "4b1ad5f3416e0ddead22021c",
+      endpoint: "https://s3.us-east-005.backblazeb2.com",
+      region: "us-east-005"
+    };
+
+    const SUBMISSIONS_PREFIX = "_submissions/";
+    const SYSTEM_META_KEY = "__system_meta__";
+    const MAX_FILE_BYTES = 500 * 1024 * 1024;
+    const LOCAL_CACHE_MAX_BYTES = 80 * 1024 * 1024;
+    const INSTRUMENTS = ["악기 사용안함", "어쿠스틱피아노", "신디", "드럼", "베이스기타"];
     const STORAGE_KEY = "gm_media_guide_b2_v17";
     const IDB_NAME = "gm_media_guide_files_b2_v17";
     const IDB_STORE = "files";
-    const MAX_FILE_BYTES = 500 * 1024 * 1024;
-    const LOCAL_CACHE_MAX_BYTES = 15 * 1024 * 1024;
-    const SYSTEM_META_KEY = "__system_meta__";
-    const SUBMISSIONS_PREFIX = "_submissions/";
-    const ADMIN_NOTE_MAX_CHARS = 28;
-
-    const B2_CONFIG = {
-      signerBaseUrl: "https://b2-upload-signer.dreampooh1004.workers.dev",
-      bucketName: "gumimc-media-files"
-    };
-
-    const INSTRUMENTS = [
-      "악기 사용안함",
-      "어쿠스틱피아노",
-      "신디",
-      "드럼",
-      "일렉기타",
-      "베이스기타",
-      "어쿠스틱기타",
-      "관악기/현악기",
-      "기타"
-    ];
 
     const ACCOUNT_COLOR_PALETTE = [
-      { bg: "#eff6ff", fg: "#1d4ed8", border: "#93c5fd" },
-      { bg: "#f0fdf4", fg: "#15803d", border: "#86efac" },
-      { bg: "#fefce8", fg: "#a16207", border: "#fde047" },
-      { bg: "#fdf2f8", fg: "#be185d", border: "#f9a8d4" },
-      { bg: "#f5f3ff", fg: "#6d28d9", border: "#c4b5fd" },
-      { bg: "#ecfeff", fg: "#0e7490", border: "#67e8f9" },
-      { bg: "#fff7ed", fg: "#c2410c", border: "#fdba74" },
-      { bg: "#f0f9ff", fg: "#0369a1", border: "#7dd3fc" }
+      { bg: "#dbeafe", text: "#1d4ed8", border: "#60a5fa", dot: "#2563eb" },
+      { bg: "#dcfce7", text: "#15803d", border: "#4ade80", dot: "#16a34a" },
+      { bg: "#fef3c7", text: "#b45309", border: "#fbbf24", dot: "#d97706" },
+      { bg: "#f3e8ff", text: "#7e22ce", border: "#c084fc", dot: "#9333ea" },
+      { bg: "#ffe4e6", text: "#be123c", border: "#fb7185", dot: "#e11d48" },
+      { bg: "#cffafe", text: "#0e7490", border: "#22d3ee", dot: "#0891b2" },
+      { bg: "#ffedd5", text: "#c2410c", border: "#fb923c", dot: "#ea580c" },
+      { bg: "#fce7f3", text: "#be185d", border: "#f472b6", dot: "#db2777" },
+      { bg: "#e0e7ff", text: "#4338ca", border: "#818cf8", dot: "#4f46e5" },
+      { bg: "#f1f5f9", text: "#334155", border: "#94a3b8", dot: "#475569" }
     ];
 
-    const LEGACY_ID_TO_UID = {
-      "youth": "uid_youth",
-      "청년부": "uid_youth",
-      "elem": "uid_elem",
-      "초등부": "uid_elem",
-      "teen": "uid_teen",
-      "청소년부": "uid_teen",
-      "praise": "uid_praise",
-      "찬양팀": "uid_praise",
-      "infant": "uid_infant",
-      "영아부": "uid_infant",
-      "child": "uid_child",
-      "아동부": "uid_child"
+    const FIXED_KEY_COLOR_INDEX = {
+      uid_youth: 0, "청년부": 0, youth: 0,
+      uid_elem: 1, "초등부": 1, elem: 1,
+      uid_teen: 2, "청소년부": 2, teen: 2,
+      uid_praise: 3, "찬양팀": 3, praise: 3,
+      uid_infant: 4, "영아부": 4, infant: 4,
+      uid_children: 5, "아동부": 5, children: 5,
+      "test": 6, "테스트계정": 6
     };
 
-    const DEFAULT_STATE = {
-      sessionUserId: null,
-      eventInfo: {
-        name: "새 행사를 설정해 주세요",
-        date: "",
-        notice: "",
-        updatedAt: 0
-      },
-      accounts: [
-        { id: "admin", pw: "1234", deptName: "관리자", role: "admin", deptUid: "uid_admin", defaultOrderSeq: 0 },
-        { id: "청년부", pw: "1111", deptName: "청년부", role: "dept", deptUid: "uid_youth", defaultOrderSeq: 1 },
-        { id: "초등부", pw: "1111", deptName: "초등부", role: "dept", deptUid: "uid_elem", defaultOrderSeq: 2 },
-        { id: "청소년부", pw: "1111", deptName: "청소년부", role: "dept", deptUid: "uid_teen", defaultOrderSeq: 3 },
-        { id: "찬양팀", pw: "1111", deptName: "찬양팀", role: "dept", deptUid: "uid_praise", defaultOrderSeq: 4 },
-        { id: "영아부", pw: "1111", deptName: "영아부", role: "dept", deptUid: "uid_infant", defaultOrderSeq: 5 },
-        { id: "아동부", pw: "1111", deptName: "아동부", role: "dept", deptUid: "uid_child", defaultOrderSeq: 6 }
-      ],
-      deptSubmissions: {}
-    };
+    function getAccountColorTheme(keyStr) {
+      const s = String(keyStr || "").trim();
+      if (Object.prototype.hasOwnProperty.call(FIXED_KEY_COLOR_INDEX, s)) {
+        return ACCOUNT_COLOR_PALETTE[FIXED_KEY_COLOR_INDEX[s] % ACCOUNT_COLOR_PALETTE.length];
+      }
+      if (s.includes("youth") || s.includes("청년")) return ACCOUNT_COLOR_PALETTE[0];
+      if (s.includes("elem") || s.includes("초등")) return ACCOUNT_COLOR_PALETTE[1];
+      if (s.includes("teen") || s.includes("청소년")) return ACCOUNT_COLOR_PALETTE[2];
+      if (s.includes("praise") || s.includes("찬양")) return ACCOUNT_COLOR_PALETTE[3];
+      if (s.includes("infant") || s.includes("영아")) return ACCOUNT_COLOR_PALETTE[4];
+      if (s.includes("children") || s.includes("아동")) return ACCOUNT_COLOR_PALETTE[5];
+
+      let hash = 0;
+      for (let i = 0; i < s.length; i++) {
+        hash = ((hash << 5) - hash) + s.charCodeAt(i);
+        hash |= 0;
+      }
+      const idx = Math.abs(hash) % ACCOUNT_COLOR_PALETTE.length;
+      return ACCOUNT_COLOR_PALETTE[idx];
+    }
+
+    function resolveThemeForEntity(colorKey, idLabel, deptName) {
+      const candidates = [colorKey, idLabel, deptName].filter((v) => String(v || "").trim() !== "");
+      for (const c of candidates) {
+        const key = String(c).trim();
+        if (Object.prototype.hasOwnProperty.call(FIXED_KEY_COLOR_INDEX, key)) {
+          return getAccountColorTheme(key);
+        }
+      }
+      return getAccountColorTheme(candidates[0] || "default");
+    }
+
+    function renderColoredIdPill(orderSeq, idLabel, colorKey, deptName = "") {
+      const t = resolveThemeForEntity(colorKey, idLabel, deptName);
+      const labelText = String(idLabel || deptName || "").trim();
+      return `
+        <span class="id-color-pill" data-order-seq="${Number(orderSeq || 0)}" style="background-color:${t.bg} !important; color:${t.text} !important; border-color:${t.border} !important;">
+          <span class="id-color-dot" style="background-color:${t.dot} !important;"></span>
+          <span>${escapeHtml(labelText)}</span>
+        </span>
+      `;
+    }
+
+    function renderColoredDeptName(deptName, colorKey, idLabel = "") {
+      const t = resolveThemeForEntity(colorKey, idLabel, deptName);
+      return `
+        <span class="dept-color-label" style="color:${t.text} !important;">
+          <span class="id-color-dot" style="background-color:${t.dot} !important;"></span>
+          <span>${escapeHtml(deptName)}</span>
+        </span>
+      `;
+    }
+
+    function renderColoredIdCode(idText, colorKey, deptName = "") {
+      const t = resolveThemeForEntity(colorKey, idText, deptName);
+      return `<code class="id-code-badge" style="background-color:${t.bg} !important; color:${t.text} !important; border-color:${t.border} !important;">${escapeHtml(idText)}</code>`;
+    }
+
+    function isPlainTextSubtitleFile(file) {
+      const name = String(file?.name || "").toLowerCase();
+      const mime = String(file?.type || "").toLowerCase();
+      return name.endsWith(".txt") || mime === "text/plain";
+    }
+
+    function getCueSubtitleFiles(cue) {
+      if (Array.isArray(cue?.subtitleFiles)) return cue.subtitleFiles;
+      if (cue?.subtitleFileKey && cue?.subtitleFileName) {
+        return [{ key: cue.subtitleFileKey, name: cue.subtitleFileName }];
+      }
+      return [];
+    }
+
+    function getCueDocSubtitleFiles(cue) {
+      return Array.isArray(cue?.docSubtitleFiles) ? cue.docSubtitleFiles : [];
+    }
 
     function deepClone(obj) {
       return JSON.parse(JSON.stringify(obj));
     }
 
-    function truncateAdminText(text, maxChars = ADMIN_NOTE_MAX_CHARS) {
-      const normalized = String(text || "").replace(/\s+/g, " ").trim();
-      if (!normalized || normalized === "-") return "-";
-      if (normalized.length <= maxChars) return normalized;
-      return normalized.slice(0, maxChars).trimEnd() + "...";
-    }
+    const DEFAULT_STATE = {
+      sessionUserId: null,
+      eventInfo: {
+        name: "2026 성탄전야 발표회",
+        date: "2026.12.24(목) 19:30 / 본당",
+        notice: "음원·영상 및 TXT 자막은 행사 3일 전까지 업로드해 주세요.",
+        updatedAt: 0
+      },
+      accounts: [
+        { id: "admin", pw: "1234", deptName: "미디어팀(관리자)", role: "admin", deptUid: "uid_admin", defaultOrderSeq: 0 },
+        { id: "청년부", pw: "1111", deptName: "청년부", role: "dept", deptUid: "uid_youth", defaultOrderSeq: 1 },
+        { id: "초등부", pw: "1111", deptName: "초등부", role: "dept", deptUid: "uid_elem", defaultOrderSeq: 2 },
+        { id: "청소년부", pw: "1111", deptName: "청소년부", role: "dept", deptUid: "uid_teen", defaultOrderSeq: 3 },
+        { id: "찬양팀", pw: "1111", deptName: "찬양팀", role: "dept", deptUid: "uid_praise", defaultOrderSeq: 4 },
+        { id: "영아부", pw: "1111", deptName: "영아부", role: "dept", deptUid: "uid_infant", defaultOrderSeq: 5 },
+        { id: "아동부", pw: "1111", deptName: "아동부", role: "dept", deptUid: "uid_children", defaultOrderSeq: 6 }
+      ],
+      deptSubmissions: {}
+    };
 
-    function renderAdminNoteCell(rawText, maxChars = ADMIN_NOTE_MAX_CHARS) {
-      const cleanRaw = String(rawText || "").trim();
-      if (!cleanRaw || cleanRaw === "-") {
-        return `<span class="helper-text">-</span>`;
+    const LEGACY_ID_TO_UID = {
+      admin: "uid_admin",
+      youth: "uid_youth",
+      elem: "uid_elem",
+      teen: "uid_teen",
+      praise: "uid_praise",
+      infant: "uid_infant",
+      children: "uid_children"
+    };
+
+    function resolveAccountUid(accOrKey) {
+      if (!accOrKey) return "";
+      if (typeof accOrKey === "object") {
+        if (accOrKey.deptUid) return accOrKey.deptUid;
+        if (accOrKey.id && LEGACY_ID_TO_UID[accOrKey.id]) {
+          accOrKey.deptUid = LEGACY_ID_TO_UID[accOrKey.id];
+          return accOrKey.deptUid;
+        }
+        const clean = String(accOrKey.id || "dept").replace(/[^a-zA-Z0-9가-힣_-]/g, "_");
+        accOrKey.deptUid = `uid_${clean}_${Math.random().toString(36).slice(2, 7)}`;
+        return accOrKey.deptUid;
       }
-      const shortText = truncateAdminText(cleanRaw, maxChars);
-      return `<span class="admin-note-cell" title="${escapeHtml(cleanRaw)}">${escapeHtml(shortText)}</span>`;
+      const keyStr = String(accOrKey);
+      if (LEGACY_ID_TO_UID[keyStr]) return LEGACY_ID_TO_UID[keyStr];
+      const defMatch = DEFAULT_STATE.accounts.find((d) => d.deptUid === keyStr || d.id === keyStr || d.deptName === keyStr);
+      return defMatch ? defMatch.deptUid : keyStr;
     }
 
-    function resolveAccountUid(rawKey) {
-      const s = String(rawKey || "").trim();
-      if (!s) return "";
-      if (LEGACY_ID_TO_UID[s]) return LEGACY_ID_TO_UID[s];
-      if (s.startsWith("uid_")) return s;
-      return `uid_${s.replace(/[^a-zA-Z0-9가-힣_-]/g, "_")}`;
-    }
-
-    function ensureAccountUid(acc) {
-      if (!acc || typeof acc !== "object") return "";
-      if (acc.deptUid) return acc.deptUid;
-      const resolved = resolveAccountUid(acc.id) || resolveAccountUid(acc.deptName) || `uid_${Date.now().toString(36)}`;
-      acc.deptUid = resolved;
-      return resolved;
-    }
-
-    function getAccountColorTheme(keyStr) {
-      const uid = resolveAccountUid(keyStr) || String(keyStr || "default");
-      let hash = 0;
-      for (let i = 0; i < uid.length; i++) {
-        hash = (hash * 31 + uid.charCodeAt(i)) >>> 0;
+    function normalizeYoutubeUrl(raw) {
+      const val = String(raw || "").trim();
+      if (!val) return "";
+      let candidate = val;
+      if (!/^https?:\/\//i.test(candidate)) {
+        if (/^(www\.)?(youtube\.com|youtu\.be|m\.youtube\.com)\//i.test(candidate)) {
+          candidate = `https://${candidate}`;
+        } else {
+          return "";
+        }
       }
-      return ACCOUNT_COLOR_PALETTE[hash % ACCOUNT_COLOR_PALETTE.length];
-    }
-
-    function renderColoredIdPill(seqNum, idText, colorKey, deptNameText = "") {
-      const theme = getAccountColorTheme(colorKey || idText || deptNameText);
-      const label = seqNum ? `${seqNum} · ${idText}` : `${idText}`;
-      return `<span class="pill" style="background:${theme.bg}; color:${theme.fg}; border:1px solid ${theme.border};">${escapeHtml(label)}</span>`;
-    }
-
-    function renderColoredIdCode(idText, colorKey, deptNameText = "") {
-      const theme = getAccountColorTheme(colorKey || idText || deptNameText);
-      return `<code style="background:${theme.bg}; color:${theme.fg}; border:1px solid ${theme.border}; padding:2px 6px; border-radius:5px; font-weight:700;">${escapeHtml(idText)}</code>`;
-    }
-
-    function renderColoredDeptName(deptName, colorKey, fallbackId = "") {
-      const theme = getAccountColorTheme(colorKey || fallbackId || deptName);
-      return `<strong style="color:${theme.fg};">${escapeHtml(deptName)}</strong>`;
-    }
-
-    function isPlainTextSubtitleFile(fileMeta) {
-      const name = String(fileMeta?.name || "").toLowerCase();
-      const type = String(fileMeta?.type || "").toLowerCase();
-      return name.endsWith(".txt") || type === "text/plain";
-    }
-
-    function getCueSubtitleFiles(cue) {
-      if (!cue || typeof cue !== "object") return [];
-      const list = Array.isArray(cue.subtitleFiles) ? cue.subtitleFiles : [];
-      return list.filter((f) => f && isPlainTextSubtitleFile(f));
-    }
-
-    function getCueDocSubtitleFiles(cue) {
-      if (!cue || typeof cue !== "object") return [];
-      const docs = Array.isArray(cue.docSubtitleFiles) ? [...cue.docSubtitleFiles] : [];
-      const legacyNonTxt = (Array.isArray(cue.subtitleFiles) ? cue.subtitleFiles : []).filter(
-        (f) => f && !isPlainTextSubtitleFile(f)
-      );
-      return [...docs, ...legacyNonTxt];
-    }
-
-    function normalizeYoutubeUrl(rawUrl) {
-      const trimmed = String(rawUrl || "").trim();
-      if (!trimmed) return "";
-      const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
       try {
-        const parsed = new URL(withScheme);
-        const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
-        if (host === "youtu.be") {
-          const id = parsed.pathname.split("/").filter(Boolean)[0];
-          return id ? `https://youtu.be/${id}` : "";
+        const u = new URL(candidate);
+        if (u.protocol !== "https:" && u.protocol !== "http:") return "";
+        const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+        if (host !== "youtube.com" && host !== "m.youtube.com" && host !== "youtu.be") {
+          return "";
         }
-        if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
-          const v = parsed.searchParams.get("v");
-          if (v) return `https://www.youtube.com/watch?v=${v}`;
-          const parts = parsed.pathname.split("/").filter(Boolean);
-          if (["shorts", "embed", "live"].includes(parts[0]) && parts[1]) {
-            return `https://www.youtube.com/watch?v=${parts[1]}`;
-          }
-        }
-        return "";
+        return u.toString();
       } catch {
         return "";
       }
     }
 
-    function isValidYoutubeUrl(rawUrl) {
-      return Boolean(normalizeYoutubeUrl(rawUrl));
+    function isValidYoutubeUrl(raw) {
+      return Boolean(normalizeYoutubeUrl(raw));
     }
 
-    function mergeWithDefaultAccounts(incoming, existingAccounts = []) {
+    function ensureAccountUid(acc) {
+      return resolveAccountUid(acc);
+    }
+
+    function mergeWithDefaultAccounts(parsedAccounts, currentAccounts = []) {
       const defaults = deepClone(DEFAULT_STATE.accounts);
+      const incoming = Array.isArray(parsedAccounts)
+        ? parsedAccounts.filter((a) => a && a.id && a.pw && a.deptName && a.role)
+        : [];
+      const existing = Array.isArray(currentAccounts)
+        ? currentAccounts.filter((a) => a && a.id && a.pw && a.deptName && a.role)
+        : [];
+
       const map = new Map();
 
-      defaults.forEach((d) => {
-        map.set(d.deptUid, { ...d });
+      defaults.forEach((acc) => {
+        map.set(acc.deptUid, {
+          ...acc,
+          id: String(acc.id).trim(),
+          pw: String(acc.pw).trim()
+        });
       });
 
-      (existingAccounts || []).forEach((acc) => {
-        if (!acc || !acc.id || !acc.pw) return;
+      existing.forEach((acc) => {
         const cleanId = String(acc.id).trim();
         const cleanPw = String(acc.pw).trim();
         const uid = acc.deptUid || LEGACY_ID_TO_UID[cleanId] || LEGACY_ID_TO_UID[acc.deptName] || `uid_${cleanId.replace(/[^a-zA-Z0-9가-힣_-]/g, "_")}`;
@@ -1030,8 +1094,7 @@
         });
       });
 
-      (Array.isArray(incoming) ? incoming : []).forEach((acc) => {
-        if (!acc || !acc.id || !acc.pw) return;
+      incoming.forEach((acc) => {
         const cleanId = String(acc.id).trim();
         const cleanPw = String(acc.pw).trim();
         const uid = acc.deptUid || LEGACY_ID_TO_UID[cleanId] || LEGACY_ID_TO_UID[acc.deptName] || `uid_${cleanId.replace(/[^a-zA-Z0-9가-힣_-]/g, "_")}`;
@@ -1050,7 +1113,7 @@
       return Array.from(map.values());
     }
 
-        function loadState() {
+    function loadState() {
       const fallback = deepClone(DEFAULT_STATE);
       try {
         const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("gm_media_guide_b2_v16") || localStorage.getItem("gm_media_guide_b2_v15") || localStorage.getItem("gm_media_guide_b2_v14");
@@ -1101,7 +1164,6 @@
 
     let state = loadState();
     let activeTab = null;
-    let adminEditingDeptUid = null;
     let fileCache = {};
     let downloadableFileRegistry = {};
     let remoteB2Files = [];
@@ -1553,60 +1615,24 @@
       }
     }
 
-    function getDeptAccounts() {
-      return state.accounts.filter((a) => a && a.role === "dept");
-    }
-
-    function getTargetDeptAccount(loggedInUser = null) {
-      const actor = loggedInUser || getCurrentUser();
-      if (!actor) return null;
-      if (actor.role !== "admin") return actor;
-
-      const deptList = getDeptAccounts();
-      if (!deptList.length) return null;
-
-      if (adminEditingDeptUid) {
-        const matched = deptList.find((d) => ensureAccountUid(d) === adminEditingDeptUid || d.id === adminEditingDeptUid);
-        if (matched) {
-          adminEditingDeptUid = ensureAccountUid(matched);
-          return matched;
-        }
-      }
-      adminEditingDeptUid = ensureAccountUid(deptList[0]);
-      return deptList[0];
-    }
-
-    function getEditableTargetAccount() {
-      const actor = getCurrentUser();
-      if (!actor) return null;
-      if (actor.role === "dept") return actor;
-      if (actor.role === "admin" && activeTab === "adminDeptEdit") {
-        return getTargetDeptAccount(actor);
-      }
-      return null;
-    }
-
-    function scheduleAutoSaveAndSync(targetAcc) {
-      const actor = getCurrentUser();
-      const target = targetAcc || getEditableTargetAccount();
-      if (!actor || !target || target.role !== "dept") return;
-
+    function scheduleAutoSaveAndSync(user) {
+      if (!user || user.role !== "dept") return;
       hasDirtyDeptChanges = true;
       setSavedStatusLabel("입력 중... 자동저장 대기");
 
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(() => {
-        const activeTarget = getEditableTargetAccount();
-        if (!activeTarget || activeTarget.role !== "dept") return;
-        const sub = collectDeptFormIntoState(activeTarget, { preserveExistingSubmittedAt: true, markClean: false });
+        const current = getCurrentUser();
+        if (!current || current.role !== "dept") return;
+        const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
         setSavedStatusLabel(`로컬 자동저장됨 (${sub.updatedAt}) · B2 동기화 대기...`);
       }, 600);
 
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
       autoSyncTimer = setTimeout(async () => {
-        const activeTarget = getEditableTargetAccount();
-        if (!activeTarget || activeTarget.role !== "dept") return;
-        const sub = collectDeptFormIntoState(activeTarget, { preserveExistingSubmittedAt: true, markClean: false });
+        const current = getCurrentUser();
+        if (!current || current.role !== "dept") return;
+        const sub = collectDeptFormIntoState(current, { preserveExistingSubmittedAt: true, markClean: false });
         setSavedStatusLabel("B2 동기화 중...");
         const ok = await syncSubmissionToB2(sub, { silent: true });
         setSavedStatusLabel(
@@ -1618,11 +1644,11 @@
     }
 
     async function flushPendingDeptChanges({ keepaliveOnly = false } = {}) {
-      const target = getEditableTargetAccount();
-      if (!target || target.role !== "dept") return;
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
       if (!hasDirtyDeptChanges && !autoSaveTimer && !autoSyncTimer) return;
       clearAutoTimers();
-      const sub = collectDeptFormIntoState(target, { preserveExistingSubmittedAt: true });
+      const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
       if (keepaliveOnly) {
         syncSubmissionToB2(sub, { silent: true });
       } else {
@@ -2475,13 +2501,12 @@
       };
     }
 
-    async function fillDeptSampleData(targetAcc) {
-      if (!targetAcc || targetAcc.role !== "dept") return;
-      const ok = confirm(`'${targetAcc.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
+    async function fillDeptSampleData(user) {
+      const ok = confirm(`'${user.deptName}' 화면에 가이드용 예시 데이터를 채우시겠습니까?`);
       if (!ok) return;
       clearAutoTimers();
       hasDirtyDeptChanges = false;
-      const uid = ensureAccountUid(targetAcc);
+      const uid = ensureAccountUid(user);
       const existing = state.deptSubmissions[uid];
       const existingSeq = Number(existing?.orderSeq);
       const orderSeq = Number.isInteger(existingSeq) && existingSeq > 0
@@ -2492,14 +2517,14 @@
         Number.isFinite(Number(existing?.submittedAt)) && Number(existing.submittedAt) > 0
           ? Number(existing.submittedAt)
           : now;
-      const sampleSub = await buildSampleSubmissionForDept(targetAcc, submittedAt, orderSeq);
+      const sampleSub = await buildSampleSubmissionForDept(user, submittedAt, orderSeq);
       sampleSub.syncedAt = now;
       sampleSub.updatedAt = new Date(now).toLocaleString("ko-KR");
       state.deptSubmissions[uid] = sampleSub;
       saveState();
       const synced = await syncSubmissionToB2(sampleSub, { silent: true });
-      renderDeptView(targetAcc, { skipRemoteFetch: true });
-      showToast(synced ? `${targetAcc.deptName} 예시 데이터가 B2에 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
+      renderDeptView(user, { skipRemoteFetch: true });
+      showToast(synced ? `${user.deptName} 예시 데이터가 B2에 동기화되었습니다.` : "예시 데이터가 로컬에 입력되었습니다.");
     }
 
     async function fillAdminSampleData() {
@@ -2552,10 +2577,16 @@
       return list.length ? list.join(", ") : "-";
     }
 
-    function collectSubmissionFileKeys(sub) {
+    async function deleteDeptSubmission(storageKey) {
+      const sub = state.deptSubmissions[storageKey] || Object.values(state.deptSubmissions || {}).find((s) => s.deptUid === storageKey || s.deptId === storageKey);
+      if (!sub) return;
+      const uid = getSubmissionStorageKey(sub);
+      const deptLabel = sub.deptName || sub.deptId || uid;
+      const ok = confirm(`'${deptLabel}' 부서의 제출 큐시트 및 첨부 파일 내역을 삭제하시겠습니까?`);
+      if (!ok) return;
+
       const fileKeys = [];
       const b2Keys = [];
-      if (!sub) return { fileKeys, b2Keys };
       (sub.customCueFiles || []).forEach((cf) => {
         if (cf?.key) fileKeys.push(cf.key);
         if (cf?.b2Key) b2Keys.push(cf.b2Key);
@@ -2575,41 +2606,22 @@
           if (mf?.b2Key) b2Keys.push(mf.b2Key);
         });
       });
-      return { fileKeys, b2Keys: [...new Set(b2Keys)] };
-    }
-
-    async function deleteDeptSubmission(storageKey, options = {}) {
-      const { skipConfirm = false, includeB2Files = true } = options;
-      const sub = state.deptSubmissions[storageKey] || Object.values(state.deptSubmissions || {}).find((s) => s.deptUid === storageKey || s.deptId === storageKey);
-      if (!sub) return;
-      const uid = getSubmissionStorageKey(sub);
-      const deptLabel = sub.deptName || sub.deptId || uid;
-      if (!skipConfirm) {
-        const ok = confirm(`'${deptLabel}' 부서의 제출 큐시트 및 첨부 파일 내역을 삭제하시겠습니까?`);
-        if (!ok) return;
-      }
-
-      const { fileKeys, b2Keys } = collectSubmissionFileKeys(sub);
 
       delete state.deptSubmissions[uid];
       if (sub.deptId && state.deptSubmissions[sub.deptId]) {
         delete state.deptSubmissions[sub.deptId];
       }
       saveState();
-      if (fileKeys.length) await deleteFileRecords(fileKeys);
-      if (includeB2Files && b2Keys.length) {
-        await Promise.all(b2Keys.map((bKey) => deleteB2ObjectImmediate(bKey)));
-      }
+      await deleteFileRecords(fileKeys);
+      await Promise.all([...new Set(b2Keys)].map((bKey) => deleteB2ObjectImmediate(bKey)));
 
       await deleteB2SubmissionObject(uid);
       if (sub.deptId && sub.deptId !== uid) {
         await deleteB2SubmissionObject(sub.deptId);
       }
 
-      if (!skipConfirm) {
-        renderAdminOverview();
-        showToast(`'${deptLabel}' 부서 큐시트가 삭제되었습니다.`);
-      }
+      renderAdminOverview();
+      showToast(`'${deptLabel}' 부서 큐시트가 삭제되었습니다.`);
     }
 
     function formatKindLabel(kind) {
@@ -2726,7 +2738,7 @@
       }
 
       if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:18px;">B2에 업로드된 파일이 없습니다.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">B2에 업로드된 파일이 없습니다.</td></tr>`;
         return;
       }
 
@@ -2789,7 +2801,6 @@
           await flushPendingDeptChanges();
           state.sessionUserId = null;
           activeTab = null;
-          adminEditingDeptUid = null;
           hasDirtyDeptChanges = false;
           saveState();
           renderAll();
@@ -2813,10 +2824,9 @@
 
       const navTabs = document.getElementById("navTabs");
       if (user.role === "admin") {
-        if (!["adminOverview", "adminDeptEdit", "adminManage"].includes(activeTab)) activeTab = "adminOverview";
+        if (!["adminOverview", "adminManage"].includes(activeTab)) activeTab = "adminOverview";
         navTabs.innerHTML = `
           <button type="button" class="tab-btn ${activeTab === "adminOverview" ? "active" : ""}" data-tab="adminOverview">종합 큐시트 현황 · 내보내기</button>
-          <button type="button" class="tab-btn ${activeTab === "adminDeptEdit" ? "active" : ""}" data-tab="adminDeptEdit">부서별 제출 편집</button>
           <button type="button" class="tab-btn ${activeTab === "adminManage" ? "active" : ""}" data-tab="adminManage">행사명 · 계정 · 초기화</button>
         `;
       } else {
@@ -2834,14 +2844,12 @@
         });
       });
 
-      const showDeptEditView = activeTab === "dept" || (user.role === "admin" && activeTab === "adminDeptEdit");
-      document.getElementById("deptTab").classList.toggle("hidden", !showDeptEditView);
+      document.getElementById("deptTab").classList.toggle("hidden", activeTab !== "dept");
       document.getElementById("adminOverviewTab").classList.toggle("hidden", activeTab !== "adminOverview");
       document.getElementById("adminManageTab").classList.toggle("hidden", activeTab !== "adminManage");
 
-      if (showDeptEditView) {
-        const targetAcc = user.role === "admin" ? getTargetDeptAccount(user) : user;
-        renderDeptView(targetAcc, { isAdminProxy: user.role === "admin" });
+      if (activeTab === "dept") {
+        renderDeptView(user);
       } else if (activeTab === "adminOverview") {
         renderAdminOverview();
         fetchRemoteSubmissions(false);
@@ -2852,53 +2860,6 @@
           if (activeTab === "adminManage") renderAdminManage();
         });
       }
-    }
-
-    function renderAdminDeptSelector(targetAcc) {
-      const card = document.getElementById("adminDeptSelectorCard");
-      const selectEl = document.getElementById("adminTargetDeptSelect");
-      const chipsEl = document.getElementById("adminTargetDeptChips");
-      if (!card || !selectEl || !chipsEl) return;
-
-      const deptList = getDeptAccounts();
-      card.classList.remove("hidden");
-
-      if (!deptList.length) {
-        selectEl.innerHTML = `<option value="">등록된 부서 계정이 없습니다</option>`;
-        chipsEl.innerHTML = `<span class="helper-text">행사명 · 계정 · 초기화 탭에서 부서 계정을 먼저 추가해 주세요.</span>`;
-        return;
-      }
-
-      const activeUid = targetAcc ? ensureAccountUid(targetAcc) : "";
-      selectEl.innerHTML = deptList.map((acc) => {
-        const uid = ensureAccountUid(acc);
-        const hasSub = Boolean(state.deptSubmissions[uid]);
-        return `<option value="${escapeHtml(uid)}" ${uid === activeUid ? "selected" : ""}>${escapeHtml(acc.deptName)} (${escapeHtml(acc.id)})${hasSub ? " · 제출됨" : ""}</option>`;
-      }).join("");
-
-      chipsEl.innerHTML = deptList.map((acc) => {
-        const uid = ensureAccountUid(acc);
-        const isSelected = uid === activeUid;
-        return `
-          <button
-            type="button"
-            class="btn ${isSelected ? "btn-primary" : "btn-outline"} btn-xs"
-            data-select-admin-dept="${escapeHtml(uid)}"
-          >${escapeHtml(acc.deptName)}</button>
-        `;
-      }).join("");
-
-      chipsEl.querySelectorAll("[data-select-admin-dept]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const nextUid = btn.dataset.selectAdminDept;
-          if (!nextUid || nextUid === adminEditingDeptUid) return;
-          await flushPendingDeptChanges();
-          hasDirtyDeptChanges = false;
-          adminEditingDeptUid = nextUid;
-          const nextAcc = getTargetDeptAccount();
-          if (nextAcc) renderDeptView(nextAcc, { isAdminProxy: true });
-        });
-      });
     }
 
     function applyDeptFormValues(sub) {
@@ -2917,45 +2878,24 @@
       renderCueList(sub);
     }
 
-    function renderDeptView(targetAcc, { skipRemoteFetch = false, isAdminProxy = false } = {}) {
-      const selectorCard = document.getElementById("adminDeptSelectorCard");
-      if (!targetAcc) {
-        if (selectorCard) {
-          selectorCard.classList.remove("hidden");
-          renderAdminDeptSelector(null);
-        }
-        document.getElementById("deptNameBadge").textContent = "선택된 부서 없음";
-        return;
-      }
-
-      if (isAdminProxy) {
-        renderAdminDeptSelector(targetAcc);
-      } else if (selectorCard) {
-        selectorCard.classList.add("hidden");
-      }
-
-      const sub = ensureDeptSubmission(targetAcc);
+    function renderDeptView(user, { skipRemoteFetch = false } = {}) {
+      const sub = ensureDeptSubmission(user);
       pruneDeletedFilesFromSubmission(sub);
-      document.getElementById("deptNameBadge").textContent = isAdminProxy
-        ? `${targetAcc.deptName} · 관리자 직접 편집 중`
-        : targetAcc.deptName;
+      document.getElementById("deptNameBadge").textContent = user.deptName;
       applyDeptFormValues(sub);
 
       if (skipRemoteFetch) return;
 
-      const requestedUid = ensureAccountUid(targetAcc);
       (async () => {
         try {
           await fetchRemoteB2Files(false);
-          const remoteSub = await fetchSingleDeptSubmissionFromB2(targetAcc);
-          const actor = getCurrentUser();
-          const currentEditable = getEditableTargetAccount();
-          if (!actor || !currentEditable) return;
-          if (ensureAccountUid(currentEditable) !== requestedUid) return;
+          const remoteSub = await fetchSingleDeptSubmissionFromB2(user);
+          const activeUser = getCurrentUser();
+          if (!activeUser || activeUser.deptUid !== user.deptUid || activeTab !== "dept") return;
           if (hasDirtyDeptChanges || activeUploadCount > 0) return;
 
-          const latest = ensureDeptSubmission(currentEditable);
-          await reconcileDeptFilesWithB2List(latest, currentEditable);
+          const latest = ensureDeptSubmission(activeUser);
+          await reconcileDeptFilesWithB2List(latest, activeUser);
           if (remoteSub) {
             applyDeptFormValues(latest);
             if (latest.updatedAt) {
@@ -3009,7 +2949,7 @@
             else sub.instruments.push(inst);
           }
           renderInstrumentButtons(sub);
-          scheduleAutoSaveAndSync(getEditableTargetAccount());
+          scheduleAutoSaveAndSync(getCurrentUser());
         });
       });
     }
@@ -3047,7 +2987,7 @@
           if (!target) return;
           sub.customCueFiles.splice(idx, 1);
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
-          collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCustomCueFiles(sub);
@@ -3189,7 +3129,7 @@
       container.querySelectorAll(".cue-item").forEach((el) => {
         const idx = Number(el.dataset.cueIdx);
         const cue = sub.cues[idx];
-        const onCueFieldChange = () => scheduleAutoSaveAndSync(getEditableTargetAccount());
+        const onCueFieldChange = () => scheduleAutoSaveAndSync(getCurrentUser());
 
         el.querySelector(".cue-title").addEventListener("input", (e) => { cue.title = e.target.value; onCueFieldChange(); });
         el.querySelector(".cue-topic").addEventListener("input", (e) => { cue.topic = e.target.value; onCueFieldChange(); });
@@ -3254,7 +3194,7 @@
           }
           e.target.value = "";
           if (added > 0) {
-            collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
+            collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
             const synced = await syncSubmissionToB2(sub, { silent: true });
             setSavedStatusLabel(
               synced
@@ -3303,7 +3243,7 @@
                 ? `${currentTrim}\n\n${appendedTexts.join("\n\n")}`
                 : appendedTexts.join("\n\n");
             }
-            collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
+            collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
             await syncSubmissionToB2(sub, { silent: true });
             renderCueList(sub);
             if (txtAdded > 0 && docAdded > 0) {
@@ -3325,7 +3265,7 @@
             [sub.cues[i - 1], sub.cues[i]] = [sub.cues[i], sub.cues[i - 1]];
             clearAllCueCustomRanks(sub);
             renderCueList(sub);
-            scheduleAutoSaveAndSync(getEditableTargetAccount());
+            scheduleAutoSaveAndSync(getCurrentUser());
           }
         });
       });
@@ -3337,7 +3277,7 @@
             [sub.cues[i + 1], sub.cues[i]] = [sub.cues[i], sub.cues[i + 1]];
             clearAllCueCustomRanks(sub);
             renderCueList(sub);
-            scheduleAutoSaveAndSync(getEditableTargetAccount());
+            scheduleAutoSaveAndSync(getCurrentUser());
           }
         });
       });
@@ -3348,7 +3288,7 @@
           sub.cues.splice(i, 1);
           clearAllCueCustomRanks(sub);
           renderCueList(sub);
-          scheduleAutoSaveAndSync(getEditableTargetAccount());
+          scheduleAutoSaveAndSync(getCurrentUser());
         });
       });
 
@@ -3359,7 +3299,7 @@
           if (!target) return;
           sub.cues[cIdx].mediaFiles.splice(fIdx, 1);
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
-          collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -3374,7 +3314,7 @@
           if (!target) return;
           sub.cues[cIdx].subtitleFiles.splice(sIdx, 1);
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
-          collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -3389,7 +3329,7 @@
           if (!target) return;
           sub.cues[cIdx].docSubtitleFiles.splice(dIdx, 1);
           if (target.b2Key) await deleteB2ObjectImmediate(target.b2Key);
-          collectDeptFormIntoState(getEditableTargetAccount(), { preserveExistingSubmittedAt: true });
+          collectDeptFormIntoState(getCurrentUser(), { preserveExistingSubmittedAt: true });
           await syncSubmissionToB2(sub, { silent: true });
           if (target.key) await deleteFileRecords([target.key]);
           renderCueList(sub);
@@ -3402,14 +3342,14 @@
           const i = Number(btn.dataset.toggleHelp);
           sub.cues[i].subtitleHelp = !sub.cues[i].subtitleHelp;
           renderCueList(sub);
-          scheduleAutoSaveAndSync(getEditableTargetAccount());
+          scheduleAutoSaveAndSync(getCurrentUser());
         });
       });
     }
 
-    function collectDeptFormIntoState(targetAcc, options = {}) {
+    function collectDeptFormIntoState(user, options = {}) {
       const { preserveExistingSubmittedAt = true, markClean = true } = options;
-      const sub = ensureDeptSubmission(targetAcc);
+      const sub = ensureDeptSubmission(user);
       sub.contact = document.getElementById("deptContact").value.trim();
       sub.micCount = Math.max(0, Number(document.getElementById("deptMicCount").value || 0));
       sub.requestMicStand = !!document.getElementById("chkReqMicStand").checked;
@@ -3488,7 +3428,6 @@
             topic: cue.topic || "-",
             duration: cue.duration || "-",
             note: cue.note || "-",
-            generalNote: sub.generalNote || "-",
             youtubeUrl,
             subtitleFiles: subFiles,
             docSubtitleFiles: docSubFiles,
@@ -3553,7 +3492,7 @@
 
       const tbody = document.getElementById("masterCueTableBody");
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--muted); padding:22px;">아직 제출된 큐시트가 없습니다.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:var(--muted); padding:24px;">아직 제출된 큐시트가 없습니다.</td></tr>`;
       } else {
         tbody.innerHTML = rows.map((r, rIdx) => {
           const colorKey = r.deptUid || r.deptId || r.deptName;
@@ -3561,7 +3500,7 @@
           const hasTxtOrPaste = r.subtitleFiles.length > 0 || r.hasSubText;
           const hasDocSub = r.docSubtitleFiles.length > 0;
           const subBadge = hasTxtOrPaste
-            ? `<span class="pill pill-green">✓ 접수</span>${hasDocSub ? ` <span class="pill pill-blue">문서${r.docSubtitleFiles.length}</span>` : ""}`
+            ? `<span class="pill pill-green">✓ 접수</span>${hasDocSub ? `<div style="margin-top:4px;"><span class="pill pill-blue">문서별도 ${r.docSubtitleFiles.length}</span></div>` : ""}`
             : (hasDocSub
               ? `<span class="pill pill-blue">문서자막 ${r.docSubtitleFiles.length}</span>`
               : (r.subtitleHelp
@@ -3624,7 +3563,7 @@
           const hasMediaReq = r.mediaReq !== "-";
           const instAndReq = `
             ${hasInstruments ? `<div>${escapeHtml(r.instruments)}</div>` : ""}
-            ${hasMediaReq ? `<div${hasInstruments ? ' style="margin-top:3px;"' : ""}><span class="pill pill-green">${escapeHtml(r.mediaReq)}</span></div>` : ""}
+            ${hasMediaReq ? `<div${hasInstruments ? ' style="margin-top:4px;"' : ""}><span class="pill pill-green">${escapeHtml(r.mediaReq)}</span></div>` : ""}
           `;
 
           return `
@@ -3642,13 +3581,14 @@
               </td>
               <td class="nowrap-col">${escapeHtml(r.duration)}</td>
               <td class="nowrap-col">
-                <div><strong>${r.micCount}개</strong> · 스탠드 ${escapeHtml(r.standText)}</div>
+                <div><strong>${r.micCount}개</strong></div>
+                <div class="helper-text">스탠드: ${escapeHtml(r.standText)}</div>
                 <div class="helper-text">천장 E/L: ${escapeHtml(r.ceilingText)}</div>
               </td>
               <td>${instAndReq}</td>
               <td class="nowrap-col">${subBadge}</td>
               <td class="nowrap-col">${filesHtml}</td>
-              <td>${renderAdminNoteCell(r.note, ADMIN_NOTE_MAX_CHARS)}</td>
+              <td>${escapeHtml(r.note)}</td>
               <td class="nowrap-col">
                 <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" data-del-dept-cue="${escapeHtml(r.storageKey)}">부서 삭제</button>
               </td>
@@ -3671,7 +3611,7 @@
 
       const deptTbody = document.getElementById("deptSummaryTableBody");
       if (!subs.length) {
-        deptTbody.innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--muted); padding:18px;">부서 제출 내역이 없습니다.</td></tr>`;
+        deptTbody.innerHTML = `<tr><td colspan="13" style="text-align:center; color:var(--muted); padding:20px;">부서 제출 내역이 없습니다.</td></tr>`;
       } else {
         deptTbody.innerHTML = subs.map((s, idx) => {
           const storageKey = getSubmissionStorageKey(s);
@@ -3717,7 +3657,7 @@
               <td class="nowrap-col">${bgmOrVideoBadge}</td>
               <td>${customDocsHtml}</td>
               <td>${helps.length ? `<span class="pill pill-warn">${escapeHtml(helps.join(", "))}</span>` : "없음"}</td>
-              <td>${renderAdminNoteCell(s.generalNote || "-", ADMIN_NOTE_MAX_CHARS)}</td>
+              <td>${escapeHtml(s.generalNote || "-")}</td>
               <td class="nowrap-col">
                 <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);" data-del-dept-cue="${escapeHtml(storageKey)}">부서 큐시트 삭제</button>
               </td>
@@ -3812,13 +3752,11 @@
               delete state.deptSubmissions[oldId];
               await deleteB2SubmissionObject(oldId);
             }
+            await syncSubmissionToB2(existingSub, { silent: true });
           }
 
           saveState();
           await syncSystemMetaToB2({ silent: true });
-          if (existingSub) {
-            await syncSubmissionToB2(existingSub, { silent: true });
-          }
           renderAll();
           showToast(`'${nextDeptName}' (${nextId}) 계정 정보가 저장 및 B2 동기화되었습니다.`);
         });
@@ -3829,33 +3767,16 @@
           const i = Number(btn.dataset.delAcc);
           const target = state.accounts[i];
           if (!target || target.role === "admin") return;
-
-          const ok = confirm(`'${target.deptName}' (${target.id}) 계정을 삭제하시겠습니까?\n해당 부서의 제출 큐시트와 연결된 파일 내역도 함께 정리됩니다.`);
-          if (!ok) return;
-
           const uid = ensureAccountUid(target);
-          if (adminEditingDeptUid === uid) {
-            adminEditingDeptUid = null;
-          }
-          const sub = state.deptSubmissions[uid] || state.deptSubmissions[target.id];
-          const { fileKeys, b2Keys } = collectSubmissionFileKeys(sub);
-
           delete state.deptSubmissions[uid];
           delete state.deptSubmissions[target.id];
           state.accounts.splice(i, 1);
           saveState();
-
-          if (fileKeys.length) await deleteFileRecords(fileKeys);
-          if (b2Keys.length) {
-            await Promise.all(b2Keys.map((bKey) => deleteB2ObjectImmediate(bKey)));
-          }
           await deleteB2SubmissionObject(uid);
-          if (target.id !== uid) {
-            await deleteB2SubmissionObject(target.id);
-          }
+          await deleteB2SubmissionObject(target.id);
           await syncSystemMetaToB2({ silent: true });
           renderAll();
-          showToast(`'${target.deptName}' 계정이 삭제 및 B2 동기화되었습니다.`);
+          showToast("계정이 삭제 및 B2 동기화되었습니다.");
         });
       });
     }
@@ -3892,7 +3813,6 @@
         "첨부파일": r.mediaFiles.map((mf) => mf.name).join(", ") || "-",
         "유튜브음원링크": r.youtubeUrl || "-",
         "자체부서큐시트": r.customCueNames,
-        "부서전달사항": r.generalNote,
         "비고/메모": r.note
       }));
 
@@ -3917,7 +3837,6 @@
         { wch: 24 },
         { wch: 30 },
         { wch: 24 },
-        { wch: 32 },
         { wch: 32 }
       ];
 
@@ -4112,10 +4031,6 @@
         const uid = ensureAccountUid(found);
         state.sessionUserId = uid;
         activeTab = found.role === "admin" ? "adminOverview" : "dept";
-        if (found.role === "admin") {
-          const firstDept = getDeptAccounts()[0];
-          adminEditingDeptUid = firstDept ? ensureAccountUid(firstDept) : null;
-        }
         hasDirtyDeptChanges = false;
         saveState();
         document.getElementById("loginForm").reset();
@@ -4142,81 +4057,59 @@
       await clearAllFileRecords();
       state = deepClone(DEFAULT_STATE);
       activeTab = null;
-      adminEditingDeptUid = null;
       await fetchRemoteSystemMeta(true);
       renderAll();
       showToast("브라우저 저장 데이터가 초기화되었습니다.");
     });
 
-    document.getElementById("adminTargetDeptSelect").addEventListener("change", async (e) => {
-      const nextUid = e.target.value;
-      if (!nextUid || nextUid === adminEditingDeptUid) return;
-      await flushPendingDeptChanges();
-      hasDirtyDeptChanges = false;
-      adminEditingDeptUid = nextUid;
-      const targetAcc = getTargetDeptAccount();
-      if (targetAcc) renderDeptView(targetAcc, { isAdminProxy: true });
-    });
-
-    document.getElementById("reloadTargetDeptBtn").addEventListener("click", async () => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc) return;
-      await flushPendingDeptChanges();
-      hasDirtyDeptChanges = false;
-      await fetchRemoteB2Files(false);
-      await fetchSingleDeptSubmissionFromB2(targetAcc);
-      renderDeptView(targetAcc, { skipRemoteFetch: true, isAdminProxy: getCurrentUser()?.role === "admin" });
-      showToast(`'${targetAcc.deptName}' 최신 B2 데이터를 불러왔습니다.`);
-    });
-
     ["deptContact", "deptMicCount", "deptMicStandCount", "deptGeneralNote"].forEach((id) => {
       const el = document.getElementById(id);
-      el.addEventListener("input", () => scheduleAutoSaveAndSync(getEditableTargetAccount()));
-      el.addEventListener("change", () => scheduleAutoSaveAndSync(getEditableTargetAccount()));
+      el.addEventListener("input", () => scheduleAutoSaveAndSync(getCurrentUser()));
+      el.addEventListener("change", () => scheduleAutoSaveAndSync(getCurrentUser()));
     });
 
     document.getElementById("chkReqMicStand").addEventListener("change", (e) => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc || targetAcc.role !== "dept") return;
-      const sub = ensureDeptSubmission(targetAcc);
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
+      const sub = ensureDeptSubmission(user);
       sub.requestMicStand = !!e.target.checked;
       if (sub.requestMicStand && (!sub.micStandCount || sub.micStandCount < 1)) {
         sub.micStandCount = 1;
       }
       renderMicOptionsControl(sub);
-      scheduleAutoSaveAndSync(targetAcc);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("chkCeilingMic").addEventListener("change", (e) => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc || targetAcc.role !== "dept") return;
-      const sub = ensureDeptSubmission(targetAcc);
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
+      const sub = ensureDeptSubmission(user);
       sub.useCeilingMic = !!e.target.checked;
-      scheduleAutoSaveAndSync(targetAcc);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("btnReqBgm").addEventListener("click", () => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc || targetAcc.role !== "dept") return;
-      const sub = ensureDeptSubmission(targetAcc);
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
+      const sub = ensureDeptSubmission(user);
       sub.requestBgm = !sub.requestBgm;
       renderMediaReqButtons(sub);
-      scheduleAutoSaveAndSync(targetAcc);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("btnReqVideo").addEventListener("click", () => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc || targetAcc.role !== "dept") return;
-      const sub = ensureDeptSubmission(targetAcc);
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
+      const sub = ensureDeptSubmission(user);
       sub.requestVideo = !sub.requestVideo;
       renderMediaReqButtons(sub);
-      scheduleAutoSaveAndSync(targetAcc);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("deptCustomCueFile").addEventListener("change", async (e) => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc || targetAcc.role !== "dept") return;
-      const sub = ensureDeptSubmission(targetAcc);
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
+      const sub = ensureDeptSubmission(user);
       const files = Array.from(e.target.files || []);
       let added = 0;
       for (const f of files) {
@@ -4228,16 +4121,16 @@
       }
       e.target.value = "";
       if (added > 0) {
-        collectDeptFormIntoState(targetAcc, { preserveExistingSubmittedAt: true });
+        collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
         await syncSubmissionToB2(sub, { silent: true });
         renderCustomCueFiles(sub);
       }
     });
 
     document.getElementById("fillDeptSampleBtn").addEventListener("click", async () => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc || targetAcc.role !== "dept") return;
-      await fillDeptSampleData(targetAcc);
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
+      await fillDeptSampleData(user);
     });
 
     document.getElementById("fillAdminSampleBtn").addEventListener("click", async () => {
@@ -4247,29 +4140,29 @@
     });
 
     document.getElementById("addCueBtn").addEventListener("click", () => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc || targetAcc.role !== "dept") return;
-      const sub = ensureDeptSubmission(targetAcc);
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
+      const sub = ensureDeptSubmission(user);
       sub.cues.push(createEmptyCue());
       clearAllCueCustomRanks(sub);
       renderCueList(sub);
-      scheduleAutoSaveAndSync(targetAcc);
+      scheduleAutoSaveAndSync(user);
     });
 
     document.getElementById("saveDeptBtn").addEventListener("click", async () => {
-      const targetAcc = getEditableTargetAccount();
-      if (!targetAcc || targetAcc.role !== "dept") return;
+      const user = getCurrentUser();
+      if (!user || user.role !== "dept") return;
       clearAutoTimers();
-      const sub = collectDeptFormIntoState(targetAcc, { preserveExistingSubmittedAt: true });
+      const sub = collectDeptFormIntoState(user, { preserveExistingSubmittedAt: true });
       setSavedStatusLabel(`B2 동기화 중... (${sub.updatedAt})`);
-      showToast(`${targetAcc.deptName} 내용 저장 및 B2 동기화 중...`);
+      showToast("부서 내용 저장 및 B2 동기화 중...");
       const ok = await syncSubmissionToB2(sub, { silent: true });
       setSavedStatusLabel(
         ok
           ? `✓ B2 동기화 완료 (${sub.updatedAt})`
           : `⚠ 로컬만 저장됨 (${sub.updatedAt}) · B2 동기화 재시도 필요`
       );
-      showToast(ok ? `✓ ${targetAcc.deptName} 저장 및 B2 동기화되었습니다.` : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
+      showToast(ok ? "✓ 저장 및 B2 동기화되었습니다." : "로컬에만 저장되었습니다. 네트워크를 확인해 주세요.");
     });
 
     document.getElementById("saveMasterOrderBtn").addEventListener("click", async () => {
@@ -4296,9 +4189,8 @@
         if (user && user.role === "admin" && activeTab === "adminOverview") {
           fetchRemoteSubmissions(false);
           fetchRemoteB2Files(false);
-        } else if (user && !hasDirtyDeptChanges && activeUploadCount === 0) {
-          const targetAcc = getEditableTargetAccount();
-          if (targetAcc) renderDeptView(targetAcc, { isAdminProxy: user.role === "admin" });
+        } else if (user && user.role === "dept" && !hasDirtyDeptChanges && activeUploadCount === 0) {
+          renderDeptView(user);
         }
       }
     });
@@ -4348,7 +4240,6 @@
       const cleanSlug = id.replace(/[^a-zA-Z0-9가-힣_-]/g, "_") || "dept";
       const deptUid = `uid_${cleanSlug}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`;
       state.accounts.push({ id, pw, deptName, role: "dept", deptUid, defaultOrderSeq: 0 });
-      if (!adminEditingDeptUid) adminEditingDeptUid = deptUid;
       saveState();
       document.getElementById("addAccountForm").reset();
       await syncSystemMetaToB2({ silent: true });
